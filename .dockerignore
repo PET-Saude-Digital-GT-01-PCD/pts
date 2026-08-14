@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.git
+.gitignore
+.env*
+.dockerignore
+Dockerfile
+docker-compose.yml
+README.md
+coverage
+test-results
+playwright-report
+pts-context-docs
+docs
+*.md

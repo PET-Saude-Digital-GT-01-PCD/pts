@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pts-db
+    environment:
+      POSTGRES_USER: pts
+      POSTGRES_PASSWORD: pts
+      POSTGRES_DB: pts
+    ports:
+      - "5432:5432"
+    volumes:
+      - pts_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pts -d pts"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: pts-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  app:
+    build:
+      context: .
+      target: deps
+    container_name: pts-app
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://pts:pts@db:5432/pts?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    command: sh -c "pnpm prisma generate && pnpm db:deploy && pnpm dev"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  pts_pgdata:
