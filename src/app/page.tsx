@@ -25,12 +25,10 @@ export default function Home() {
           </p>
           <div className="mt-4 flex gap-3">
             <Button asChild>
-              <a href="/api/health">Healthcheck</a>
+              <a href="/login">Entrar</a>
             </Button>
             <Button asChild variant="outline">
-              <a href="https://github.com/anomalyco/opencode/issues">
-                Documentação
-              </a>
+              <a href="/api/health">Healthcheck</a>
             </Button>
           </div>
         </CardContent>
