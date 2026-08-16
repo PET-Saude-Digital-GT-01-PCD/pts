@@ -32,6 +32,7 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://pts:pts@db:5432/pts?schema=public
+      CI: "true"
     depends_on:
       db:
         condition: service_healthy
