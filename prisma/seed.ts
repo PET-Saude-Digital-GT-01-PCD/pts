@@ -1,10 +1,18 @@
+import bcrypt from "bcryptjs";
+import { loadEnvFile } from "node:process";
 import { PrismaClient } from "@prisma/client";
+
+// tsx não carrega .env (só o CLI do Prisma carrega). Carregar quando presente.
+try {
+  loadEnvFile();
+} catch {
+  // .env ausente (ex.: CI injeta as variáveis diretamente)
+}
 
 const prisma = new PrismaClient();
 
-// ponytail: hash placeholder — auth (passo 2, contexto iam) substitui por Argon2/bcrypt
-const SENHA_HASH_PLACEHOLDER =
-  "$placeholder$alterar-no-contexto-iam";
+// Senha padrão apenas para dev/piloto — sobrescrever com SEED_ADMIN_SENHA.
+const SENHA_ADMIN = process.env.SEED_ADMIN_SENHA ?? "admin123";
 
 async function main() {
   const cer = await prisma.cer.upsert({
@@ -18,12 +26,14 @@ async function main() {
     },
   });
 
+  const senhaHash = await bcrypt.hash(SENHA_ADMIN, 10);
+
   await prisma.usuario.upsert({
     where: { email: "admin@pts.local" },
-    update: {},
+    update: { senhaHash },
     create: {
       email: "admin@pts.local",
-      senhaHash: SENHA_HASH_PLACEHOLDER,
+      senhaHash,
       nome: "Administrador",
       categoria: "ENFERMEIRO",
       papel: "ADMIN",
@@ -31,7 +41,7 @@ async function main() {
     },
   });
 
-  console.log("Seed ok: CER + usuário admin criados.");
+  console.log("Seed ok: CER + usuário admin criados (papel ADMIN).");
 }
 
 main()

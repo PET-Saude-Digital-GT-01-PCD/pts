@@ -26,6 +26,9 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://pts:pts@localhost:5432/pts?schema=public
+      AUTH_SECRET: ci-only-secret-not-for-production
+      AUTH_URL: http://localhost:3000
+      SEED_ADMIN_SENHA: admin123
 
     steps:
       - uses: actions/checkout@v4
@@ -49,10 +52,11 @@ jobs:
       - name: Test (Vitest)
         run: pnpm test
 
-      - name: Prisma generate + migrate
+      - name: Prisma generate + migrate + seed
         run: |
           pnpm prisma generate
           pnpm db:deploy
+          pnpm db:seed
 
       - name: Build
         run: pnpm build

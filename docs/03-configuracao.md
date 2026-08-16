@@ -11,8 +11,11 @@ cp .env.example .env
 | Variável | Descrição | Padrão dev |
 |---|---|---|
 | `DATABASE_URL` | connection string do PostgreSQL | `postgresql://pts:pts@localhost:5432/pts?schema=public` |
+| `AUTH_SECRET` | segredo de assinatura do JWT (Auth.js) — gerar com `openssl rand -base64 32` | — |
+| `AUTH_URL` | URL pública da aplicação (Auth.js) | `http://localhost:3000` |
+| `SEED_ADMIN_SENHA` | senha do usuário `admin@pts.local` no seed (dev) | `admin123` |
 
-> Dentro do compose (`app`), `DATABASE_URL` aponta para o host `db` (`postgresql://pts:pts@db:5432/pts`). No host, aponta para `localhost`. O `.env` não é versionado (`.gitignore`); o `.env.example` é a fonte de verdade para novas variáveis.
+> Dentro do compose (`app`), `DATABASE_URL` aponta para o host `db` (`postgresql://pts:pts@db:5432/pts`). No host, aponta para `localhost`. O `.env` não é versionado (`.gitignore`); o `.env.example` é a fonte de verdade para novas variáveis. `AUTH_SECRET` é obrigatório em produção/CI (o build falha sem ele).
 
 ## Scripts
 
