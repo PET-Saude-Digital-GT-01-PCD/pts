@@ -25,22 +25,22 @@ src/
 │   ├── api/health/      #   healthcheck L7 (app + DB)
 ├── components/          # shadcn/ui + componentes de UI
 │   └── ui/              #   primitivos gerados pelo shadcn
-├── server/              # regras de negócio (bounded contexts) — a criar
+├── server/              # regras de negócio (bounded contexts)
 │   ├── care-plan/       #   NÚCLEO: pts, metas, revisões, mural, eventos
 │   ├── reception/       #   paciente, cuidador, consentimento, baseline, PPI
 │   ├── triage/          #   semáforo, elegibilidade, contrarreferência
 │   ├── clinical/        #   SOAP, avaliações por especialidade
 │   ├── governance/      #   indicadores, auditoria
-│   ├── iam/             #   usuários, papéis, acesso por caso
+│   ├── iam/             #   usuários, papéis, acesso por caso; senha/sessão (ativo)
 │   ├── integrations/    #   e-SUS (FHIR), notify, fila outbound
 │   └── shared/          #   zod, auditoria, lock otimista, tipos
-├── lib/                 # db (PrismaClient), utils; auth virá aqui
+├── lib/                 # db (PrismaClient), auth (Auth.js), utils
 prisma/                  # schema, migrations, seed
 tests/                   # unit (Vitest)
 e2e/                     # Playwright
 ```
 
-Regra de dependência: `app → server/{contexto} → prisma`. `shared` não importa contexto nenhum. `server/` ainda não existe — contextos nascem com as features (não criar pastas vazias).
+Regra de dependência: `app → server/{contexto} → prisma`. `shared` não importa contexto nenhum. Contextos nascem com as features (não criar pastas vazias).
 
 ## Regras de trabalho
 
