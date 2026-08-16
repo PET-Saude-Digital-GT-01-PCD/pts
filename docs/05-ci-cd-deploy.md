@@ -6,12 +6,13 @@
 
 ```
 checkout → pnpm install (cache) → typecheck → lint → vitest
-  → prisma generate + migrate (service postgres:16) → build → playwright e2e
+  → prisma generate + migrate + seed (service postgres:16) → build → playwright e2e
 ```
 
 - **Gate:** CI falhou → sem merge, sem deploy.
 - Banco de teste: serviço `postgres:16` do próprio workflow.
 - Cache: pnpm store (via `pnpm/action-setup` + `setup-node`).
+- O e2e de login depende do seed: o workflow roda `db:seed` após migrate e injeta `AUTH_SECRET`, `AUTH_URL` e `SEED_ADMIN_SENHA` (valores só de CI).
 
 Workflows futuros (Fase 2, quando o alvo de deploy for definido — ADR 0007):
 
