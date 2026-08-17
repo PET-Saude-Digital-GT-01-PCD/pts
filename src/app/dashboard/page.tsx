@@ -1,8 +1,8 @@
-import { requireAuth } from "@/server/iam/session";
+import { requirePermissao } from "@/server/iam/session";
 import { SignOutButton } from "./sign-out-button";
 
 export default async function DashboardPage() {
-  const user = await requireAuth();
+  const user = await requirePermissao("governanca.dashboard.ver");
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
@@ -19,7 +19,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex justify-between py-2">
             <dt className="text-muted-foreground">Papel</dt>
-            <dd>{user.papel}</dd>
+            <dd>{user.nomePapel}</dd>
           </div>
           <div className="flex justify-between py-2">
             <dt className="text-muted-foreground">Categoria</dt>
