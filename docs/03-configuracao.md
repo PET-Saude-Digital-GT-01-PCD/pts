@@ -63,6 +63,13 @@ pnpm dlx shadcn@latest add <componente>
 
 Build roda sem rede: **não** usar `next/font/google` (faz fetch na build). Usar font stack do sistema (já configurado).
 
+## Tema (claro/escuro)
+
+- Tema por classe `.dark` (não `prefers-color-scheme`) via **next-themes** — tokens em `src/app/globals.css` (oklch, claro + dark) com paleta da identidade PET/CER.
+- Toggle no header (`src/components/ui/theme-toggle.tsx`): Claro / Escuro / Sistema.
+- Adicionar `@custom-variant dark` já está no `globals.css` — necessário para `dark:` de classe no Tailwind v4.
+- Novas telas: usar tokens (`bg-card`, `text-muted-foreground`, `text-success`, etc.) em vez de cores hardcoded.
+
 ## Docker
 
 - `Dockerfile` multi-stage (`deps` → `builder` → `runner`); imagem de produção roda como usuário não-root.

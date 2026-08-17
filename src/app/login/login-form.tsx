@@ -10,10 +10,10 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Logo } from "@/components/ui/logo";
 
 export function LoginForm() {
   const router = useRouter();
@@ -44,8 +44,8 @@ export function LoginForm() {
 
   return (
     <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>PTS Digital</CardTitle>
+      <CardHeader className="items-center text-center">
+        <Logo />
         <CardDescription>
           Acesse com suas credenciais do CER.
         </CardDescription>
