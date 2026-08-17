@@ -30,7 +30,7 @@ prisma/           schema, migrations, seed
 tests/            unit (Vitest)
 e2e/              Playwright
 docs/             guia operacional (setup, docker, config, commit)
-pts-context-docs/ planejamento completo (base, plano 00–16, ADRs 0001–0007)
+pts-context-docs/ planejamento completo (base, plano 00–17, ADRs 0001–0010)
 ```
 
 ## Documentação

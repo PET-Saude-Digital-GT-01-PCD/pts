@@ -11,7 +11,7 @@
 | Linguagem | TypeScript strict | Dado de saúde exige type safety nas fronteiras |
 | ORM | Prisma | Migrations + types + enums; DX para time acadêmico |
 | Validação | Zod | Schemas compartilhados UI↔servidor; valida payloads JSONB |
-| Autenticação | Auth.js v5 (credentials) + RBAC próprio | Gov.br entra como provider OIDC; papel abstrato já |
+| Autenticação | Auth.js v5 (credentials) + RBAC configurável | Gov.br entra como provider OIDC; papéis/permissões data-driven (ADR-0009) |
 | UI | Tailwind + shadcn/ui (Radix) | Componentes acessíveis (WCAG/LBI); velocidade de montagem |
 | Banco | PostgreSQL 16 (Docker; `pgcrypto`, `citext`) | Criptografia em repouso; CPF/CNS case-insensitive |
 | Testes | Vitest (unit) + Playwright (e2e) | Um framework unit + um e2e, nada mais |
@@ -75,7 +75,7 @@ Server Action → zod valida input → usecase do contexto
 Server Component → query repository do contexto → render
 ```
 
-Autorização: checagem de papel + vinculação ao caso (`iam`) antes de qualquer usecase de escrita; leitura clínica restrita à equipe do PTS.
+Autorização: checagem de papel + permissão de recurso (`iam`, RBAC data-driven — ADR-0009) + vinculação ao caso antes de qualquer usecase de escrita; leitura clínica restrita à equipe do PTS. Admissão por auto-cadastro com aprovação do admin (`usuario.status` PENDENTE/ATIVO/BLOQUEADO). Identidade da org (nome, logo, parceiros) via `org_config` no layout (ADR-0010).
 
 ## 4. Bounded contexts (núcleo)
 
@@ -86,7 +86,7 @@ Autorização: checagem de papel + vinculação ao caso (`iam`) antes de qualque
 | `triage` | semáforo, elegibilidade, contrarreferência | Núcleo; regras determinísticas |
 | `clinical` | SOAP, avaliações por especialidade | Estável; payloads JSONB evoluem |
 | `governance` | indicadores, auditoria (leitura) | Evolutivo (Fase 2) |
-| `iam` | usuários, papéis, acesso por caso | Estável |
+| `iam` | usuários, papéis, permissões, admissão, acesso por caso | Estável; RBAC data-driven (ADR-0009) |
 | `integrations` | e-SUS (FHIR), notify, fila outbound | **Evolutivo — mock primeiro** |
 
 Prioridade de construção (Fase 1): `care-plan` + `iam` + `reception` + `triage` + `clinical` (fisio/TO). `governance` completo e `integrations` reais na Fase 2.
@@ -128,6 +128,11 @@ Decisões de arquitetura em `docs/adr/` (formato Nygard) — respeitar, não rea
 | 0005 | Lock otimista + auditoria append-only na mesma transação |
 | 0006 | Fila outbound em tabela PG (`SKIP LOCKED`), sem Redis |
 | 0007 | Docker-first: imagem portável + compose; alvo de deploy plugável |
+| 0008 | Integração por portas canônicas + adapters multi-formato |
+| 0009 | RBAC configurável por papel (catálogo dinâmico + guardrails) |
+| 0010 | Multi-instância per-org + `org_config` (branding por URL) |
+
+Implementação dos blocos de acesso/admissão/identidade: `plano/17-rbac-multi-instancia.md`.
 
 ## 7. Referências
 

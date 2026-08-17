@@ -141,3 +141,18 @@ Identificar os perfis (atores) da plataforma PTS Digital, definir o que cada um 
 | Admin técnico | Logs e configuração | Usuários, integrações, monitoramento | Dados de saúde |
 
 Fonte: plano/06 §5 (papéis e permissões) e plano/03 (personas).
+
+---
+
+## 7. Modelo de Implementação (RBAC configurável)
+
+A matriz acima é o **padrão inicial**, não um conjunto fixo de código. Para a organização adaptar perfis e permissões sem equipe técnica, o controle de acesso é data-driven (ADR-0009):
+
+- **`papel`** — catálogo dinâmico criado pelo admin (ex.: "Fisioterapeuta", "Cargo de limpeza"); cada papel tem base `CLINICO | GESTOR | ADMIN`.
+- **`recurso`** — catálogo fixo do sistema (`soap.ler`, `triagem.escrever`, `dashboard.ver`...).
+- **`papel_recurso`** — matriz editável pelo admin (checkbox).
+- **Um papel por usuário**; permissão = união dos recursos do papel.
+- **Guardrails em código** (não desligáveis por admin): base `GESTOR` nunca ganha recurso clínico; recursos de admin restritos à base `ADMIN`; mudanças auditadas.
+- **Admissão**: auto-cadastro com campos definidos pela org (`formulario_config`) → `PENDENTE` → aprovação do admin → `ATIVO`; login bloqueado até aprovar.
+
+Detalhamento: `plano/17-rbac-multi-instancia.md`, `docs/adr/0009`, `docs/adr/0010`.

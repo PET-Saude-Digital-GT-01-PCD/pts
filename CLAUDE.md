@@ -5,7 +5,7 @@ Instruções operacionais para agentes que trabalham neste repositório. Instru�
 ## Estado atual
 
 - **Fase:** base de desenvolvimento pronta. Next.js 15 · TypeScript strict · Tailwind + shadcn/ui · PostgreSQL 16 · Prisma · Docker-first · Vitest · Playwright · GitHub Actions.
-- Contexto do produto (planejamento completo, ADRs 0001–0007): `pts-context-docs/`. Respeite ADRs; não reabra decisão registrada.
+- Contexto do produto (planejamento completo, ADRs 0001–0010): `pts-context-docs/`. Respeite ADRs; não reabra decisão registrada. RBAC configurável + admissão + multi-instância: `plano/17`.
 - Fluxo de engenharia oficial: **Superpowers** (`plano/16`). Fluxos do Matt Pocock não misturar.
 
 ## Comandos
@@ -31,7 +31,7 @@ src/
 │   ├── triage/          #   semáforo, elegibilidade, contrarreferência
 │   ├── clinical/        #   SOAP, avaliações por especialidade
 │   ├── governance/      #   indicadores, auditoria
-│   ├── iam/             #   usuários, papéis, acesso por caso; senha/sessão (ativo)
+│   ├── iam/             #   usuários, papéis/permissões (RBAC dinâmico), admissão; senha/sessão (ativo)
 │   ├── integrations/    #   e-SUS (FHIR), notify, fila outbound
 │   └── shared/          #   zod, auditoria, lock otimista, tipos
 ├── lib/                 # db (PrismaClient), auth (Auth.js), utils

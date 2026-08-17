@@ -45,7 +45,7 @@ Regras determinísticas têm **TDD obrigatório** (AGENTS.md):
 | Passo | Artefato | Skill |
 |---|---|---|
 | Memória do projeto | `AGENTS.md` + `CONTEXT.md` | — |
-| Decisões de arquitetura | `docs/adr/0001-0007` | `domain-modeling` |
+| Decisões de arquitetura | `docs/adr/0001-0010` | `domain-modeling` |
 | Scaffolding (quando código existir) | issue tracker + labels + layout docs | `/setup-matt-pocock-skills` |
 
 ## 4. Rituais
@@ -63,7 +63,7 @@ Regras determinísticas têm **TDD obrigatório** (AGENTS.md):
 **Fase 1 (MVP piloto):**
 
 1. Setup repo: CI + Docker + scaffold + schema Prisma + mock e-SUS.
-2. `iam`: auth + RBAC + acesso por caso.
+2. `iam`: auth + RBAC configurável (plano/17, blocos A–B) + admissão + acesso por caso.
 3. `reception`: cadastro + cuidador + consentimento + baseline (degradada).
 4. `triage`: triagem + semáforo (TDD) + elegibilidade.
 5. `clinical`: SOAP + avaliação fisio (checklist → CIF).

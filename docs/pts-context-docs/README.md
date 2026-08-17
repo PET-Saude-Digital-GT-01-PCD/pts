@@ -25,7 +25,7 @@ pts-context-docs/
 │   ├── pts.md                    #   fundamentos teórico-conceituais do PTS
 │   ├── Plano ... Digital ...md   #   arquitetura e funcionalidades da solução digital
 │   └── Plano ... Guia ...md      #   visão operacional e módulos do sistema
-├── plano/                        # plano de formulação e desenvolvimento (11 etapas)
+├── plano/                        # plano de formulação e desenvolvimento
 │   ├── 00-index.md               #   mapa de navegação e ordem de leitura
 │   ├── 01-fundamentos-teoricos.md
 │   ├── 02-diagnostico-ambiente.md
@@ -42,7 +42,8 @@ pts-context-docs/
 │   ├── 13-regras-negocio-concorrencia.md
 │   ├── 14-telas-e-fluxos.md
 │   ├── 15-infra-ci-cd-deploy.md
-│   └── 16-ciclos-engenharia.md
+│   ├── 16-ciclos-engenharia.md
+│   └── 17-rbac-multi-instancia.md
 └── Perguntas/                    # respostas detalhadas aos 6 questionamentos iniciais
     ├── 01-processo-assistencial-pts.md
     ├── 02-dados-modelagem.md
@@ -54,7 +55,7 @@ pts-context-docs/
 
 Os diagramas da documentação usam **Mermaid** e renderizam automaticamente no GitHub. O índice de diagramas está em [`diagramas/README.md`](diagramas/README.md).
 
-Os planos técnico/operacional (`plano/11`–`16`) e as decisões de arquitetura em [`docs/adr/`](docs/adr/) definem a implementação: stack (Node 22 · Next.js 15 · Prisma · PostgreSQL 16 · Docker), modelo de dados, regras de concorrência, telas, CI/CD e fluxo de engenharia (Superpowers).
+Os planos técnico/operacional (`plano/11`–`17`) e as decisões de arquitetura em [`docs/adr/`](docs/adr/) definem a implementação: stack (Node 22 · Next.js 15 · Prisma · PostgreSQL 16 · Docker), modelo de dados, regras de concorrência, telas, CI/CD, fluxo de engenharia (Superpowers) e adaptação por organização (RBAC/admissão/branding).
 
 > Diagrama renderizado nativamente pelo GitHub em qualquer arquivo `.md` que contenha bloco ` ```mermaid `.
 
@@ -72,6 +73,8 @@ base/pts.md
   → plano/11 → 12 → 13 → 14 → 15 → 16
       (arquitetura técnica → modelo de dados → regras/concorrência →
        telas → infra/CI-CD → ciclos de engenharia)
+  → plano/17
+      (RBAC configurável → admissão → multi-instância/branding)
 ```
 
 ### Consulta por tema
@@ -100,6 +103,7 @@ base/pts.md
 | **Telas e fluxos priorizados** | `plano/14` |
 | **Infra, CI/CD e deploy** | `plano/15` |
 | **Ciclos de engenharia (Superpowers)** | `plano/16` |
+| **RBAC configurável, admissão e multi-instância** | `plano/17` |
 | **Decisões de arquitetura (ADRs)** | `docs/adr/` |
 
 ### Documentos-fonte do contexto
