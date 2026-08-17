@@ -28,17 +28,16 @@ enum CategoriaProfissional {
   ENFERMEIRO
 }
 
-enum Papel {
-  RECEPCAO
-  TRIADOR
-  MEDICO
-  FISIOTERAPEUTA
-  TERAPEUTA_OCUPACIONAL
-  PSICOLOGO
-  REFERENCIA
+enum BasePapel {
+  CLINICO
   GESTOR
   ADMIN
-  USUARIO
+}
+
+enum StatusUsuario {
+  PENDENTE
+  ATIVO
+  BLOQUEADO
 }
 
 enum StatusPts {
@@ -101,29 +100,72 @@ model Cer {
   escopos   Escopo[]
   criadaEm  DateTime @default(now()) @db.Timestamptz(3)
 
-  usuarios    Usuario[]
-  pacientes   Paciente[]
-  pts         Pts[]
+  usuarios  Usuario[]
+  pacientes Paciente[]
+  pts       Pts[]
+  papeis    Papel[]
 
   @@map("cer")
 }
 
-model Usuario {
+model Papel {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId     String    @db.Uuid
+  nome      String
+  descricao String?
+  base      BasePapel
+  ativo     Boolean   @default(true)
+  criadoEm  DateTime  @default(now()) @db.Timestamptz(3)
+
+  cer      Cer            @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  usuarios Usuario[]
+  recursos PapelRecurso[]
+
+  @@unique([cerId, nome])
+  @@map("papel")
+}
+
+model Recurso {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cerId     String   @db.Uuid
-  email     String   @unique @db.Citext
+  chave     String   @unique @db.Citext
+  grupo     String
+  descricao String?
+  criadoEm  DateTime @default(now()) @db.Timestamptz(3)
+
+  papeis PapelRecurso[]
+
+  @@map("recurso")
+}
+
+model PapelRecurso {
+  papelId   String @db.Uuid
+  recursoId String @db.Uuid
+
+  papel   Papel   @relation(fields: [papelId], references: [id], onDelete: Restrict)
+  recurso Recurso @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+
+  @@id([papelId, recursoId])
+  @@map("papel_recurso")
+}
+
+model Usuario {
+  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId     String                @db.Uuid
+  email     String                @unique @db.Citext
   senhaHash String
   nome      String
   categoria CategoriaProfissional
-  papel     Papel
-  criadoEm  DateTime @default(now()) @db.Timestamptz(3)
+  papelId   String                @db.Uuid
+  status    StatusUsuario         @default(ATIVO)
+  criadoEm  DateTime              @default(now()) @db.Timestamptz(3)
 
-  cer               Cer               @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  ptsComoReferencia Pts[]             @relation("referencia")
+  cer               Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  papel             Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
+  ptsComoReferencia Pts[]                 @relation("referencia")
   auditorias        Auditoria[]
   ajustes           AjusteClassificacao[]
   avaliacoes        Avaliacao[]
-  metasDono          Meta[]            @relation("donoMeta")
+  metasDono         Meta[]                @relation("donoMeta")
   revisoes          PtsRevisao[]
   metaHistorico     MetaStatusHistorico[]
 
@@ -133,25 +175,25 @@ model Usuario {
 // ===== Recepção =====
 
 model Paciente {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cerId       String   @db.Uuid
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId        String     @db.Uuid
   // ponytail: unique global (não parcial) enquanto não há reativação de soft-delete
-  cpf         String?  @unique @db.Citext
-  cns         String?  @unique @db.Citext
-  nome        String
-  dtnasc      DateTime
-  sexo        Sexo
-  enderecoJson Json?   @db.JsonB
-  ubsId       String?
-  origem      OrigemDado @default(digitado)
-  ativo       Boolean  @default(true)
-  criadoEm    DateTime @default(now()) @db.Timestamptz(3)
+  cpf          String?    @unique @db.Citext
+  cns          String?    @unique @db.Citext
+  nome         String
+  dtnasc       DateTime
+  sexo         Sexo
+  enderecoJson Json?      @db.JsonB
+  ubsId        String?
+  origem       OrigemDado @default(digitado)
+  ativo        Boolean    @default(true)
+  criadoEm     DateTime   @default(now()) @db.Timestamptz(3)
 
-  cer          Cer          @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  cuidadores   Cuidador[]
+  cer            Cer             @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  cuidadores     Cuidador[]
   consentimentos Consentimento[]
-  baseline     Baseline?
-  pts          Pts[]
+  baseline       Baseline?
+  pts            Pts[]
 
   @@index([cpf])
   @@index([cns])
@@ -159,14 +201,14 @@ model Paciente {
 }
 
 model Cuidador {
-  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pacienteId        String  @db.Uuid
-  nome              String
-  parentesco        String
-  idade             Int?
-  comorbidadesJson  Json?   @db.JsonB
-  zaritScore        Int?
-  vulnerabilidadesJson Json? @db.JsonB
+  id                   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId           String @db.Uuid
+  nome                 String
+  parentesco           String
+  idade                Int?
+  comorbidadesJson     Json?  @db.JsonB
+  zaritScore           Int?
+  vulnerabilidadesJson Json?  @db.JsonB
 
   paciente Paciente @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
 
@@ -174,13 +216,13 @@ model Cuidador {
 }
 
 model Consentimento {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pacienteId   String   @db.Uuid
-  termoVersao  String
-  canal        CanalConsentimento
-  data         DateTime @default(now()) @db.Timestamptz(3)
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId    String             @db.Uuid
+  termoVersao   String
+  canal         CanalConsentimento
+  data          DateTime           @default(now()) @db.Timestamptz(3)
   assinaturaRef String?
-  revogadoEm   DateTime? @db.Timestamptz(3)
+  revogadoEm    DateTime?          @db.Timestamptz(3)
 
   paciente Paciente @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
 
@@ -189,14 +231,14 @@ model Consentimento {
 }
 
 model Baseline {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pacienteId     String   @unique @db.Uuid
-  importadoEm    DateTime @default(now()) @db.Timestamptz(3)
-  diagnosticosJson  Json?  @db.JsonB
-  alergiasJson      Json?  @db.JsonB
-  medicacoesJson    Json?  @db.JsonB
-  internacoesJson   Json?  @db.JsonB
-  origemJson        Json?  @db.JsonB
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId       String   @unique @db.Uuid
+  importadoEm      DateTime @default(now()) @db.Timestamptz(3)
+  diagnosticosJson Json?    @db.JsonB
+  alergiasJson     Json?    @db.JsonB
+  medicacoesJson   Json?    @db.JsonB
+  internacoesJson  Json?    @db.JsonB
+  origemJson       Json?    @db.JsonB
 
   paciente Paciente @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
 
@@ -206,25 +248,25 @@ model Baseline {
 // ===== Núcleo: PTS =====
 
 model Pts {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pacienteId       String   @db.Uuid
-  cerId            String   @db.Uuid
-  status           StatusPts @default(EM_AVALIACAO)
-  refProfissionalId String? @db.Uuid
-  semaforoReuniao  Semaforo @default(VERDE)
-  versao           Int      @default(0)
-  aberturaEm       DateTime @default(now()) @db.Timestamptz(3)
-  encerramentoEm   DateTime? @db.Timestamptz(3)
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId         String    @db.Uuid
+  cerId              String    @db.Uuid
+  status             StatusPts @default(EM_AVALIACAO)
+  refProfissionalId  String?   @db.Uuid
+  semaforoReuniao    Semaforo  @default(VERDE)
+  versao             Int       @default(0)
+  aberturaEm         DateTime  @default(now()) @db.Timestamptz(3)
+  encerramentoEm     DateTime? @db.Timestamptz(3)
   motivoEncerramento String?
-  criadoEm         DateTime @default(now()) @db.Timestamptz(3)
+  criadoEm           DateTime  @default(now()) @db.Timestamptz(3)
 
-  paciente         Paciente  @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
-  cer              Cer       @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  refProfissional  Usuario?  @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
-  revisoes         PtsRevisao[]
-  triagens         Triagem[]
-  avaliacoes       Avaliacao[]
-  metas            Meta[]
+  paciente        Paciente     @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  cer             Cer          @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  refProfissional Usuario?     @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
+  revisoes        PtsRevisao[]
+  triagens        Triagem[]
+  avaliacoes      Avaliacao[]
+  metas           Meta[]
 
   @@index([pacienteId])
   @@index([cerId, status])
@@ -232,14 +274,14 @@ model Pts {
 }
 
 model PtsRevisao {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ptsId       String   @db.Uuid
-  numero      Int
-  motivo      String
-  revisadoPorId String @db.Uuid
-  data        DateTime @default(now()) @db.Timestamptz(3)
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId         String   @db.Uuid
+  numero        Int
+  motivo        String
+  revisadoPorId String   @db.Uuid
+  data          DateTime @default(now()) @db.Timestamptz(3)
 
-  pts        Pts      @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  pts         Pts     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
   revisadoPor Usuario @relation(fields: [revisadoPorId], references: [id], onDelete: Restrict)
 
   @@unique([ptsId, numero])
@@ -247,75 +289,75 @@ model PtsRevisao {
 }
 
 model Triagem {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ptsId        String   @db.Uuid
-  motivo       String
-  eixosJson    Json     @db.JsonB
-  pontuacaoJson Json?   @db.JsonB
-  classificacao Semaforo
+  id                     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId                  String        @db.Uuid
+  motivo                 String
+  eixosJson              Json          @db.JsonB
+  pontuacaoJson          Json?         @db.JsonB
+  classificacao          Semaforo
   resultadoElegibilidade Elegibilidade @default(REVISAO_MANUAL)
-  justificativa String?
-  versao       Int      @default(0)
-  criadaEm     DateTime @default(now()) @db.Timestamptz(3)
+  justificativa          String?
+  versao                 Int           @default(0)
+  criadaEm               DateTime      @default(now()) @db.Timestamptz(3)
 
-  pts      Pts                @relation(fields: [ptsId], references: [id], onDelete: Restrict)
-  ajustes  AjusteClassificacao[]
+  pts     Pts                   @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  ajustes AjusteClassificacao[]
 
   @@index([ptsId])
   @@map("triagem")
 }
 
 model AjusteClassificacao {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  triagemId   String   @db.Uuid
-  de          Semaforo
-  para        Semaforo
-  motivo      String
-  ajustadoPorId String @db.Uuid
-  data        DateTime @default(now()) @db.Timestamptz(3)
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  triagemId     String   @db.Uuid
+  de            Semaforo
+  para          Semaforo
+  motivo        String
+  ajustadoPorId String   @db.Uuid
+  data          DateTime @default(now()) @db.Timestamptz(3)
 
-  triagem     Triagem  @relation(fields: [triagemId], references: [id], onDelete: Restrict)
-  ajustadoPor Usuario  @relation(fields: [ajustadoPorId], references: [id], onDelete: Restrict)
+  triagem     Triagem @relation(fields: [triagemId], references: [id], onDelete: Restrict)
+  ajustadoPor Usuario @relation(fields: [ajustadoPorId], references: [id], onDelete: Restrict)
 
   @@map("ajuste_classificacao")
 }
 
 model Avaliacao {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ptsId        String   @db.Uuid
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId         String        @db.Uuid
   especialidade Especialidade
-  dadosJson    Json     @db.JsonB
-  escoresJson  Json?    @db.JsonB
-  avaliadorId  String   @db.Uuid
-  versao       Int      @default(0)
-  criadaEm     DateTime @default(now()) @db.Timestamptz(3)
+  dadosJson     Json          @db.JsonB
+  escoresJson   Json?         @db.JsonB
+  avaliadorId   String        @db.Uuid
+  versao        Int           @default(0)
+  criadaEm      DateTime      @default(now()) @db.Timestamptz(3)
 
-  pts        Pts      @relation(fields: [ptsId], references: [id], onDelete: Restrict)
-  avaliador  Usuario  @relation(fields: [avaliadorId], references: [id], onDelete: Restrict)
-  metas      Meta[]
+  pts       Pts     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  avaliador Usuario @relation(fields: [avaliadorId], references: [id], onDelete: Restrict)
+  metas     Meta[]
 
   @@index([ptsId, especialidade])
   @@map("avaliacao")
 }
 
 model Meta {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ptsId        String   @db.Uuid
-  avaliacaoId  String?  @db.Uuid
-  donoId       String   @db.Uuid
-  descTecnica  String
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId         String     @db.Uuid
+  avaliacaoId   String?    @db.Uuid
+  donoId        String     @db.Uuid
+  descTecnica   String
   descAcessivel String
-  criteriosJson Json    @db.JsonB
-  status       StatusMeta @default(NOVA)
-  prazo        DateTime
-  dataPactuacao DateTime @default(now()) @db.Timestamptz(3)
-  dataRevisao  DateTime? @db.Timestamptz(3)
-  versao       Int      @default(0)
-  criadoEm     DateTime @default(now()) @db.Timestamptz(3)
+  criteriosJson Json       @db.JsonB
+  status        StatusMeta @default(NOVA)
+  prazo         DateTime
+  dataPactuacao DateTime   @default(now()) @db.Timestamptz(3)
+  dataRevisao   DateTime?  @db.Timestamptz(3)
+  versao        Int        @default(0)
+  criadoEm      DateTime   @default(now()) @db.Timestamptz(3)
 
-  pts       Pts       @relation(fields: [ptsId], references: [id], onDelete: Restrict)
-  avaliacao Avaliacao? @relation(fields: [avaliacaoId], references: [id], onDelete: SetNull)
-  dono      Usuario   @relation("donoMeta", fields: [donoId], references: [id], onDelete: Restrict)
+  pts       Pts                   @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  avaliacao Avaliacao?            @relation(fields: [avaliacaoId], references: [id], onDelete: SetNull)
+  dono      Usuario               @relation("donoMeta", fields: [donoId], references: [id], onDelete: Restrict)
   historico MetaStatusHistorico[]
 
   @@index([ptsId, status])
@@ -323,15 +365,15 @@ model Meta {
 }
 
 model MetaStatusHistorico {
-  id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  metaId  String   @db.Uuid
+  id      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  metaId  String      @db.Uuid
   de      StatusMeta?
   para    StatusMeta
-  autorId String   @db.Uuid
-  data    DateTime @default(now()) @db.Timestamptz(3)
+  autorId String      @db.Uuid
+  data    DateTime    @default(now()) @db.Timestamptz(3)
   motivo  String?
 
-  meta Meta     @relation(fields: [metaId], references: [id], onDelete: Restrict)
+  meta  Meta    @relation(fields: [metaId], references: [id], onDelete: Restrict)
   autor Usuario @relation(fields: [autorId], references: [id], onDelete: Restrict)
 
   @@index([metaId, data])

@@ -1,9 +1,16 @@
-import type { CategoriaProfissional, Papel } from "@prisma/client";
+import type {
+  BasePapel,
+  CategoriaProfissional,
+  StatusUsuario,
+} from "@prisma/client";
 import type { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   interface User {
-    papel?: Papel;
+    papelId?: string;
+    basePapel?: BasePapel;
+    nomePapel?: string;
+    status?: StatusUsuario;
     categoria?: CategoriaProfissional | null;
     cerId?: string | null;
   }
@@ -12,7 +19,10 @@ declare module "next-auth" {
     user: {
       id: string;
       nome: string;
-      papel: Papel;
+      papelId: string;
+      basePapel: BasePapel;
+      nomePapel: string;
+      status: StatusUsuario;
       categoria: CategoriaProfissional | null;
       cerId: string | null;
     } & DefaultSession["user"];

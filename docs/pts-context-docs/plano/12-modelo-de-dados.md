@@ -7,6 +7,11 @@
 ```mermaid
 erDiagram
     CER ||--o{ USUARIO : possui
+    USUARIO }o--|| PAPEL : possui
+    PAPEL ||--o{ PAPEL_RECURSO : concede
+    RECURSO ||--o{ PAPEL_RECURSO : recebe
+    CER ||--o| ORG_CONFIG : personaliza
+    CER ||--o{ FORMULARIO_CONFIG : define
     CER ||--o{ PACIENTE : vincula
     PACIENTE ||--o{ CUIDADOR : tem
     PACIENTE ||--o| CONSENTIMENTO : registra
@@ -40,17 +45,77 @@ Tenant do sistema (unidade de saúde). Presente em toda tabela clínica para hab
 | escopos | enum[] | FISICA / INTELECTUAL / VISUAL / AUDITIVA (elegibilidade) |
 
 ### `usuario`
-Profissional ou papel administrativo. Papel global; acesso a caso via equipe.
+Profissional ou papel administrativo. Papel via FK para `papel` (RBAC data-driven, ADR-0009); acesso a caso via equipe.
 
 | Coluna | Tipo | Notas |
 |---|---|---|
 | id | uuid PK | |
 | cerId | fk → cer | |
+| papelId | fk → papel | papel único (catálogo dinâmico) |
+| status | enum | PENDENTE / ATIVO / BLOQUEADO (admissão) |
 | email | citext unique | |
 | senhaHash | text | Argon2/bcrypt |
 | nome | text | |
-| categoria | enum | recepção, triador, médico, fisio, to, psico... |
-| papel | enum RBAC | RECEPCAO, TRIADOR, MEDICO, FISIOTERAPEUTA, TERAPEUTA_OCUPACIONAL, PSICOLOGO, REFERENCIA, GESTOR, ADMIN, USUARIO |
+| categoria | enum | metadado informativo (recepção, triador, médico, fisio, to, psico...) |
+| camposDinamicosJson | jsonb | campos pessoais definidos pela org (`formulario_config`) |
+
+### `papel`
+Catálogo dinâmico de papéis por org (substitui enum fixo — ADR-0009).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| cerId | fk → cer | |
+| nome | text | "Fisioterapeuta", "Cargo de limpeza"... |
+| descricao | text | |
+| base | enum | CLINICO / GESTOR / ADMIN (ancora guardrails) |
+| ativo | bool | papel em uso não deleta |
+
+### `recurso`
+Catálogo fixo do sistema (seed; não configurável pela org).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| chave | citext unique | `soap.ler`, `triagem.escrever`, `dashboard.ver`... |
+| grupo | text | recepcao / triage / clinical / care-plan / governanca / admin |
+| descricao | text | |
+
+### `papel_recurso`
+Matriz de permissões editável pelo admin.
+
+| Coluna | Tipo |
+|---|---|
+| papelId | fk → papel |
+| recursoId | fk → recurso |
+
+Unique(papelId, recursoId). Guardrails (ex.: gestor sem `soap.*`) em código, não em banco.
+
+### `formulario_config`
+Campos do perfil que a org define (auto-cadastro/admissão).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| cerId | fk → cer | |
+| entidade | text | `usuario` (hoje) |
+| campo | text | chave do campo |
+| rotulo | text | rótulo exibido |
+| obrigatorio | bool | |
+| visivel | bool | |
+| tipo | text | text / email / select / date... |
+| opcoesJson | jsonb | opções p/ select |
+
+### `org_config`
+Identidade visual/parceiros da org (ADR-0010, 1:1 com cer).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| cerId | fk unique → cer | |
+| nomeExibido | text | título/metadata |
+| logoUrl | text | URL externa |
+| parceirosJson | jsonb | `[{ nome, logoUrl }]` |
 
 ### `paciente`
 
@@ -283,3 +348,4 @@ Tabela PPI configurável localmente (sem dependência de rede).
 - `avaliacao` JSONB por especialidade (`ponytail:` teto = 4 tabelas separadas quando cada especialidade precisar de query própria pesada; upgrade = extrair tabelas + migration de split).
 - Versionamento por marcos + histórico (`ponytail:` teto = snapshot por revisão quando comparativo virar relatório frequente/online; upgrade = tabela de snapshot materializada).
 - `cerId` duplicado em tabelas clínicas para RLS futuro (`ponytail:` teto = RLS por tenant; upgrade = habilitar RLS nas migrations).
+- Papel único por usuário (`papelId`) em vez de N:M (`ponytail:` teto = perfis compostos; upgrade = `usuario_papel` quando orgs pedirem em volume). `equipe_pts` (vinculação ao caso) fica para o Bloco D (`plano/17`).

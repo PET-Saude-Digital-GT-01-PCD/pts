@@ -26,4 +26,4 @@ Guia operacional do repositório: como subir, configurar, testar e versionar. Do
 | CI | GitHub Actions |
 | Deploy | Docker-first (imagem portável) |
 
-Decisões de arquitetura: `docs/adr/0001–0007` em `pts-context-docs/`.
+Decisões de arquitetura: `docs/adr/0001–0010` em `pts-context-docs/`.

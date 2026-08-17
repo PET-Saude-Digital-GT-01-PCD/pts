@@ -33,12 +33,14 @@ Este conjunto de documentos estrutura, da base teórica à implementação digit
 | 14 | **telas-e-fluxos.md** | Telas priorizadas, navegação, princípios UX | Quais telas e em que ordem? |
 | 15 | **infra-ci-cd-deploy.md** | Docker, GitHub Actions, ambientes, backup, segurança | Como rodar, testar e publicar? |
 | 16 | **ciclos-engenharia.md** | Fluxo Superpowers, TDD, rituais, ordem de construção | Como trabalhar durante o build? |
+| 17 | **rbac-multi-instancia.md** | RBAC configurável + admissão + multi-instância/branding (blocos A–D) | Como adaptar perfis, permissões e identidade por organização? |
 
 ## Ordem de Leitura
 
 - **Estratégica** (visão geral): 00 → 01 → 04 → 07 → 08
 - **Linear completa** (recomendada): 00 → 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10
 - **Técnica** (planejamento operacional): 11 → 12 → 13 → 14 → 15 → 16 (decisões em `docs/adr/`)
+- **Adaptação por organização** (RBAC, admissão, identidade): 17 (+ ADR 0009, 0010)
 - **Consultas pontuais**: cada documento é autocontido e referenciável de forma isolada
 
 ## Diagrama de Dependências

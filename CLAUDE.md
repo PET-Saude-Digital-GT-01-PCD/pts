@@ -5,7 +5,7 @@ Instruções operacionais para agentes que trabalham neste repositório. Instru�
 ## Estado atual
 
 - **Fase:** base de desenvolvimento pronta. Next.js 15 · TypeScript strict · Tailwind + shadcn/ui · PostgreSQL 16 · Prisma · Docker-first · Vitest · Playwright · GitHub Actions.
-- Contexto do produto (planejamento completo, ADRs 0001–0007): `pts-context-docs/`. Respeite ADRs; não reabra decisão registrada.
+- Contexto do produto (planejamento completo, ADRs 0001–0010): `pts-context-docs/`. Respeite ADRs; não reabra decisão registrada. RBAC configurável + admissão + multi-instância: `plano/17`.
 - Fluxo de engenharia oficial: **Superpowers** (`plano/16`). Fluxos do Matt Pocock não misturar.
 
 ## Comandos
@@ -31,7 +31,7 @@ src/
 │   ├── triage/          #   semáforo, elegibilidade, contrarreferência
 │   ├── clinical/        #   SOAP, avaliações por especialidade
 │   ├── governance/      #   indicadores, auditoria
-│   ├── iam/             #   usuários, papéis, acesso por caso; senha/sessão (ativo)
+│   ├── iam/             #   usuários, papéis/permissões (RBAC dinâmico), admissão; senha/sessão (ativo)
 │   ├── integrations/    #   e-SUS (FHIR), notify, fila outbound
 │   └── shared/          #   zod, auditoria, lock otimista, tipos
 ├── lib/                 # db (PrismaClient), auth (Auth.js), utils
@@ -50,6 +50,8 @@ Regra de dependência: `app → server/{contexto} → prisma`. `shared` não imp
 - Lock otimista (`version`) em rows mutáveis; conflito → 409 → recarrega UI.
 - e-SUS é periférico: contrato por interface + mock. Fluxo clínico nunca trava por indisponibilidade de integração.
 - Semáforo e elegibilidade são funções puras determinísticas — TDD obrigatório.
+- Acesso controlado por RBAC data-driven: `requirePermissao("grupo.recurso")` (não `requirePapel`). Guardrails (GESTOR sem recurso clínico, admin.* só base ADMIN, ≥1 admin ativo, papel em uso não deleta) em `server/iam/permissoes.ts`, TDD obrigatório.
+- Mudança de papel/permissão grava auditoria na mesma transação.
 - `ponytail:` comentários marcam simplificação deliberada (nome do teto + caminho de upgrade).
 - Não commitar secrets; `.env` no `.gitignore`, exemplos em `.env.example`.
 - Fontes: usar font stack do sistema (sem `next/font/google` — build precisa rodar sem rede).

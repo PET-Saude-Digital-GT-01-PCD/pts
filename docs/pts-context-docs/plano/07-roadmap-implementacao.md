@@ -59,6 +59,19 @@ Build dos módulos 1, 2, 3 e 5 (núcleo) + módulo 4 (Fisio/TO essencial) confor
 - Expansão para 2–3 CER adicionais com curva de aprendizado medida.
 - Condição: indicadores do piloto atendidos (doc 09) + capacidade de manutenção definida (doc 10).
 
+### 3.4 Base de acesso e identidade (transversal)
+
+Pré-requisito para a org configurar a instância sem equipe técnica (blocos em `plano/17`):
+
+| Bloco | Entrega | Fase-alvo |
+|---|---|---|
+| A — RBAC dinâmico | Catálogo `papel`/`recurso` + matriz editável pelo admin; `requirePermissao` | Fase 1 (núcleo iam) |
+| B — Admissão | Auto-cadastro com campos por org (`formulario_config`) → aprovação do admin | Fase 1/2 |
+| C — Branding | `org_config`: nome, logo, parceiros; header/rodapé dinâmicos | Fase 2 |
+| D — Equipe do caso | `equipe_pts` + enforcement de vinculação ao caso | Fase 2 |
+
+Deploy-per-org (ADR-0010): a app é distribuída e cada organização sobe a própria instância; configuração de acesso e identidade é feita por UI, sem alterar código.
+
 ## 4. Marcos e Dependências
 
 | Marco | Depende de | Critério de saída |

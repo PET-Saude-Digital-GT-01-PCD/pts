@@ -103,6 +103,16 @@ flowchart TD
 
 Princípio de menor privilégio: nenhum papel vê além do necessário ao seu job. Dados clínicos completos somente pela equipe do caso.
 
+### 5.1 Controle de acesso (RBAC configurável — ADR-0009)
+
+A matriz acima é o **padrão inicial**, não um conjunto fixo de código. O controle de acesso é **data-driven**:
+
+- **Catálogo de papéis** (`papel`) criado pelo admin da organização; cada papel tem base `CLINICO | GESTOR | ADMIN`.
+- **Catálogo de recursos** (`recurso`) fixo do sistema (ex.: `soap.ler`, `triagem.escrever`, `dashboard.ver`).
+- **Matriz `papel_recurso`**: admin marca/desmarca o que cada papel vê e faz.
+- **Um papel por usuário**; permissão efetiva = união dos recursos do papel.
+- **Guardrails em código** (não configuráveis): gestor nunca ganha recurso clínico; recursos de admin restritos à base `ADMIN`; mudanças de permissão auditadas. Ver `plano/17`.
+
 ## 6. Governança de Dados e LGPD
 
 - **Base legal:** consentimento explícito para tratamento de dados sensíveis de saúde + finalidades legítimas de cuidado.
