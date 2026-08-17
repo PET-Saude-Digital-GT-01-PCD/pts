@@ -50,6 +50,8 @@ Regra de dependência: `app → server/{contexto} → prisma`. `shared` não imp
 - Lock otimista (`version`) em rows mutáveis; conflito → 409 → recarrega UI.
 - e-SUS é periférico: contrato por interface + mock. Fluxo clínico nunca trava por indisponibilidade de integração.
 - Semáforo e elegibilidade são funções puras determinísticas — TDD obrigatório.
+- Acesso controlado por RBAC data-driven: `requirePermissao("grupo.recurso")` (não `requirePapel`). Guardrails (GESTOR sem recurso clínico, admin.* só base ADMIN, ≥1 admin ativo, papel em uso não deleta) em `server/iam/permissoes.ts`, TDD obrigatório.
+- Mudança de papel/permissão grava auditoria na mesma transação.
 - `ponytail:` comentários marcam simplificação deliberada (nome do teto + caminho de upgrade).
 - Não commitar secrets; `.env` no `.gitignore`, exemplos em `.env.example`.
 - Fontes: usar font stack do sistema (sem `next/font/google` — build precisa rodar sem rede).
