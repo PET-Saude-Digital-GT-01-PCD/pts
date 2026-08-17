@@ -18,7 +18,7 @@ export type SessaoUsuario = {
 
 export async function getCurrentUser(): Promise<SessaoUsuario | null> {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user || !session.user.papelId) return null;
   return {
     id: session.user.id,
     nome: session.user.nome,
@@ -39,6 +39,7 @@ export async function requireAuth(): Promise<SessaoUsuario> {
 }
 
 export async function recursosDoUsuario(papelId: string): Promise<string[]> {
+  if (!papelId) return [];
   const papel = await db.papel.findUnique({
     where: { id: papelId },
     select: { recursos: { select: { recurso: { select: { chave: true } } } } },
