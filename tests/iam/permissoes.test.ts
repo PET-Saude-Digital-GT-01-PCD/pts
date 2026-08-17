@@ -23,15 +23,15 @@ describe("iam/permissoes", () => {
   });
 
   describe("ehRecursoAdminOnly", () => {
-    it("identifica papeis.gerenciar, config.* e usuarios.aprovar", () => {
-      expect(ehRecursoAdminOnly("papeis.gerenciar")).toBe(true);
-      expect(ehRecursoAdminOnly("config.org.editar")).toBe(true);
-      expect(ehRecursoAdminOnly("usuarios.aprovar")).toBe(true);
+    it("identifica recursos do grupo admin.*", () => {
+      expect(ehRecursoAdminOnly("admin.papeis.gerenciar")).toBe(true);
+      expect(ehRecursoAdminOnly("admin.config.org.editar")).toBe(true);
+      expect(ehRecursoAdminOnly("admin.usuarios.aprovar")).toBe(true);
     });
 
     it("não marca demais recursos", () => {
       expect(ehRecursoAdminOnly("soap.ler")).toBe(false);
-      expect(ehRecursoAdminOnly("usuarios.ver")).toBe(false);
+      expect(ehRecursoAdminOnly("governanca.dashboard.ver")).toBe(false);
     });
   });
 
@@ -51,7 +51,7 @@ describe("iam/permissoes", () => {
     it("CLINICO com recurso admin-only viola", () => {
       const r = validarRecursos(BasePapel.CLINICO, [
         "soap.ler",
-        "papeis.gerenciar",
+        "admin.papeis.gerenciar",
       ]);
       expect(r.ok).toBe(false);
       expect(r.violacoes).toHaveLength(1);
@@ -60,9 +60,9 @@ describe("iam/permissoes", () => {
     it("ADMIN com recurso admin-only passa", () => {
       expect(
         validarRecursos(BasePapel.ADMIN, [
-          "papeis.gerenciar",
-          "config.org.editar",
-          "usuarios.aprovar",
+          "admin.papeis.gerenciar",
+          "admin.config.org.editar",
+          "admin.usuarios.aprovar",
         ]).ok,
       ).toBe(true);
     });

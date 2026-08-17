@@ -1,18 +1,14 @@
 import type { BasePapel } from "@prisma/client";
 
 export const RECURSOS_CLINICOS = ["soap.", "avaliacao."];
-export const RECURSOS_ADMIN_ONLY = [
-  "papeis.gerenciar",
-  "config.org.editar",
-  "usuarios.aprovar",
-];
+export const PREFIXO_ADMIN_ONLY = "admin.";
 
 export function ehRecursoClinico(chave: string): boolean {
   return RECURSOS_CLINICOS.some((prefixo) => chave.startsWith(prefixo));
 }
 
 export function ehRecursoAdminOnly(chave: string): boolean {
-  return RECURSOS_ADMIN_ONLY.includes(chave);
+  return chave.startsWith(PREFIXO_ADMIN_ONLY);
 }
 
 export type ResultadoValidacao = { ok: boolean; violacoes: string[] };

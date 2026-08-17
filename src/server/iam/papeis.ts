@@ -28,7 +28,7 @@ function erroDaValidacao(base: BasePapel, recursos: string[]): string | null {
 export async function criarPapel(
   input: unknown,
 ): Promise<Resultado> {
-  const user = await requirePermissao("papeis.gerenciar");
+  const user = await requirePermissao("admin.papeis.gerenciar");
   const parsed = papelInputSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, erro: "Dados inválidos: verifique nome e base." };
@@ -93,7 +93,7 @@ export async function atualizarPapel(
   papelId: string,
   input: unknown,
 ): Promise<Resultado> {
-  const user = await requirePermissao("papeis.gerenciar");
+  const user = await requirePermissao("admin.papeis.gerenciar");
   const parsed = papelInputSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, erro: "Dados inválidos: verifique nome e base." };
@@ -174,7 +174,7 @@ export async function atualizarRecursos(
   papelId: string,
   chaves: string[],
 ): Promise<Resultado> {
-  const user = await requirePermissao("papeis.gerenciar");
+  const user = await requirePermissao("admin.papeis.gerenciar");
 
   const papel = await db.papel.findUnique({
     where: { id: papelId },
@@ -221,7 +221,7 @@ export async function atualizarRecursos(
 }
 
 export async function deletarPapel(papelId: string): Promise<Resultado> {
-  const user = await requirePermissao("papeis.gerenciar");
+  const user = await requirePermissao("admin.papeis.gerenciar");
 
   const papel = await db.papel.findUnique({
     where: { id: papelId },
@@ -267,7 +267,7 @@ export async function atribuirPapelUsuario(
   usuarioId: string,
   papelId: string,
 ): Promise<Resultado> {
-  const user = await requirePermissao("usuarios.ver");
+  const user = await requirePermissao("admin.usuarios.ver");
 
   const [usuario, papel] = await Promise.all([
     db.usuario.findUnique({ where: { id: usuarioId } }),
