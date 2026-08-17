@@ -1,6 +1,6 @@
 import type { BasePapel } from "@prisma/client";
 
-export const RECURSOS_CLINICOS = ["soap.", "avaliacao."];
+export const RECURSOS_CLINICOS = ["clinical."];
 export const PREFIXO_ADMIN_ONLY = "admin.";
 
 export function ehRecursoClinico(chave: string): boolean {

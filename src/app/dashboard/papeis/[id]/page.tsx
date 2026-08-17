@@ -26,7 +26,7 @@ export default async function EditarPapelPage({
         recursos: { select: { recurso: { select: { chave: true } } } },
       },
     }),
-    db.recurso.findMany({ orderBy: { grupo: "asc", chave: "asc" } }),
+    db.recurso.findMany({ orderBy: [{ grupo: "asc" }, { chave: "asc" }] }),
   ]);
 
   if (!papel) notFound();

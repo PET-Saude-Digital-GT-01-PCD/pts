@@ -223,6 +223,10 @@ async function main() {
     where: { cerId_nome: { cerId: cer.id, nome: "ADMIN" } },
   });
 
+  const papelFisio = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "FISIOTERAPEUTA" } },
+  });
+
   const senhaHash = await bcrypt.hash(SENHA_ADMIN, 10);
 
   await prisma.usuario.upsert({
@@ -234,6 +238,20 @@ async function main() {
       nome: "Administrador",
       categoria: "ENFERMEIRO",
       papelId: papelAdmin.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
+  await prisma.usuario.upsert({
+    where: { email: "fisio@pts.local" },
+    update: { papelId: papelFisio.id, status: "ATIVO" },
+    create: {
+      email: "fisio@pts.local",
+      senhaHash: await bcrypt.hash("fisio123", 10),
+      nome: "Fisioterapeuta",
+      categoria: "FISIOTERAPEUTA",
+      papelId: papelFisio.id,
       status: "ATIVO",
       cerId: cer.id,
     },

@@ -11,14 +11,14 @@ import {
 
 describe("iam/permissoes", () => {
   describe("ehRecursoClinico", () => {
-    it("identifica recursos soap.* e avaliacao.*", () => {
-      expect(ehRecursoClinico("soap.ler")).toBe(true);
-      expect(ehRecursoClinico("avaliacao.escrever")).toBe(true);
+    it("identifica recursos do grupo clinical (soap.* e avaliacao.*)", () => {
+      expect(ehRecursoClinico("clinical.soap.ler")).toBe(true);
+      expect(ehRecursoClinico("clinical.avaliacao.escrever")).toBe(true);
     });
 
     it("não marca recursos não-clínicos", () => {
-      expect(ehRecursoClinico("dashboard.ver")).toBe(false);
-      expect(ehRecursoClinico("triagem.ver")).toBe(false);
+      expect(ehRecursoClinico("governanca.dashboard.ver")).toBe(false);
+      expect(ehRecursoClinico("triage.triagem.ver")).toBe(false);
     });
   });
 
@@ -30,27 +30,30 @@ describe("iam/permissoes", () => {
     });
 
     it("não marca demais recursos", () => {
-      expect(ehRecursoAdminOnly("soap.ler")).toBe(false);
+      expect(ehRecursoAdminOnly("clinical.soap.ler")).toBe(false);
       expect(ehRecursoAdminOnly("governanca.dashboard.ver")).toBe(false);
     });
   });
 
   describe("validarRecursos", () => {
     it("GESTOR com recurso clínico viola", () => {
-      const r = validarRecursos(BasePapel.GESTOR, ["dashboard.ver", "soap.ler"]);
+      const r = validarRecursos(BasePapel.GESTOR, [
+        "governanca.dashboard.ver",
+        "clinical.soap.ler",
+      ]);
       expect(r.ok).toBe(false);
       expect(r.violacoes).toHaveLength(1);
     });
 
-    it("GESTOR com avaliacao.* viola", () => {
+    it("GESTOR com clinical.avaliacao.* viola", () => {
       expect(
-        validarRecursos(BasePapel.GESTOR, ["avaliacao.escrever"]).ok,
+        validarRecursos(BasePapel.GESTOR, ["clinical.avaliacao.escrever"]).ok,
       ).toBe(false);
     });
 
     it("CLINICO com recurso admin-only viola", () => {
       const r = validarRecursos(BasePapel.CLINICO, [
-        "soap.ler",
+        "clinical.soap.ler",
         "admin.papeis.gerenciar",
       ]);
       expect(r.ok).toBe(false);
@@ -68,7 +71,12 @@ describe("iam/permissoes", () => {
     });
 
     it("matriz válida de papel clínico passa", () => {
-      const recursos = ["soap.ler", "soap.escrever", "meta.ler", "mural.escrever"];
+      const recursos = [
+        "clinical.soap.ler",
+        "clinical.soap.escrever",
+        "care-plan.meta.ler",
+        "care-plan.mural.escrever",
+      ];
       expect(validarRecursos(BasePapel.CLINICO, recursos).ok).toBe(true);
     });
 
@@ -79,13 +87,18 @@ describe("iam/permissoes", () => {
 
   describe("temPermissao", () => {
     it("concede quando recurso presente", () => {
-      expect(temPermissao(["dashboard.ver", "soap.ler"], "dashboard.ver")).toBe(
-        true,
-      );
+      expect(
+        temPermissao(
+          ["governanca.dashboard.ver", "clinical.soap.ler"],
+          "governanca.dashboard.ver",
+        ),
+      ).toBe(true);
     });
 
     it("nega quando ausente", () => {
-      expect(temPermissao(["dashboard.ver"], "soap.ler")).toBe(false);
+      expect(temPermissao(["governanca.dashboard.ver"], "clinical.soap.ler")).toBe(
+        false,
+      );
     });
   });
 

@@ -40,6 +40,7 @@ export default async function UsuariosPage() {
         {usuarios.map((u) => (
           <div
             key={u.id}
+            data-email={u.email}
             className="flex items-center justify-between gap-4 px-4 py-3"
           >
             <div>

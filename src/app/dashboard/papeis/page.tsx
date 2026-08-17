@@ -24,7 +24,7 @@ export default async function PapeisPage() {
         recursos: { select: { recurso: { select: { chave: true } } } },
       },
     }),
-    db.recurso.findMany({ orderBy: { grupo: "asc", chave: "asc" } }),
+    db.recurso.findMany({ orderBy: [{ grupo: "asc" }, { chave: "asc" }] }),
   ]);
 
   return (
