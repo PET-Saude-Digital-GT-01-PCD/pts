@@ -10,6 +10,7 @@ import {
 import { temFaltaRecente } from "@/server/care-plan/eventos";
 import { AbaVazia, AbasNav, ehAba } from "./abas";
 import { AbaAvaliacoes } from "./aba-avaliacoes";
+import { AbaTriagem } from "./aba-triagem";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -26,7 +27,12 @@ export default async function PainelCasoPage({
   params: Promise<{ ptsId: string }>;
   searchParams: Promise<{ aba?: string }>;
 }) {
-  await exigirUmaDasOuRedirect(["care-plan.meta.ler", "clinical.soap.ler"]);
+  await exigirUmaDasOuRedirect([
+    "care-plan.meta.ler",
+    "clinical.soap.ler",
+    // triador lê o caso para preencher/ajustar a triagem (issue #18)
+    "triage.triagem.ver",
+  ]);
 
   const { ptsId } = await params;
   const { aba } = await searchParams;
@@ -38,7 +44,17 @@ export default async function PainelCasoPage({
       paciente: true,
       cer: true,
       refProfissional: true,
-      triagens: { select: { id: true, classificacao: true, criadaEm: true } },
+      triagens: {
+        select: {
+          id: true,
+          classificacao: true,
+          resultadoElegibilidade: true,
+          justificativa: true,
+          criadaEm: true,
+          ajustes: { select: { para: true } },
+        },
+        orderBy: { criadaEm: "desc" },
+      },
       revisoes: { select: { id: true, numero: true, motivo: true, data: true } },
       metas: {
         select: { id: true, descTecnica: true, dataPactuacao: true },
@@ -143,6 +159,8 @@ export default async function PainelCasoPage({
         <div role="tabpanel">
           {abaAtiva === "avaliacoes" ? (
             <AbaAvaliacoes ptsId={pts.id} />
+          ) : abaAtiva === "triagem" ? (
+            <AbaTriagem ptsId={pts.id} versaoPts={pts.versao} triagens={pts.triagens} />
           ) : (
             <AbaVazia titulo={abaAtiva[0].toUpperCase() + abaAtiva.slice(1)} />
           )}

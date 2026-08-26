@@ -1,5 +1,6 @@
 import { requirePermissao } from "@/server/iam/session";
 import { zaritAlto } from "@/server/reception/zarit";
+import { TriagemForm } from "@/app/casos/[ptsId]/triagem-form";
 import { db } from "@/lib/db";
 
 export default async function PacientePage({
@@ -13,6 +14,7 @@ export default async function PacientePage({
   const paciente = await db.paciente.findUnique({
     where: { id },
     select: {
+      id: true,
       nome: true,
       cpf: true,
       cns: true,
@@ -23,6 +25,7 @@ export default async function PacientePage({
         take: 1,
         select: { zaritScore: true },
       },
+      pts: { where: { status: { not: "FECHADO" } }, select: { id: true } },
     },
   });
 
@@ -58,6 +61,22 @@ export default async function PacientePage({
           <Linha rotulo="Sexo" valor={paciente.sexo} />
         </dl>
         {/* ponytail: seções Cuidador/Consentimento (#19) e PTS (#18) entram aqui */}
+        {paciente.pts.length > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Caso em andamento:{" "}
+            <a
+              className="underline"
+              href={`/casos/${paciente.pts[0].id}?aba=triagem`}
+            >
+              abrir painel do caso
+            </a>
+          </p>
+        ) : (
+          <section className="space-y-3">
+            <h2 className="text-lg font-medium">Triagem</h2>
+            <TriagemForm pacienteId={paciente.id} />
+          </section>
+        )}
       </div>
     </main>
   );
