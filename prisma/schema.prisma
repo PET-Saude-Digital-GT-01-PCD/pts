@@ -66,6 +66,13 @@ enum OrigemDado {
   digitado
 }
 
+enum TipoEventoCuidado {
+  SESSAO
+  FALTA
+  CANCELAMENTO
+  OUTRO
+}
+
 enum Sexo {
   MASCULINO
   FEMININO
@@ -159,15 +166,16 @@ model Usuario {
   status    StatusUsuario         @default(ATIVO)
   criadoEm  DateTime              @default(now()) @db.Timestamptz(3)
 
-  cer               Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  papel             Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
-  ptsComoReferencia Pts[]                 @relation("referencia")
-  auditorias        Auditoria[]
-  ajustes           AjusteClassificacao[]
-  avaliacoes        Avaliacao[]
-  metasDono         Meta[]                @relation("donoMeta")
-  revisoes          PtsRevisao[]
-  metaHistorico     MetaStatusHistorico[]
+  cer                Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  papel              Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
+  ptsComoReferencia  Pts[]                 @relation("referencia")
+  auditorias         Auditoria[]
+  ajustes            AjusteClassificacao[]
+  avaliacoes         Avaliacao[]
+  metasDono          Meta[]                @relation("donoMeta")
+  revisoes           PtsRevisao[]
+  metaHistorico      MetaStatusHistorico[]
+  eventosRegistrados EventoCuidado[]       @relation("eventosRegistrados")
 
   @@map("usuario")
 }
@@ -260,13 +268,14 @@ model Pts {
   motivoEncerramento String?
   criadoEm           DateTime  @default(now()) @db.Timestamptz(3)
 
-  paciente        Paciente     @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
-  cer             Cer          @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  refProfissional Usuario?     @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
+  paciente        Paciente        @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  cer             Cer             @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  refProfissional Usuario?        @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
   revisoes        PtsRevisao[]
   triagens        Triagem[]
   avaliacoes      Avaliacao[]
   metas           Meta[]
+  eventos         EventoCuidado[]
 
   @@index([pacienteId])
   @@index([cerId, status])
@@ -378,6 +387,22 @@ model MetaStatusHistorico {
 
   @@index([metaId, data])
   @@map("meta_status_historico")
+}
+
+model EventoCuidado {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId           String            @db.Uuid
+  tipo            TipoEventoCuidado
+  data            DateTime          @db.Timestamptz(3)
+  observacao      String?
+  registradoPorId String            @db.Uuid
+  criadoEm        DateTime          @default(now()) @db.Timestamptz(3)
+
+  pts           Pts     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  registradoPor Usuario @relation("eventosRegistrados", fields: [registradoPorId], references: [id], onDelete: Restrict)
+
+  @@index([ptsId, data])
+  @@map("evento_cuidado")
 }
 
 // ===== Governança =====
