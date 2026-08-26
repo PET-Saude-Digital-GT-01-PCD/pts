@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# opencode local (permissoes autonomas — nao commitar)
+opencode.jsonc
+opencode.json
