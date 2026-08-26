@@ -380,6 +380,24 @@ async function main() {
     },
   });
 
+  // ===== soap (issue #5) =====
+  const papelMedico = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "MEDICO" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "medico@pts.local" },
+    update: { papelId: papelMedico.id, status: "ATIVO" },
+    create: {
+      email: "medico@pts.local",
+      senhaHash: await bcrypt.hash("medico123", 10),
+      nome: "Médico Exemplo",
+      categoria: "MEDICO",
+      papelId: papelMedico.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
   console.log(
     `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
   );

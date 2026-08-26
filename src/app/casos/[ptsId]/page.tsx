@@ -9,6 +9,7 @@ import {
 } from "@/server/care-plan/painel";
 import { temFaltaRecente } from "@/server/care-plan/eventos";
 import { AbaVazia, AbasNav, ehAba } from "./abas";
+import { AbaAvaliacoes } from "./aba-avaliacoes";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -140,7 +141,11 @@ export default async function PainelCasoPage({
       <section className="space-y-4">
         <AbasNav ativa={abaAtiva} ptsId={pts.id} />
         <div role="tabpanel">
-          <AbaVazia titulo={abaAtiva[0].toUpperCase() + abaAtiva.slice(1)} />
+          {abaAtiva === "avaliacoes" ? (
+            <AbaAvaliacoes ptsId={pts.id} />
+          ) : (
+            <AbaVazia titulo={abaAtiva[0].toUpperCase() + abaAtiva.slice(1)} />
+          )}
         </div>
       </section>
     </main>
