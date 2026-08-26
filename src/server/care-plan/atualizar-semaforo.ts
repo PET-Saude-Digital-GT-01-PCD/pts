@@ -3,78 +3,84 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { requirePermissao } from "@/server/iam/session";
+import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
 import {
   semaforoDeReuniao,
   type EntradaReuniao,
 } from "@/server/care-plan/semaforo-reuniao";
 
+export type Resultado =
+  | { ok: true; classificacao: "VERDE" | "AMARELO" | "VERMELHO" }
+  | { ok: false; erro: string; codigo?: number };
+
+class ConflitoVersao extends Error {
+  readonly codigo = 409;
+}
+
 const entradaSchema = z.object({
+  ptsId: z.string().uuid(),
   divergenciaEspecialidades: z.boolean(),
   conflitosMeta: z.number().int().min(0),
   eventoRisco: z.boolean(),
   pendenciaAjuste: z.boolean(),
+  // Lock otimista: versão do PTS conhecida pelo cliente.
+  version: z.number().int().min(0),
 });
 
-export type ResultadoSemaforo =
-  | { ok: true }
-  | { ok: false; erro: string; conflito?: boolean };
-
 export async function atualizarSemaforoReuniao(
-  ptsId: string,
-  entrada: unknown,
+  input: unknown,
   motivo?: string,
-  versaoEsperada?: number,
-): Promise<ResultadoSemaforo> {
-  const user = await requirePermissao("care-plan.pts.revisar");
-  const parsed = entradaSchema.safeParse(entrada);
+): Promise<Resultado> {
+  const user = await requireAuth();
+  const recursos = await recursosDoUsuario(user.papelId);
+  if (!recursos.includes("care-plan.pts.revisar")) {
+    return { ok: false, erro: "Sem permissão para revisar este caso." };
+  }
+
+  const parsed = entradaSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, erro: "Dados inválidos para o semáforo de reunião." };
   }
 
-  const dados: EntradaReuniao = parsed.data;
-  const classificacao = semaforoDeReuniao(dados);
+  const { ptsId, version, ...dados } = parsed.data;
+  const entrada: EntradaReuniao = dados;
+  const classificacao = semaforoDeReuniao(entrada);
 
   try {
     await db.$transaction(async (tx) => {
-      const where = versaoEsperada === undefined
-        ? { id: ptsId }
-        : { id: ptsId, versao: versaoEsperada };
-
-      const resultado = await tx.pts.updateMany({
-        where,
-        data: {
-          semaforoReuniao: classificacao,
-          // ponytail: increment cego — sem checagem de teto; revisões do PTS é quem reabre ciclo
-          versao: { increment: 1 },
-        },
+      const atual = await tx.pts.findUniqueOrThrow({
+        where: { id: ptsId },
+        select: { semaforoReuniao: true, versao: true },
       });
 
-      if (resultado.count === 0) {
-        throw new Error("CONFLITO_VERSAO");
+      const atualizado = await tx.pts.updateMany({
+        where: { id: ptsId, versao: version },
+        data: { semaforoReuniao: classificacao, versao: version + 1 },
+      });
+      if (atualizado.count === 0) {
+        throw new ConflitoVersao(
+          "Conflito de versão: o PTS foi alterado por outra pessoa. Recarregue a página.",
+        );
       }
 
       await tx.auditoria.create({
         data: {
           actorId: user.id,
-          action: "care-plan.semaforo_reuniao.atualizar",
+          action: "pts.semaforo_reuniao",
           entityType: "pts",
           entityId: ptsId,
-          afterJson: { ...dados, classificacao },
+          beforeJson: atual,
+          afterJson: { ...entrada, classificacao, versao: version + 1 },
           motivo,
         },
       });
     });
 
-    return { ok: true };
+    return { ok: true, classificacao };
   } catch (e) {
-    if (e instanceof Error && e.message === "CONFLITO_VERSAO") {
-      return {
-        ok: false,
-        erro: "O caso foi alterado por outra pessoa. Recarregue e tente de novo.",
-        conflito: true,
-      };
+    if (e instanceof ConflitoVersao) {
+      return { ok: false, erro: e.message, codigo: e.codigo };
     }
-    return { ok: false, erro: "Erro ao atualizar semáforo de reunião." };
+    return { ok: false, erro: "Erro ao atualizar o semáforo de reunião." };
   }
 }
