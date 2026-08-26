@@ -46,3 +46,28 @@ test("SOAP exige campos obrigatórios (zod na fronteira)", async ({ page }) => {
   await page.getByRole("button", { name: "Salvar avaliação SOAP" }).click();
   await expect(page.getByTestId("lista-soap")).toBeVisible();
 });
+
+test("painel de divergência mostra contraste ALTA sem bloquear salvar", async ({
+  page,
+}) => {
+  await login(page, "medico@pts.local", "medico123");
+  await page.goto(`/casos/${PTS_ATIVO_ID}?aba=avaliacoes`);
+
+  await page.getByLabel("Subjetivo").fill("Família relata boa evolução.");
+  await page.getByLabel("Objetivo").fill("Exame físico com limitação importante.");
+  await page.getByLabel("Avaliacao", { exact: false }).fill("Divergência clara entre relato e medida.");
+
+  // relato otimista × medida pessimista → contradição (ALTA)
+  await page.getByLabel("Mobilidade relatada pela família (0–100)").fill("90");
+  await page.getByLabel("Mobilidade medida (0–100)").fill("10");
+  await page.getByLabel("Autonomia relatada (0–100)").fill("80");
+  await page.getByLabel("Autonomia observada (0–100)").fill("75");
+
+  await page.getByRole("button", { name: "Salvar avaliação SOAP" }).click();
+  await expect(page.getByTestId("soap-ok")).toBeVisible();
+
+  const painel = page.getByTestId("painel-divergencia").first();
+  await expect(painel).toBeVisible();
+  await expect(painel.getByTestId("divergencia-alta")).toContainText("Mobilidade");
+  await expect(painel.getByTestId("divergencia-baixa")).toContainText("Autonomia");
+});
