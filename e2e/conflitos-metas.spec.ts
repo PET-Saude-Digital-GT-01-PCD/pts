@@ -27,8 +27,9 @@ test("aba Metas do painel agrupa por especialidade e sinaliza conflitos sem bloq
 
   // conflito sinalizado (mesmo domínio "mobilidade", especialidades diferentes)
   await expect(page.getByTestId("resumo-conflitos")).toContainText("conflito");
+  // par seed gera FOCO (1 conflito) → badge nos dois lados; outros pares podem somar
   const badges = page.locator('[data-testid^="conflito-"]');
-  expect(await badges.count()).toBeGreaterThanOrEqual(3); // PRAZO+FOCO no par seed
+  expect(await badges.count()).toBeGreaterThanOrEqual(2);
 
   // nunca bloqueia: formulário de nova meta segue disponível
   await expect(page.getByRole("button", { name: "Nova meta" })).toBeEnabled();

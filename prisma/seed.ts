@@ -407,6 +407,8 @@ async function main() {
         dominioFuncional: "mobilidade",
       },
       status: "NOVA",
+      // janela propositalmente sobreposta à da meta cc01 → conflito de prazo
+      dataPactuacao: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
       prazo: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   });
