@@ -8,6 +8,7 @@ async function restaurarPapelFisio(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("admin123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL((u) => u.pathname !== "/login");
 
@@ -31,6 +32,7 @@ async function login(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("fisio@pts.local");
   await page.getByLabel("Senha").fill("fisio123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL((u) => u.pathname !== "/login");
 }

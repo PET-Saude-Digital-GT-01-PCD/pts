@@ -68,6 +68,7 @@ async function loginRecepcao(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("recepcao@pts.local");
   await page.getByLabel("Senha").fill("recepcao123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL(/\/(dashboard|recepcao|$)/);
 }

@@ -56,6 +56,7 @@ async function login(
   await page.goto("/login");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(senha);
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL((u) => u.pathname !== "/login");
 }

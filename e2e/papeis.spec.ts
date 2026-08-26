@@ -4,6 +4,7 @@ async function loginAdmin(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("admin123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
@@ -64,6 +65,7 @@ test("clínico sem admin não acessa /dashboard/usuarios (#24)", async ({
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("fisio@pts.local");
   await page.getByLabel("Senha").fill("fisio123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
 
   // #24: clínico tem dashboard próprio, mas área admin continua negada.

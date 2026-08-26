@@ -8,6 +8,7 @@ test("clínico vê Meus casos com status, semáforo, alerta e link pro painel", 
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("fisio@pts.local");
   await page.getByLabel("Senha").fill("fisio123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
@@ -30,6 +31,7 @@ test("gestor/admin vê agregados do CER", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("admin123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
