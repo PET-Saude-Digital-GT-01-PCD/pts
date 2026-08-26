@@ -1,13 +1,11 @@
+import { MetasCruzadas } from "@/components/metas-cruzadas";
+import {
+  verificarConflitoMetas,
+  type MetaParaConflito,
+} from "@/server/care-plan/conflitos";
 import { listarMetas } from "@/server/care-plan/metas";
 import { MetaForm } from "./meta-form";
 import { MetaStatusForm } from "./meta-status-form";
-
-const ROTULOS_STATUS: Record<string, string> = {
-  NOVA: "Nova",
-  EM_ANDAMENTO: "Em andamento",
-  CONCLUIDA: "Concluída",
-  NAO_ALCANCADA: "Não alcançada",
-};
 
 export async function AbaMetas({
   ptsId,
@@ -19,70 +17,44 @@ export async function AbaMetas({
   donoId: string;
 }) {
   const metas = await listarMetas(ptsId);
+  const paraConflito: MetaParaConflito[] = metas.map((m) => ({
+    id: m.id,
+    ptsId,
+    status: m.status,
+    dataPactuacao: m.dataPactuacao,
+    prazo: m.prazo,
+    dominioFuncional: m.dominioFuncional,
+    donoCategoria: (m.donoCategoria as MetaParaConflito["donoCategoria"]) ?? null,
+  }));
+  const conflitos = verificarConflitoMetas(paraConflito);
 
   return (
     <div className="space-y-4" data-testid="aba-metas">
       {podeEscrever && <MetaForm ptsId={ptsId} donoId={donoId} />}
 
-      {metas.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          Nenhuma meta pactuada ainda.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {metas.map((meta) => {
-            const vencida =
-              meta.prazo.getTime() < Date.now() &&
-              (meta.status === "NOVA" || meta.status === "EM_ANDAMENTO");
-            return (
-              <li
-                key={meta.id}
-                className={`rounded-lg border p-4 ${
-                  vencida ? "border-warning/50 bg-warning/5" : ""
-                }`}
-              >
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                    {ROTULOS_STATUS[meta.status] ?? meta.status}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {meta.donoCategoria ? `${meta.donoCategoria} · ` : ""}
-                    {meta.donoNome}
-                  </span>
-                  <time
-                    dateTime={meta.prazo.toISOString()}
-                    className={`tabular-nums ${
-                      vencida
-                        ? "font-medium text-warning"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    prazo {meta.prazo.toLocaleDateString("pt-BR")}
-                  </time>
-                  {vencida && (
-                    <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
-                      prazo vencido
-                    </span>
-                  )}
-                </div>
-                <p className="mt-2 font-medium">{meta.descTecnica}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {meta.descAcessivel}
-                </p>
-                {podeEscrever && (
-                  <div className="mt-3">
+      <MetasCruzadas
+        metas={metas}
+        conflitos={conflitos}
+        acoesPorMeta={
+          podeEscrever
+            ? Object.fromEntries(
+                metas
+                  .filter(
+                    (m) => m.status === "NOVA" || m.status === "EM_ANDAMENTO",
+                  )
+                  .map((m) => [
+                    m.id,
                     <MetaStatusForm
-                      metaId={meta.id}
-                      status={meta.status}
-                      versao={meta.versao}
-                    />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                      key={m.id}
+                      metaId={m.id}
+                      status={m.status}
+                      versao={m.versao}
+                    />,
+                  ]),
+              )
+            : undefined
+        }
+      />
     </div>
   );
 }

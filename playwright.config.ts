@@ -5,6 +5,9 @@ const e2ePort = process.env.E2E_PORT ?? "3000";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  // runner de CI tem 2 vCPU: paralelismo alto derruba o next start sob carga
+  workers: process.env.CI ? 2 : undefined,
+  timeout: 45_000,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {

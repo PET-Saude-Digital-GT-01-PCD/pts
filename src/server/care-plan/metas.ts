@@ -24,7 +24,9 @@ export type MetaDoPainel = {
   descAcessivel: string;
   status: StatusMeta;
   prazo: Date;
+  dataPactuacao: Date;
   versao: number;
+  dominioFuncional: string | null;
   donoNome: string;
   donoCategoria: string | null;
 };
@@ -40,20 +42,28 @@ export async function listarMetas(ptsId: string): Promise<MetaDoPainel[]> {
       descAcessivel: true,
       status: true,
       prazo: true,
+      dataPactuacao: true,
       versao: true,
+      criteriosJson: true,
       dono: { select: { nome: true, categoria: true } },
     },
   });
-  return rows.map((m) => ({
-    id: m.id,
-    descTecnica: m.descTecnica,
-    descAcessivel: m.descAcessivel,
-    status: m.status,
-    prazo: m.prazo,
-    versao: m.versao,
-    donoNome: m.dono.nome,
-    donoCategoria: m.dono.categoria,
-  }));
+  return rows.map((m) => {
+    const criterios = m.criteriosJson as Record<string, unknown> | null;
+    const dominio = criterios?.dominioFuncional;
+    return {
+      id: m.id,
+      descTecnica: m.descTecnica,
+      descAcessivel: m.descAcessivel,
+      status: m.status,
+      prazo: m.prazo,
+      dataPactuacao: m.dataPactuacao,
+      versao: m.versao,
+      dominioFuncional: typeof dominio === "string" ? dominio : null,
+      donoNome: m.dono.nome,
+      donoCategoria: m.dono.categoria,
+    };
+  });
 }
 
 export async function criarMeta(input: unknown): Promise<Resultado> {
