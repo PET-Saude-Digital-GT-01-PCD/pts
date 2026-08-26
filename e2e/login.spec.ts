@@ -9,7 +9,9 @@ test("login redireciona para /dashboard com usuário do seed", async ({
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByText("admin@pts.local")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Visão geral" })
+  ).toBeVisible();
 });
 
 test("senha incorreta mostra erro e permanece no login", async ({ page }) => {

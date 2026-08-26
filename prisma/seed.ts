@@ -349,6 +349,30 @@ async function main() {
       motivoEncerramento: "Alta com contrarreferência à APS.",
     },
   });
+  // ===== fim exemplo painel/dashboard =====
+
+  // ===== alerta de meta vencida para o dashboard (issue #24) =====
+  await prisma.meta.upsert({
+    where: { id: "00000000-0000-4000-8000-00000000cc01" },
+    update: {},
+    create: {
+      id: "00000000-0000-4000-8000-00000000cc01",
+      ptsId: PTS_ATIVO_ID,
+      donoId: fisio.id,
+      descTecnica:
+        "Amplitude de movimento de ombro direito ≥ 120° de flexão em 8 semanas",
+      descAcessivel: "Conseguir levantar o braço direito acima da cabeça",
+      criteriosJson: {
+        especifico: "flexão de ombro",
+        mensuravel: "goniometria ≥ 120°",
+        alcancavel: "fortalecimento semanal",
+        relevante: "independência funcional",
+        temporal: "8 semanas",
+      },
+      status: "EM_ANDAMENTO",
+      prazo: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    },
+  });
 
   // ===== recepção (issues #3/#19) =====
   const papelRecepcao = await prisma.papel.findUniqueOrThrow({
