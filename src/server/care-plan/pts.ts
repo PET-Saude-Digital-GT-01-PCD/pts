@@ -4,7 +4,9 @@ import { z } from "zod";
 import { StatusPts } from "@prisma/client";
 
 import { db } from "@/lib/db";
-import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
+import {
+  exigirUmaDas,
+} from "@/server/care-plan/acesso";
 import {
   mensagemTransicaoInvalida,
   podeTransicionar,
@@ -31,17 +33,6 @@ const transicionarPtsSchema = z.object({
   motivo: z.string().trim().max(500).optional(),
   version: z.number().int().min(0),
 });
-
-// OR de permissões (requirePermissao é AND). ponytail: helper local;
-// extrair p/ session.ts quando um 2º contexto precisar.
-async function exigirUmaDas(chaves: string[]) {
-  const user = await requireAuth();
-  const recursos = await recursosDoUsuario(user.papelId);
-  if (!chaves.some((chave) => recursos.includes(chave))) {
-    throw new Error("Sem permissão para esta ação.");
-  }
-  return user;
-}
 
 export async function abrirPts(input: unknown): Promise<Resultado> {
   const user = await exigirUmaDas([
