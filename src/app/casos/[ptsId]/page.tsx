@@ -11,7 +11,7 @@ import {
   type ItemTimeline,
 } from "@/server/care-plan/painel";
 import { temFaltaRecente } from "@/server/care-plan/eventos";
-import { AbaVazia, AbasNav, ehAba } from "./abas";
+import { AbasNav, ehAba } from "./abas";
 import { AbaAvaliacoes } from "./aba-avaliacoes";
 import { AbaTriagem } from "./aba-triagem";
 import { AbaMetas } from "./aba-metas";
@@ -174,9 +174,7 @@ export default async function PainelCasoPage({
             <AbaMetas ptsId={pts.id} podeEscrever={podeMetaEscrever} donoId={usuario.id} />
           ) : abaAtiva === "mural" ? (
             <AbaMural ptsId={pts.id} podeEscrever={podeMuralEscrever} />
-          ) : (
-            <AbaVazia titulo={abaAtiva[0].toUpperCase() + abaAtiva.slice(1)} />
-          )}
+          ) : null}
         </div>
       </section>
     </main>
