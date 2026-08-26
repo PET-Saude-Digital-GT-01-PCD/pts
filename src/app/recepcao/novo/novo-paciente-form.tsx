@@ -9,6 +9,7 @@ import {
   registrarConsentimento,
   revogarConsentimento,
 } from "@/server/reception/consentimento";
+import { SecaoBaseline } from "@/components/reception/secao-baseline";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -67,6 +68,7 @@ export function NovoPacienteForm({
           Paciente cadastrado. Complete as seções abaixo ou{" "}
           <ConcluirLink pacienteId={pacienteId} router={router} />.
         </p>
+        <SecaoBaseline pacienteId={pacienteId} />
         <SecaoCuidador pacienteId={pacienteId} />
         <SecaoConsentimento pacienteId={pacienteId} />
         <Button onClick={() => router.push(`/pacientes/${pacienteId}`)}>
