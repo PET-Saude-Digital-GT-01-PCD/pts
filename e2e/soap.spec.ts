@@ -35,8 +35,8 @@ test("médico registra avaliação SOAP e ela aparece na lista", async ({ page }
   await expect(page.getByTestId("soap-ok")).toBeVisible();
 
   const lista = page.getByTestId("lista-soap");
-  await expect(lista.getByText("Lombalgia mecânica em investigação.")).toBeVisible();
-  await expect(lista.getByText("Fisioterapia motora")).toBeVisible();
+  await expect(lista.getByText("Lombalgia mecânica em investigação.").first()).toBeVisible();
+  await expect(lista.getByText("Fisioterapia motora").first()).toBeVisible();
 });
 
 test("SOAP exige campos obrigatórios (zod na fronteira)", async ({ page }) => {
