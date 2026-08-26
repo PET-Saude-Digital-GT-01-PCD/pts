@@ -7,6 +7,7 @@ import {
   montarTimeline,
   type ItemTimeline,
 } from "@/server/care-plan/painel";
+import { temFaltaRecente } from "@/server/care-plan/eventos";
 import { AbaVazia, AbasNav, ehAba } from "./abas";
 
 const LABEL_STATUS: Record<string, string> = {
@@ -44,9 +45,14 @@ export default async function PainelCasoPage({
       avaliacoes: {
         select: { id: true, especialidade: true, criadaEm: true },
       },
+      eventos: {
+        select: { id: true, tipo: true, data: true },
+      },
     },
   });
   if (!pts) notFound();
+
+  const [faltaRecente] = await Promise.all([temFaltaRecente(pts.id)]);
 
   const timeline: ItemTimeline[] = montarTimeline({
     aberturaEm: pts.aberturaEm,
@@ -54,6 +60,7 @@ export default async function PainelCasoPage({
     metas: pts.metas,
     revisoes: pts.revisoes,
     triagens: pts.triagens,
+    eventosCuidado: pts.eventos,
   });
 
   return (
@@ -70,6 +77,16 @@ export default async function PainelCasoPage({
           <Semaforo
             status={pts.semaforoReuniao.toLowerCase() as SemaforoStatus}
           />
+          {faltaRecente && (
+            <p
+              data-testid="alerta-falta"
+              role="alert"
+              className="w-full rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive"
+            >
+              Falta registrada nos últimos 30 dias — comunicar o profissional de
+              referência.
+            </p>
+          )}
           {pts.status === "FECHADO" && (
             <p
               data-testid="banner-fechado"
