@@ -28,7 +28,7 @@ export default async function RecepcaoPage({
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
+    <main className="flex flex-col items-center justify-center gap-8 p-8">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Recepção</CardTitle>

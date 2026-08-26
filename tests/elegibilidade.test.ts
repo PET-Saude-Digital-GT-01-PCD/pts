@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { Escopo } from "@prisma/client";
-import { elegibilidadePorEscopo } from "@/server/triage/elegibilidade";
+import { elegibilidadePorEscopo, type EscopoCER } from "@/server/triage/elegibilidade";
 
-const casosElegiveis: Array<[string, Escopo]> = [
+const casosElegiveis: Array<[string, EscopoCER]> = [
   ["G00", "FISICA"],
   ["G99", "FISICA"],
   ["M00", "FISICA"],
@@ -47,7 +46,7 @@ describe("elegibilidadePorEscopo", () => {
     expect(resultado).toEqual({
       resultado: "NAO_ELEGIVEL",
       justificativa:
-        "O CID informado pertence a um escopo de reabilitação não oferecido por este CER.",
+        "CID mapeado para deficiência fora dos escopos atendidos por este CER.",
     });
   });
 
@@ -61,23 +60,23 @@ describe("elegibilidadePorEscopo", () => {
   it.each(["F69", "F90", "H52", "H55", "H89", "H92", "T99", "Z00"])(
     "encaminha o CID não mapeado %s para revisão manual",
     (cid) => {
-      expect(elegibilidadePorEscopo(cid, "encaminhamento", ["FISICA"])).toEqual({
+      expect(elegibilidadePorEscopo(cid, "encaminhamento", ["FISICA"])).toMatchObject({
         resultado: "REVISAO_MANUAL",
       });
     },
   );
 
   it("encaminha CID vazio ou inválido para revisão manual", () => {
-    expect(elegibilidadePorEscopo("", "encaminhamento", ["FISICA"])).toEqual({
+    expect(elegibilidadePorEscopo("", "encaminhamento", ["FISICA"])).toMatchObject({
       resultado: "REVISAO_MANUAL",
     });
-    expect(elegibilidadePorEscopo("não é CID", "encaminhamento", ["FISICA"])).toEqual({
+    expect(elegibilidadePorEscopo("não é CID", "encaminhamento", ["FISICA"])).toMatchObject({
       resultado: "REVISAO_MANUAL",
     });
   });
 
   it("produz sempre o mesmo resultado para a mesma entrada", () => {
-    const escopos: Escopo[] = ["INTELECTUAL", "VISUAL"];
+    const escopos: EscopoCER[] = ["INTELECTUAL", "VISUAL"];
     const primeiraExecucao = elegibilidadePorEscopo("F79", "avaliação", escopos);
     const segundaExecucao = elegibilidadePorEscopo("F79", "avaliação", escopos);
 

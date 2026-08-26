@@ -9,7 +9,6 @@ import {
   type CardCaso,
 } from "@/server/care-plan/dashboard";
 import { recursosDoUsuario, requireAuth } from "@/server/iam/session";
-import { SignOutButton } from "./sign-out-button";
 
 const STATUS_LABEL: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -79,10 +78,9 @@ export default async function DashboardPage() {
   if (visao.visao === "GESTAO") {
     const { agregados } = visao;
     return (
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 p-8">
-        <header className="flex items-center justify-between">
+      <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
+        <header>
           <h1 className="text-2xl font-semibold">Visão geral</h1>
-          <SignOutButton />
         </header>
         {agregados.total === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
@@ -131,13 +129,9 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 p-8">
-      <header className="flex items-center justify-between">
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
+      <header>
         <h1 className="text-2xl font-semibold">Meus casos</h1>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span>{user.nome}</span>
-          <SignOutButton />
-        </div>
       </header>
       <Grade casos={visao.casos} />
     </main>

@@ -59,10 +59,14 @@ describe("triage/elegibilidade", () => {
   });
 
   it("CID malformado → REVISAO_MANUAL (sem lançar erro)", () => {
-    for (const cid of ["", "G", "G1", "GG00", "g00", "1234", "G999"]) {
+    for (const cid of ["", "G", "G1", "GG00", "1234", "G999"]) {
       expect(() => elegibilidadePorEscopo(cid, "x", TODOS)).not.toThrow();
       expect(elegibilidadePorEscopo(cid, "x", TODOS).resultado).toBe("REVISAO_MANUAL");
     }
+  });
+
+  it("CID em minúscula é normalizado (g00 → G00) e classificado corretamente", () => {
+    expect(elegibilidadePorEscopo("g00", "encaminhamento", ["FISICA"]).resultado).toBe("ELEGIVEL");
   });
 
   it("determinismo: mesmo input → mesmo resultado", () => {
