@@ -350,6 +350,24 @@ async function main() {
     },
   });
 
+  // ===== recepção (issues #3/#19) =====
+  const papelRecepcao = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "RECEPCAO" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "recepcao@pts.local" },
+    update: { papelId: papelRecepcao.id, status: "ATIVO" },
+    create: {
+      email: "recepcao@pts.local",
+      senhaHash: await bcrypt.hash("recepcao123", 10),
+      nome: "Recepção",
+      categoria: "RECEPCAO",
+      papelId: papelRecepcao.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
   console.log(
     `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
   );
