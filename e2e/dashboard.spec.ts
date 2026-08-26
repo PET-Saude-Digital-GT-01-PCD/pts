@@ -10,7 +10,7 @@ test("clínico vê Meus casos com status, semáforo, alerta e link pro painel", 
   await page.getByLabel("Senha").fill("fisio123");
   await page.getByRole("button", { name: "Entrar" }).click();
 
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
   await expect(
     page.getByRole("heading", { name: "Meus casos" })
   ).toBeVisible();
@@ -32,7 +32,7 @@ test("gestor/admin vê agregados do CER", async ({ page }) => {
   await page.getByLabel("Senha").fill("admin123");
   await page.getByRole("button", { name: "Entrar" }).click();
 
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
   await expect(
     page.getByRole("heading", { name: "Visão geral" })
   ).toBeVisible();

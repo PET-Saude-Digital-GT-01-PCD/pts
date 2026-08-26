@@ -27,7 +27,8 @@ test("usuário com care-plan.meta.ler vê o painel do caso", async ({ page }) =>
   // abas navegam
   await page.getByRole("tab", { name: "Metas" }).click();
   await expect(page).toHaveURL(new RegExp(`\\?aba=metas$`));
-  await expect(page.getByTestId("aba-vazia")).toBeVisible();
+  // #6: aba de metas agora lista conteúdo (meta vencida do seed)
+  await expect(page.getByTestId("aba-metas")).toBeVisible();
 });
 
 test("timeline mostra a abertura do PTS do seed", async ({ page }) => {

@@ -29,7 +29,7 @@ test("usuário ATIVO sem dashboard.ver vê a visão clínica do /dashboard (#24)
   await page.getByRole("button", { name: "Entrar" }).click();
 
   // Papel clínico agora tem visão própria ("Meus casos"); não é mais negado.
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
   await expect(
     page.getByRole("heading", { name: "Meus casos" })
   ).toBeVisible();

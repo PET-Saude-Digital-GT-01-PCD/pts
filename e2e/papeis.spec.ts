@@ -45,7 +45,9 @@ test("clínico sem admin não acessa /dashboard/usuarios (#24)", async ({
 }) => {
   await loginAdmin(page);
   await page.goto("/dashboard/usuarios");
-  const linha = page.locator('[data-email="fisio@pts.local"]');
+  // Usa medico@pts.local: já é MEDICO, então o if abaixo é no-op e o papel
+  // do fisio@pts.local não é mutado (outros specs dependem dele).
+  const linha = page.locator('[data-email="medico@pts.local"]');
   const select = linha.locator("select");
   const papelMedico = await select
     .locator("option")

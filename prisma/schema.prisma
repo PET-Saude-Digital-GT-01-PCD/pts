@@ -276,7 +276,6 @@ model Pts {
   triagens        Triagem[]
   avaliacoes      Avaliacao[]
   metas           Meta[]
-<<<<<<< HEAD
   eventos         EventoCuidado[]
   discussoes      Discussao[]
 

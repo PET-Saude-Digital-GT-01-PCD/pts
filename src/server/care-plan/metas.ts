@@ -1,19 +1,69 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import type { StatusMeta } from "@prisma/client";
+import { Prisma, StatusMeta } from "@prisma/client";
+import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { requirePermissao } from "@/server/iam/session";
+import { exigirUmaDas, temUmaDas } from "@/server/care-plan/acesso";
 import {
   metaInputSchema,
   transicaoStatusValida,
 } from "@/server/care-plan/meta-schema";
 
-type Resultado = { ok: boolean; erro?: string; conflito?: boolean };
+export type Resultado =
+  | { ok: true }
+  | { ok: false; erro: string; codigo?: number };
+
+class ConflitoVersao extends Error {
+  readonly codigo = 409;
+}
+
+export type MetaDoPainel = {
+  id: string;
+  descTecnica: string;
+  descAcessivel: string;
+  status: StatusMeta;
+  prazo: Date;
+  versao: number;
+  donoNome: string;
+  donoCategoria: string | null;
+};
+
+export async function listarMetas(ptsId: string): Promise<MetaDoPainel[]> {
+  if (!(await temUmaDas(["care-plan.meta.ler"]))) return [];
+  const rows = await db.meta.findMany({
+    where: { ptsId },
+    orderBy: [{ status: "asc" }, { prazo: "asc" }],
+    select: {
+      id: true,
+      descTecnica: true,
+      descAcessivel: true,
+      status: true,
+      prazo: true,
+      versao: true,
+      dono: { select: { nome: true, categoria: true } },
+    },
+  });
+  return rows.map((m) => ({
+    id: m.id,
+    descTecnica: m.descTecnica,
+    descAcessivel: m.descAcessivel,
+    status: m.status,
+    prazo: m.prazo,
+    versao: m.versao,
+    donoNome: m.dono.nome,
+    donoCategoria: m.dono.categoria,
+  }));
+}
 
 export async function criarMeta(input: unknown): Promise<Resultado> {
-  const user = await requirePermissao("care-plan.meta.escrever");
+  let user;
+  try {
+    user = await exigirUmaDas(["care-plan.meta.escrever"]);
+  } catch {
+    return { ok: false, erro: "Sem permissão para criar metas." };
+  }
+
   const parsed = metaInputSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -29,7 +79,7 @@ export async function criarMeta(input: unknown): Promise<Resultado> {
         where: { id: dados.ptsId },
         select: { id: true },
       });
-      if (!ptsExiste) throw new Error("PTS_INEXISTENTE");
+      if (!ptsExiste) throw new Error("PTS não encontrado.");
 
       const meta = await tx.meta.create({
         data: {
@@ -50,7 +100,7 @@ export async function criarMeta(input: unknown): Promise<Resultado> {
       await tx.auditoria.create({
         data: {
           actorId: user.id,
-          action: "care-plan.meta.criar",
+          action: "meta.criar",
           entityType: "meta",
           entityId: meta.id,
           afterJson: {
@@ -62,55 +112,63 @@ export async function criarMeta(input: unknown): Promise<Resultado> {
       });
     });
 
-    revalidatePath(`/casos/${dados.ptsId}`);
     return { ok: true };
   } catch (e) {
-    if (e instanceof Error && e.message === "PTS_INEXISTENTE") {
-      return { ok: false, erro: "PTS não encontrado." };
-    }
-    return { ok: false, erro: "Erro ao criar meta." };
+    return {
+      ok: false,
+      erro: e instanceof Error ? e.message : "Erro ao criar meta.",
+    };
   }
 }
 
 export async function mudarStatusMeta(
-  metaId: string,
-  novoStatus: StatusMeta,
-  motivo?: string,
-  versaoEsperada?: number,
+  input: unknown,
 ): Promise<Resultado> {
-  const user = await requirePermissao("care-plan.meta.escrever");
+  let user;
+  try {
+    user = await exigirUmaDas(["care-plan.meta.escrever"]);
+  } catch {
+    return { ok: false, erro: "Sem permissão para editar metas." };
+  }
+
+  const schema = z.object({
+    metaId: z.string().uuid(),
+    para: z.nativeEnum(StatusMeta),
+    motivo: z.string().trim().max(500).optional(),
+    version: z.number().int().min(0),
+  });
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
+  const { metaId, para, motivo, version } = parsed.data;
 
   try {
-    let ptsId: string | undefined;
     await db.$transaction(async (tx) => {
-      const meta = await tx.meta.findUnique({
+      const meta = await tx.meta.findUniqueOrThrow({
         where: { id: metaId },
         select: { id: true, ptsId: true, status: true, versao: true },
       });
-      if (!meta) throw new Error("META_INEXISTENTE");
-      ptsId = meta.ptsId;
 
-      if (!transicaoStatusValida(meta.status, novoStatus)) {
+      if (!transicaoStatusValida(meta.status, para)) {
         throw new Error(
-          `Transição inválida de ${meta.status} para ${novoStatus}.`,
+          `Transição inválida de ${meta.status} para ${para}.`,
         );
       }
 
-      const where =
-        versaoEsperada === undefined
-          ? { id: metaId }
-          : { id: metaId, versao: versaoEsperada };
       const atualizada = await tx.meta.updateMany({
-        where,
-        data: { status: novoStatus, versao: { increment: 1 } },
+        where: { id: metaId, versao: version },
+        data: { status: para, versao: version + 1 },
       });
-      if (atualizada.count === 0) throw new Error("CONFLITO_VERSAO");
+      if (atualizada.count === 0) {
+        throw new ConflitoVersao(
+          "Conflito de versão: a meta foi alterada por outra pessoa. Recarregue a página.",
+        );
+      }
 
       await tx.metaStatusHistorico.create({
         data: {
           metaId,
           de: meta.status,
-          para: novoStatus,
+          para,
           autorId: user.id,
           motivo,
         },
@@ -119,34 +177,27 @@ export async function mudarStatusMeta(
       await tx.auditoria.create({
         data: {
           actorId: user.id,
-          action: "care-plan.meta.status",
+          action: "meta.status",
           entityType: "meta",
           entityId: metaId,
-          beforeJson: { status: meta.status },
-          afterJson: { status: novoStatus },
+          beforeJson: { status: meta.status, versao: meta.versao },
+          afterJson: { status: para, versao: version + 1 },
           motivo,
         },
       });
     });
 
-    if (ptsId) revalidatePath(`/casos/${ptsId}`);
     return { ok: true };
   } catch (e) {
-    if (e instanceof Error) {
-      if (e.message === "CONFLITO_VERSAO") {
-        return {
-          ok: false,
-          erro: "A meta foi alterada por outra pessoa. Recarregue e tente de novo.",
-          conflito: true,
-        };
-      }
-      if (
-        e.message === "META_INEXISTENTE" ||
-        e.message.startsWith("Transição inválida")
-      ) {
-        return { ok: false, erro: e.message };
-      }
+    if (e instanceof ConflitoVersao) {
+      return { ok: false, erro: e.message, codigo: e.codigo };
     }
-    return { ok: false, erro: "Erro ao mudar status da meta." };
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      return { ok: false, erro: "Meta não encontrada." };
+    }
+    return {
+      ok: false,
+      erro: e instanceof Error ? e.message : "Erro ao mudar status da meta.",
+    };
   }
 }

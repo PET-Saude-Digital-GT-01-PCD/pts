@@ -2,7 +2,10 @@ import { notFound } from "next/navigation";
 import { Semaforo, type SemaforoStatus } from "@/components/ui/semaforo";
 
 import { db } from "@/lib/db";
-import { exigirUmaDasOuRedirect } from "@/server/care-plan/acesso";
+import {
+  exigirUmaDasOuRedirect,
+  temUmaDas,
+} from "@/server/care-plan/acesso";
 import {
   montarTimeline,
   type ItemTimeline,
@@ -11,6 +14,8 @@ import { temFaltaRecente } from "@/server/care-plan/eventos";
 import { AbaVazia, AbasNav, ehAba } from "./abas";
 import { AbaAvaliacoes } from "./aba-avaliacoes";
 import { AbaTriagem } from "./aba-triagem";
+import { AbaMetas } from "./aba-metas";
+import { AbaMural } from "./aba-mural";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -27,7 +32,7 @@ export default async function PainelCasoPage({
   params: Promise<{ ptsId: string }>;
   searchParams: Promise<{ aba?: string }>;
 }) {
-  await exigirUmaDasOuRedirect([
+  const usuario = await exigirUmaDasOuRedirect([
     "care-plan.meta.ler",
     "clinical.soap.ler",
     // triador lê o caso para preencher/ajustar a triagem (issue #18)
@@ -69,7 +74,11 @@ export default async function PainelCasoPage({
   });
   if (!pts) notFound();
 
-  const [faltaRecente] = await Promise.all([temFaltaRecente(pts.id)]);
+  const [faltaRecente, podeMetaEscrever, podeMuralEscrever] = await Promise.all([
+    temFaltaRecente(pts.id),
+    temUmaDas(["care-plan.meta.escrever"]),
+    temUmaDas(["care-plan.mural.escrever"]),
+  ]);
 
   const timeline: ItemTimeline[] = montarTimeline({
     aberturaEm: pts.aberturaEm,
@@ -161,6 +170,10 @@ export default async function PainelCasoPage({
             <AbaAvaliacoes ptsId={pts.id} />
           ) : abaAtiva === "triagem" ? (
             <AbaTriagem ptsId={pts.id} versaoPts={pts.versao} triagens={pts.triagens} />
+          ) : abaAtiva === "metas" ? (
+            <AbaMetas ptsId={pts.id} podeEscrever={podeMetaEscrever} donoId={usuario.id} />
+          ) : abaAtiva === "mural" ? (
+            <AbaMural ptsId={pts.id} podeEscrever={podeMuralEscrever} />
           ) : (
             <AbaVazia titulo={abaAtiva[0].toUpperCase() + abaAtiva.slice(1)} />
           )}
