@@ -422,6 +422,24 @@ async function main() {
     },
   });
 
+  // ===== triagem (issue #18) =====
+  const papelTriador = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "TRIADOR" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "triador@pts.local" },
+    update: { papelId: papelTriador.id, status: "ATIVO" },
+    create: {
+      email: "triador@pts.local",
+      senhaHash: await bcrypt.hash("triador123", 10),
+      nome: "Triador",
+      categoria: "ENFERMEIRO",
+      papelId: papelTriador.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
   console.log(
     `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
   );
