@@ -65,3 +65,27 @@ test("PTS inexistente → 404", async ({ page }) => {
   const resposta = await page.goto("/casos/00000000-0000-4000-8000-000000000099");
   expect(resposta?.status()).toBe(404);
 });
+
+test("checklist fisio → CIF gerada → salvar vinculado ao PTS (#21)", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await login(page, "fisio@pts.local", "fisio123");
+  await page.goto(`/casos/${PTS_ATIVO_ID}?aba=avaliacoes`);
+
+  // RF-UX-3: fisioterapeuta vê o formulário FISIO
+  await expect(
+    page.getByRole("heading", { name: /Nova avaliação — Fisioterapia/ })
+  ).toBeVisible();
+
+  await page.getByTestId("check-mobilidade").check();
+  await page.getByTestId("check-forca").check();
+  await page.getByRole("button", { name: "Salvar avaliação Fisio" }).click();
+
+  await expect(page.getByTestId("cif-ok")).toContainText("d410");
+  await expect(page.getByTestId("cif-ok")).toContainText("b730");
+
+  // lista mostra a avaliação com os códigos CIF
+  await expect(page.getByTestId("lista-especialidade")).toBeVisible();
+  await expect(page.getByText("CIF d450").first()).toBeVisible();
+});
