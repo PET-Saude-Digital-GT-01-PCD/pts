@@ -285,8 +285,76 @@ async function main() {
     },
   });
 
+  // ===== exemplo painel/dashboard (issue #16) =====
+  const PACIENTE_ATIVO_ID = "00000000-0000-4000-8000-000000000002";
+  const PACIENTE_FECHADO_ID = "00000000-0000-4000-8000-000000000003";
+  const PTS_ATIVO_ID = "00000000-0000-4000-8000-000000000010";
+  const PTS_FECHADO_ID = "00000000-0000-4000-8000-000000000011";
+
+  const fisio = await prisma.usuario.findUniqueOrThrow({
+    where: { email: "fisio@pts.local" },
+  });
+
+  const pacienteAtivo = await prisma.paciente.upsert({
+    where: { cpf: "11144477735" },
+    update: {},
+    create: {
+      id: PACIENTE_ATIVO_ID,
+      cerId: cer.id,
+      cpf: "11144477735",
+      nome: "Maria Exemplo",
+      dtnasc: new Date("1995-03-15"),
+      sexo: "FEMININO",
+    },
+  });
+
+  const pacienteFechado = await prisma.paciente.upsert({
+    where: { cpf: "12345678909" },
+    update: {},
+    create: {
+      id: PACIENTE_FECHADO_ID,
+      cerId: cer.id,
+      cpf: "12345678909",
+      nome: "João Exemplo",
+      dtnasc: new Date("1988-07-22"),
+      sexo: "MASCULINO",
+    },
+  });
+
+  await prisma.pts.upsert({
+    where: { id: PTS_ATIVO_ID },
+    update: {},
+    create: {
+      id: PTS_ATIVO_ID,
+      pacienteId: pacienteAtivo.id,
+      cerId: cer.id,
+      status: "EM_AVALIACAO",
+      refProfissionalId: fisio.id,
+      semaforoReuniao: "AMARELO",
+      versao: 0,
+    },
+  });
+
+  await prisma.pts.upsert({
+    where: { id: PTS_FECHADO_ID },
+    update: {},
+    create: {
+      id: PTS_FECHADO_ID,
+      pacienteId: pacienteFechado.id,
+      cerId: cer.id,
+      status: "FECHADO",
+      refProfissionalId: fisio.id,
+      versao: 4,
+      encerramentoEm: new Date(),
+      motivoEncerramento: "Alta com contrarreferência à APS.",
+    },
+  });
+
   console.log(
     `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
+  );
+  console.log(
+    `Seed exemplo painel (#16): PTS ativo ${PTS_ATIVO_ID} (Maria) e PTS fechado ${PTS_FECHADO_ID} (João).`,
   );
 }
 

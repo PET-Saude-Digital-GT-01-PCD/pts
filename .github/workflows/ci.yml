@@ -49,14 +49,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test (Vitest)
-        run: pnpm test
-
       - name: Prisma generate + migrate + seed
         run: |
           pnpm prisma generate
           pnpm db:deploy
           pnpm db:seed
+
+      - name: Test (Vitest)
+        run: pnpm test
 
       - name: Build
         run: pnpm build
