@@ -40,7 +40,7 @@ test("admin cria papel CLINICO e ele aparece na lista", async ({ page }) => {
   await expect(page.getByText(nome)).toBeVisible();
 });
 
-test("usuário com papel sem dashboard.ver não acessa /dashboard", async ({
+test("clínico sem admin não acessa /dashboard/usuarios (#24)", async ({
   page,
 }) => {
   await loginAdmin(page);
@@ -64,5 +64,9 @@ test("usuário com papel sem dashboard.ver não acessa /dashboard", async ({
   await page.getByLabel("Senha").fill("fisio123");
   await page.getByRole("button", { name: "Entrar" }).click();
 
-  await expect(page).toHaveURL("/");
+  // #24: clínico tem dashboard próprio, mas área admin continua negada.
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(
+    page.getByRole("heading", { name: "Meus casos" })
+  ).toBeVisible();
 });

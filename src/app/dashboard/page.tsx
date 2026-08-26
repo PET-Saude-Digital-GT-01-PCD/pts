@@ -36,7 +36,7 @@ function CardCasoView({ caso }: { caso: CardCaso }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Semaforo status={paraSemaforo(caso.semaforo)} label="Reunião" />
+          <Semaforo status={paraSemaforo(caso.semaforo)} />
           {caso.alertas.map((alerta) => (
             <p
               key={alerta}

@@ -20,7 +20,7 @@ test("usuário BLOQUEADO não consegue logar", async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/);
 });
 
-test("usuário ATIVO loga mas sem dashboard.ver é negado no /dashboard", async ({
+test("usuário ATIVO sem dashboard.ver vê a visão clínica do /dashboard (#24)", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -28,6 +28,9 @@ test("usuário ATIVO loga mas sem dashboard.ver é negado no /dashboard", async 
   await page.getByLabel("Senha").fill("fisio123");
   await page.getByRole("button", { name: "Entrar" }).click();
 
-  await expect(page).not.toHaveURL(/\/login/);
-  await expect(page).toHaveURL("/");
+  // Papel clínico agora tem visão própria ("Meus casos"); não é mais negado.
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(
+    page.getByRole("heading", { name: "Meus casos" })
+  ).toBeVisible();
 });
