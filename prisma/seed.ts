@@ -368,9 +368,46 @@ async function main() {
         alcancavel: "fortalecimento semanal",
         relevante: "independência funcional",
         temporal: "8 semanas",
+        dominioFuncional: "mobilidade",
       },
       status: "EM_ANDAMENTO",
       prazo: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    },
+  });
+  // ===== conflito cruzado p/ painel de metas (issue #20): mesmo domínio, outra especialidade =====
+  const papelMedicoSeed = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "MEDICO" } },
+  });
+  const medico = await prisma.usuario.upsert({
+    where: { email: "medico@pts.local" },
+    update: {},
+    create: {
+      email: "medico@pts.local",
+      senhaHash: await bcrypt.hash("medico123", 10),
+      nome: "Médica Exemplo",
+      categoria: "MEDICO",
+      papelId: papelMedicoSeed.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+  await prisma.meta.upsert({
+    where: { id: "00000000-0000-4000-8000-00000000cc02" },
+    update: {},
+    create: {
+      id: "00000000-0000-4000-8000-00000000cc02",
+      ptsId: PTS_ATIVO_ID,
+      donoId: medico.id,
+      descTecnica:
+        "Manutenção de mobilidade de ombro com analgesia em paralelo à fisio",
+      descAcessivel: "Continuar movimentando o ombro direito sem dor",
+      criteriosJson: {
+        especifico: "mobilidade de ombro",
+        mensuravel: "relato de dor ≤ 3/10",
+        dominioFuncional: "mobilidade",
+      },
+      status: "NOVA",
+      prazo: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   });
 
