@@ -18,6 +18,8 @@ function gerarCpf(): string {
 const CPF_BUSCA = gerarCpf();
 const CPF_NOVO = gerarCpf();
 const CPF_CUIDADOR = gerarCpf();
+// CPF conhecido pelo mock determinístico de integrations (issue #2)
+const CPF_MOCK_COMPLETO = "52998224725";
 
 async function limparPaciente(cpf: string) {
   const pacientes = await db.paciente.findMany({
@@ -37,11 +39,13 @@ async function limparPaciente(cpf: string) {
         select: { id: true },
       })
     ).map((g) => g.id);
+    await db.baseline.deleteMany({ where: { pacienteId: p.id } });
     await db.auditoria.deleteMany({
       where: {
         OR: [
           { entityType: "consentimento", entityId: { in: cids } },
           { entityType: "cuidador", entityId: { in: gids } },
+          { entityType: "Baseline", entityId: p.id },
           { entityType: "paciente", entityId: p.id },
         ],
       },
@@ -55,7 +59,7 @@ async function limparPaciente(cpf: string) {
 }
 
 test.beforeEach(async () => {
-  for (const cpf of [CPF_BUSCA, CPF_NOVO, CPF_CUIDADOR]) {
+  for (const cpf of [CPF_BUSCA, CPF_NOVO, CPF_CUIDADOR, CPF_MOCK_COMPLETO]) {
     await limparPaciente(cpf);
   }
 });
@@ -163,4 +167,49 @@ test("cuidador com Zarit alto alerta; consentimento registra e revoga", async ({
   await page.getByLabel("CPF ou CNS").fill(CPF_CUIDADOR);
   await page.getByRole("button", { name: "Buscar" }).click();
   await expect(page.getByRole("alert").first()).toContainText("Zarit alto");
+});
+
+test("baseline importada: campos destacados, editáveis e origem por campo", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await loginRecepcao(page);
+
+  // paciente criado com CPF qualquer; importação usa o CPF conhecido do mock
+  await cadastrarPaciente(page, CPF_NOVO, "Paciente Com Baseline");
+
+  // importa baseline do mock determinístico
+  await page.getByLabel("CPF ou CNS do paciente").fill(CPF_MOCK_COMPLETO);
+  await page.getByRole("button", { name: "Importar" }).click();
+
+  await expect(page.getByLabel("Diagnósticos")).toHaveValue(
+    /Paralisia cerebral/,
+    { timeout: 15_000 },
+  );
+  await expect(page.getByLabel("Alergias")).toHaveValue(/Dipirona/);
+  await expect(
+    page.getByText("Campos destacados vieram da importação.")
+  ).toBeVisible();
+
+  // edição de um campo importado troca a origem para digitado
+  await page.getByLabel("Alergias").fill("Dipirona, Látex");
+  await page
+    .getByRole("button", { name: /Salvar linha de base/ })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Linha de base salva" })
+  ).toBeVisible({ timeout: 15_000 });
+
+  // persistência: origemJson marca diagnóstico importado, alergia editada digitado
+  const registro = await db.baseline.findFirst({
+    where: { paciente: { cpf: CPF_NOVO } },
+    select: { origemJson: true, diagnosticosJson: true, alergiasJson: true },
+  });
+  expect(registro?.origemJson).toMatchObject({
+    diagnosticos: "importado",
+    alergias: "digitado",
+  });
+  expect(registro?.diagnosticosJson).toContain("Paralisia cerebral quadriplégica");
+  expect(registro?.alergiasJson).toEqual(["Dipirona", "Látex"]);
 });
