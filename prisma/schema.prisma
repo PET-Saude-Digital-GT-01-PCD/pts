@@ -176,6 +176,7 @@ model Usuario {
   revisoes           PtsRevisao[]
   metaHistorico      MetaStatusHistorico[]
   eventosRegistrados EventoCuidado[]       @relation("eventosRegistrados")
+  discussoes         Discussao[]           @relation("discussoes")
 
   @@map("usuario")
 }
@@ -275,7 +276,9 @@ model Pts {
   triagens        Triagem[]
   avaliacoes      Avaliacao[]
   metas           Meta[]
+<<<<<<< HEAD
   eventos         EventoCuidado[]
+  discussoes      Discussao[]
 
   @@index([pacienteId])
   @@index([cerId, status])
@@ -403,6 +406,22 @@ model EventoCuidado {
 
   @@index([ptsId, data])
   @@map("evento_cuidado")
+}
+
+// ===== Mural do caso (assíncrono) =====
+
+model Discussao {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId    String   @db.Uuid
+  autorId  String   @db.Uuid
+  texto    String
+  criadaEm DateTime @default(now()) @db.Timestamptz(3)
+
+  pts   Pts     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  autor Usuario @relation("discussoes", fields: [autorId], references: [id], onDelete: Restrict)
+
+  @@index([ptsId, criadaEm])
+  @@map("discussao")
 }
 
 // ===== Governança =====
