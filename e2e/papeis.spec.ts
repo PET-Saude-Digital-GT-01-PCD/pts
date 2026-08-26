@@ -4,6 +4,7 @@ async function loginAdmin(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("admin123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
@@ -45,7 +46,9 @@ test("clínico sem admin não acessa /dashboard/usuarios (#24)", async ({
 }) => {
   await loginAdmin(page);
   await page.goto("/dashboard/usuarios");
-  const linha = page.locator('[data-email="fisio@pts.local"]');
+  // Usa medico@pts.local: já é MEDICO, então o if abaixo é no-op e o papel
+  // do fisio@pts.local não é mutado (outros specs dependem dele).
+  const linha = page.locator('[data-email="medico@pts.local"]');
   const select = linha.locator("select");
   const papelMedico = await select
     .locator("option")
@@ -62,6 +65,7 @@ test("clínico sem admin não acessa /dashboard/usuarios (#24)", async ({
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("fisio@pts.local");
   await page.getByLabel("Senha").fill("fisio123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
 
   // #24: clínico tem dashboard próprio, mas área admin continua negada.

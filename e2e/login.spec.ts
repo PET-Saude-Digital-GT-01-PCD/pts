@@ -6,9 +6,10 @@ test("login redireciona para /dashboard com usuário do seed", async ({
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("admin123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
 
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
   await expect(
     page.getByRole("heading", { name: "Visão geral" })
   ).toBeVisible();
@@ -18,6 +19,7 @@ test("senha incorreta mostra erro e permanece no login", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("senha-errada");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page.getByRole("alert")).toBeVisible();

@@ -11,6 +11,7 @@ async function login(
   await page.goto("/login");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(senha);
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
   // Papéis clínicos sem governanca.dashboard.ver caem em "/", não em /dashboard.
   await page.waitForURL((u) => u.pathname !== "/login");
@@ -25,9 +26,11 @@ test("usuário com care-plan.meta.ler vê o painel do caso", async ({ page }) =>
   await expect(page.getByText("Equipe/CER:")).toBeVisible();
 
   // abas navegam
+  await page.waitForLoadState("networkidle");
   await page.getByRole("tab", { name: "Metas" }).click();
-  await expect(page).toHaveURL(new RegExp(`\\?aba=metas$`));
-  await expect(page.getByTestId("aba-vazia")).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`\\?aba=metas$`), { timeout: 15_000 });
+  // #6: aba de metas agora lista conteúdo (meta vencida do seed)
+  await expect(page.getByTestId("aba-metas")).toBeVisible();
 });
 
 test("timeline mostra a abertura do PTS do seed", async ({ page }) => {

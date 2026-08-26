@@ -23,6 +23,7 @@ test("dashboard renderiza com a marca após login", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("admin123");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
