@@ -368,6 +368,18 @@ async function main() {
     },
   });
 
+  await prisma.eventoCuidado.upsert({
+    where: { id: "00000000-0000-4000-8000-000000000020" },
+    update: {},
+    create: {
+      ptsId: PTS_ATIVO_ID,
+      tipo: "FALTA",
+      data: new Date(),
+      observacao: "Exemplo de falta recente para o alerta do painel (#25).",
+      registradoPorId: fisio.id,
+    },
+  });
+
   console.log(
     `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
   );

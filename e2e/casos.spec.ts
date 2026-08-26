@@ -36,6 +36,17 @@ test("timeline mostra a abertura do PTS do seed", async ({ page }) => {
   await expect(page.getByText("PTS aberto")).toBeVisible();
 });
 
+test("FALTA recente do seed dispara alerta no painel (#25)", async ({
+  page,
+}) => {
+  await login(page, "fisio@pts.local", "fisio123");
+  await page.goto(`/casos/${PTS_ATIVO_ID}`);
+  await expect(page.getByTestId("alerta-falta")).toBeVisible();
+  await expect(
+    page.getByText("Evento de cuidado (FALTA)").first(),
+  ).toBeVisible();
+});
+
 test("PTS fechado exibe banner somente leitura", async ({ page }) => {
   await login(page, "fisio@pts.local", "fisio123");
   await page.goto(`/casos/${PTS_FECHADO_ID}`);
