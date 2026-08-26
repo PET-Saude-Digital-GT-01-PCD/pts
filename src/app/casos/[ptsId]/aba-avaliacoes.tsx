@@ -1,4 +1,10 @@
 import { listarAvaliacoesSoap } from "@/server/clinical/soap";
+import {
+  calcularDivergencia,
+  type EntradaAvaliacao,
+  type EntradaRelato,
+  type GrauDivergencia,
+} from "@/server/clinical/divergencia";
 import { SoapForm } from "./soap-form";
 
 type ItemGrade = {
@@ -13,6 +19,56 @@ function itensGrade(v: unknown): ItemGrade[] {
   const plano = (v as { plano?: unknown }).plano;
   const grade = (plano as { gradeServicos?: unknown } | null)?.gradeServicos;
   return Array.isArray(grade) ? (grade as ItemGrade[]) : [];
+}
+
+const ROTULOS_DIVERGENCIA: Record<string, string> = {
+  mobilidadeRelatada_vs_mobilidadeMedida: "Mobilidade",
+  expectativaRecuperacao_vs_prognosticoClinico: "Expectativa × prognóstico",
+  autonomiaRelatada_vs_autonomiaObservada: "Autonomia",
+};
+
+const CLASSE_GRAU: Record<GrauDivergencia, string> = {
+  ALTA: "border-destructive/40 bg-destructive/10 text-destructive",
+  MEDIA: "border-warning/40 bg-warning/10 text-warning",
+  BAIXA: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  NENHUMA: "border-border bg-muted text-muted-foreground",
+};
+
+export function PainelDivergencia({
+  dadosJson,
+}: {
+  dadosJson: unknown;
+}) {
+  const dados = (dadosJson ?? {}) as Record<string, unknown>;
+  const itens = calcularDivergencia(
+    (dados.relato ?? {}) as EntradaRelato,
+    (dados.avaliacaoClinica ?? {}) as EntradaAvaliacao,
+  );
+  // Direcional: nunca bloqueia, só contrasta. Inline = 0 cliques da aba.
+  return (
+    <div
+      data-testid="painel-divergencia"
+      className="mt-2 flex flex-wrap gap-2 border-t pt-2"
+      aria-label="Painel de divergência saudável"
+    >
+      {itens.length === 0 ? (
+        <span className="text-xs text-muted-foreground">
+          Sem pares relato × avaliação preenchidos.
+        </span>
+      ) : (
+        itens.map((d) => (
+          <span
+            key={d.item}
+            data-testid={`divergencia-${d.grau.toLowerCase()}`}
+            title={`Relato ${d.relato} × avaliação ${d.avaliacao}`}
+            className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${CLASSE_GRAU[d.grau]}`}
+          >
+            {ROTULOS_DIVERGENCIA[d.item] ?? d.item}: {d.grau}
+          </span>
+        ))
+      )}
+    </div>
+  );
 }
 
 export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
@@ -63,6 +119,7 @@ export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
                       ))}
                     </ul>
                   )}
+                  <PainelDivergencia dadosJson={a.dadosJson} />
                 </li>
               );
             })}

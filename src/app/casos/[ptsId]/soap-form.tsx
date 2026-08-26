@@ -17,6 +17,31 @@ const ITEM_VAZIO: ItemGrade = {
   justificativa: "",
 };
 
+// Divergência saudável (#22): pares [name do input, rótulo].
+const CAMPOS_RELATO = [
+  ["mobilidadeRelatada", "Mobilidade relatada pela família (0–100)"],
+  ["expectativaRecuperacao", "Expectativa de recuperação (0–100)"],
+  ["autonomiaRelatada", "Autonomia relatada (0–100)"],
+] as const;
+
+const CAMPOS_MEDIDOS = [
+  ["mobilidadeMedida", "Mobilidade medida (0–100)"],
+  ["prognosticoClinico", "Prognóstico clínico (0–100)"],
+  ["autonomiaObservada", "Autonomia observada (0–100)"],
+] as const;
+
+function escalasForm(
+  form: FormData,
+  campos: readonly (readonly [string, string])[],
+) {
+  const valores: Record<string, number | null> = {};
+  for (const [nome] of campos) {
+    const bruto = String(form.get(nome) ?? "").trim();
+    valores[nome] = bruto === "" ? null : Number(bruto);
+  }
+  return valores;
+}
+
 export function SoapForm({ ptsId }: { ptsId: string }) {
   const router = useRouter();
   const [grade, setGrade] = useState<ItemGrade[]>([{ ...ITEM_VAZIO }]);
@@ -45,6 +70,8 @@ export function SoapForm({ ptsId }: { ptsId: string }) {
         objetivo: form.get("objetivo"),
         avaliacao: form.get("avaliacao"),
         plano: { gradeServicos: gradePreenchida },
+        relato: escalasForm(form, CAMPOS_RELATO),
+        avaliacaoClinica: escalasForm(form, CAMPOS_MEDIDOS),
       },
     });
     setSalvando(false);
@@ -131,6 +158,40 @@ export function SoapForm({ ptsId }: { ptsId: string }) {
         >
           Adicionar serviço
         </Button>
+      </fieldset>
+
+      <fieldset className="grid gap-3 rounded-lg border p-4">
+        <legend className="px-1 text-sm font-medium">
+          Divergência saudável — relato da família × avaliação clínica (opcional)
+        </legend>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {CAMPOS_RELATO.map(([nome, rotulo]) => (
+            <div key={nome} className="grid gap-1">
+              <Label htmlFor={nome}>{rotulo}</Label>
+              <Input
+                id={nome}
+                name={nome}
+                type="number"
+                min={0}
+                max={100}
+                inputMode="numeric"
+              />
+            </div>
+          ))}
+          {CAMPOS_MEDIDOS.map(([nome, rotulo]) => (
+            <div key={nome} className="grid gap-1">
+              <Label htmlFor={nome}>{rotulo}</Label>
+              <Input
+                id={nome}
+                name={nome}
+                type="number"
+                min={0}
+                max={100}
+                inputMode="numeric"
+              />
+            </div>
+          ))}
+        </div>
       </fieldset>
 
       {erro ? (
