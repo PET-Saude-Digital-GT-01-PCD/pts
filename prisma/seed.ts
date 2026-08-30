@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { loadEnvFile } from "node:process";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 // tsx não carrega .env (só o CLI do Prisma carrega). Carregar quando presente.
 try {
@@ -204,6 +204,101 @@ async function upsertPapeis(cerId: string) {
   }
 }
 
+// Campos padrão do formulário de autocadastro de usuário.
+async function upsertFormularioConfig(cerId: string) {
+  const campos = [
+    {
+      campo: "nome",
+      rotulo: "Nome completo",
+      tipo: "TEXTO" as const,
+      obrigatorio: true,
+      visivel: true,
+      ordem: 1,
+    },
+    {
+      campo: "email",
+      rotulo: "E-mail profissional",
+      tipo: "TEXTO" as const,
+      obrigatorio: true,
+      visivel: true,
+      ordem: 2,
+    },
+    {
+      campo: "senha",
+      rotulo: "Senha",
+      tipo: "TEXTO" as const,
+      obrigatorio: true,
+      visivel: true,
+      ordem: 3,
+    },
+    {
+      campo: "categoria",
+      rotulo: "Categoria profissional",
+      tipo: "SELECAO" as const,
+      obrigatorio: true,
+      visivel: true,
+      ordem: 4,
+      opcoesJson: [
+        "RECEPCAO",
+        "TRIADOR",
+        "MEDICO",
+        "FISIOTERAPEUTA",
+        "TERAPEUTA_OCUPACIONAL",
+        "PSICOLOGO",
+        "ENFERMEIRO",
+      ],
+    },
+    {
+      campo: "especialidade",
+      rotulo: "Especialidade / área de atuação",
+      tipo: "TEXTO" as const,
+      obrigatorio: false,
+      visivel: true,
+      ordem: 5,
+    },
+    {
+      campo: "registro_conselho",
+      rotulo: "Registro no conselho profissional",
+      tipo: "TEXTO" as const,
+      obrigatorio: false,
+      visivel: true,
+      ordem: 6,
+    },
+    {
+      campo: "telefone",
+      rotulo: "Telefone de contato",
+      tipo: "TEXTO" as const,
+      obrigatorio: false,
+      visivel: true,
+      ordem: 7,
+    },
+  ];
+
+  for (const c of campos) {
+    await prisma.formularioConfig.upsert({
+      where: { cerId_entidade_campo: { cerId, entidade: "usuario", campo: c.campo } },
+      update: {
+        rotulo: c.rotulo,
+        obrigatorio: c.obrigatorio,
+        visivel: c.visivel,
+        ordem: c.ordem,
+        opcoesJson: c.opcoesJson ?? Prisma.DbNull,
+      },
+      create: {
+        cerId,
+        entidade: "usuario",
+        campo: c.campo,
+        rotulo: c.rotulo,
+        tipo: c.tipo,
+        obrigatorio: c.obrigatorio,
+        visivel: c.visivel,
+        ordem: c.ordem,
+        opcoesJson: c.opcoesJson ?? Prisma.DbNull,
+      },
+    });
+  }
+}
+
 async function main() {
   const cer = await prisma.cer.upsert({
     where: { id: CER_PILOTO_ID },
@@ -218,6 +313,7 @@ async function main() {
 
   await upsertRecursos();
   await upsertPapeis(cer.id);
+  await upsertFormularioConfig(cer.id);
 
   const papelAdmin = await prisma.papel.findUniqueOrThrow({
     where: { cerId_nome: { cerId: cer.id, nome: "ADMIN" } },
@@ -236,7 +332,6 @@ async function main() {
       email: "admin@pts.local",
       senhaHash,
       nome: "Administrador",
-      categoria: "ENFERMEIRO",
       papelId: papelAdmin.id,
       status: "ATIVO",
       cerId: cer.id,
@@ -480,7 +575,7 @@ async function main() {
   });
 
   console.log(
-    `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
+    `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base, formulario_config e usuários admin/pendente/bloqueado criados.`,
   );
   console.log(
     `Seed exemplo painel (#16): PTS ativo ${PTS_ATIVO_ID} (Maria) e PTS fechado ${PTS_FECHADO_ID} (João).`,
