@@ -31,7 +31,7 @@ export default async function PacientePage({
 
   if (!paciente) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-8">
+      <main className="flex items-center justify-center p-8">
         <p role="alert" className="text-destructive text-sm">
           Paciente não encontrado.
         </p>
@@ -40,7 +40,7 @@ export default async function PacientePage({
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-8 p-8">
+    <main className="flex flex-col items-center gap-8 p-8">
       <div className="w-full max-w-lg space-y-4">
         <h1 className="text-2xl font-semibold">{paciente.nome}</h1>
         {zaritAlto(paciente.cuidadores[0]?.zaritScore) ? (

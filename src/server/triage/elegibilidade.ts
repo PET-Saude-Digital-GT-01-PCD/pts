@@ -28,11 +28,11 @@ const FAIXAS_POR_ESCOPO: Record<EscopoCER, FaixaCid[]> = {
 const JUSTIFICATIVA_NAO_ELEGIVEL =
   "CID mapeado para deficiência fora dos escopos atendidos por este CER.";
 
-/** Parse CID-10 estrito: letra maiúscula + 2 dígitos (+ opcional ".d"). Retorna null se malformado. */
+/** Parse CID-10: letra (any case) + 2 dígitos + opcional subcategoria. Retorna null se malformado. */
 function parseCid(cid: string): { letra: string; numero: number } | null {
-  const m = /^([A-Z])(\d{2})(?:\.\d)?$/.exec(cid.trim());
+  const m = /^([A-Za-z])(\d{2})(\.\d{1,2})?$/.exec(cid.trim());
   if (!m) return null;
-  return { letra: m[1], numero: Number(m[2]) };
+  return { letra: m[1].toUpperCase(), numero: Number(m[2]) };
 }
 
 export function elegibilidadePorEscopo(

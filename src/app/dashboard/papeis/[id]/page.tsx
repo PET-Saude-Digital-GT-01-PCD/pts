@@ -32,7 +32,7 @@ export default async function EditarPapelPage({
   if (!papel) notFound();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 p-8">
+    <main className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
       <h1 className="text-2xl font-semibold">Editar papel</h1>
       <Card>
         <CardHeader>

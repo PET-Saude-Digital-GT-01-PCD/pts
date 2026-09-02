@@ -90,7 +90,7 @@ export default async function PainelCasoPage({
   });
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-4xl space-y-6 p-8">
+    <main className="mx-auto w-full max-w-4xl space-y-6 p-8">
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{pts.paciente.nome}</h1>

@@ -12,7 +12,7 @@ export default async function NovoPacientePage({
   const { q } = await searchParams;
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-8 p-8">
+    <main className="flex flex-col items-center gap-8 p-8">
       <NovoPacienteForm documentoInicial={q ?? ""} />
     </main>
   );
