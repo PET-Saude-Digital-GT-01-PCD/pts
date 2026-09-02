@@ -17,7 +17,7 @@ test.describe("Recepção — Linha de Base Clínica", () => {
   test("busca CPF conhecido e exibe dados importados com badge correto", async ({ page }) => {
     // Preencher CPF e buscar (usando mock COMPLETO)
     await page.getByLabel("CPF", { exact: true }).fill("529.982.247-25");
-    await page.getByRole("button", { name: /e-SUS/i }).click();
+    await page.getByRole("button", { name: /Buscar/i }).click();
 
     // Aguardar a mensagem de sucesso
     await expect(page.getByText("Dados encontrados no e-SUS e importados.")).toBeVisible({ timeout: 10_000 });
@@ -33,14 +33,14 @@ test.describe("Recepção — Linha de Base Clínica", () => {
 
   test("CPF desconhecido exibe alerta de não encontrado", async ({ page }) => {
     await page.getByLabel("CPF", { exact: true }).fill("999.999.999-99");
-    await page.getByRole("button", { name: /e-SUS/i }).click();
+    await page.getByRole("button", { name: /Buscar/i }).click();
 
     await expect(page.getByText("Nenhum registro encontrado no e-SUS")).toBeVisible({ timeout: 10_000 });
   });
 
   test("campo editado perde o destaque de importado e volta ao normal", async ({ page }) => {
     await page.getByLabel("CPF", { exact: true }).fill("529.982.247-25");
-    await page.getByRole("button", { name: /e-SUS/i }).click();
+    await page.getByRole("button", { name: /Buscar/i }).click();
     await expect(page.getByText("Dados encontrados no e-SUS e importados.")).toBeVisible({ timeout: 10_000 });
 
     // Editar a descrição de diagnósticos

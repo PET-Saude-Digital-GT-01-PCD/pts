@@ -38,6 +38,7 @@ export function NovoPacienteForm({
   const [erro, setErro] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [pacienteId, setPacienteId] = useState<string | null>(null);
+  const [mostrarFormularioCompleto, setMostrarFormularioCompleto] = useState(false);
 
   const docInicialLimpo = documentoInicial.replace(/\D+/g, "");
   
@@ -76,6 +77,7 @@ export function NovoPacienteForm({
 
     const res = await buscarBaseline({ identificador: doc });
     setBuscando(false);
+    setMostrarFormularioCompleto(true);
 
     if (res.status === "ok") {
       const b = res.baseline;
@@ -204,9 +206,9 @@ export function NovoPacienteForm({
                   onChange={(e) => setCns(e.target.value)}
                 />
               </div>
-              <Button type="button" variant="secondary" onClick={handleBuscarEsus} disabled={buscando}>
+              <Button type="button" variant="secondary" onClick={handleBuscarEsus} disabled={buscando || (!cpf && !cns)}>
                 <Search className="w-4 h-4 mr-2" />
-                {buscando ? "Buscando..." : "e-SUS"}
+                {buscando ? "Buscando..." : "Buscar / Continuar"}
               </Button>
             </div>
             
@@ -216,7 +218,9 @@ export function NovoPacienteForm({
               </p>
             )}
 
-            <div className="grid gap-2">
+            {mostrarFormularioCompleto && (
+              <>
+                <div className="grid gap-2">
               <Label htmlFor="nome">Nome completo</Label>
               <Input 
                 id="nome" 
@@ -270,11 +274,15 @@ export function NovoPacienteForm({
                 className={destaqueGeral}
               />
             </div>
+              </>
+            )}
           </div>
 
-          <hr className="border-border" />
+          {mostrarFormularioCompleto && (
+            <>
+              <hr className="border-border" />
 
-          <div className="grid gap-4">
+              <div className="grid gap-4">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-semibold">Linha de Base Clínica</h3>
               <span className="text-xs text-muted-foreground">Opcional. Os campos destacados vieram da importação.</span>
@@ -322,15 +330,19 @@ export function NovoPacienteForm({
               </div>
             </div>
           </div>
+            </>
+          )}
 
           {erro ? (
             <p role="alert" className="text-sm text-destructive">
               {erro}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending} className="w-full">
-            {pending ? "Salvando…" : "Cadastrar Paciente e Linha de Base"}
-          </Button>
+          {mostrarFormularioCompleto && (
+            <Button type="submit" disabled={pending} className="w-full">
+              {pending ? "Salvando…" : "Cadastrar Paciente e Linha de Base"}
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

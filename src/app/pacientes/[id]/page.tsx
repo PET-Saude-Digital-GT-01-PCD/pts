@@ -20,11 +20,15 @@ export default async function PacientePage({
       cns: true,
       dtnasc: true,
       sexo: true,
+      enderecoJson: true,
       encaminhadoTriagem: true,
       cuidadores: {
         orderBy: { zaritScore: "desc" },
-        take: 1,
-        select: { zaritScore: true },
+        select: { nome: true, parentesco: true, idade: true, zaritScore: true },
+      },
+      consentimentos: {
+        orderBy: { data: "desc" },
+        select: { termoVersao: true, canal: true, data: true, revogadoEm: true, assinaturaRef: true },
       },
       baseline: {
         select: {
@@ -80,6 +84,10 @@ export default async function PacientePage({
             valor={paciente.dtnasc.toLocaleDateString("pt-BR")}
           />
           <Linha rotulo="Sexo" valor={paciente.sexo} />
+          <Linha 
+            rotulo="Endereço" 
+            valor={paciente.enderecoJson ? (paciente.enderecoJson as any).logradouro : "—"} 
+          />
         </dl>
 
         {/* Linha de base */}
@@ -107,6 +115,55 @@ export default async function PacientePage({
                 valores={internacoes}
                 origem={origens.internacoes}
               />
+            </div>
+          </section>
+        )}
+
+        {/* Cuidadores */}
+        {paciente.cuidadores.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-medium">Cuidadores</h2>
+            <div className="grid gap-3">
+              {paciente.cuidadores.map((c, i) => (
+                <div key={i} className="rounded-md border p-4 text-sm space-y-2">
+                  <div className="font-semibold">{c.nome}</div>
+                  <div className="text-muted-foreground">Parentesco: {c.parentesco}</div>
+                  {c.idade !== null && <div className="text-muted-foreground">Idade: {c.idade}</div>}
+                  {c.zaritScore !== null && (
+                    <div className="text-muted-foreground">
+                      Zarit Score: <span className={zaritAlto(c.zaritScore) ? "text-destructive font-medium" : ""}>{c.zaritScore}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Consentimentos LGPD */}
+        {paciente.consentimentos.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-medium">Consentimentos LGPD</h2>
+            <div className="grid gap-3">
+              {paciente.consentimentos.map((c, i) => (
+                <div key={i} className={`rounded-md border p-4 text-sm space-y-1 ${c.revogadoEm ? "opacity-60" : ""}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Versão: {c.termoVersao}</span>
+                    <span className="text-xs text-muted-foreground">{c.data.toLocaleDateString("pt-BR")}</span>
+                  </div>
+                  <div className="text-muted-foreground">Canal: {c.canal}</div>
+                  {c.assinaturaRef && <div className="text-muted-foreground">Assinatura Ref: {c.assinaturaRef}</div>}
+                  {c.revogadoEm ? (
+                    <div className="text-destructive font-medium pt-1">
+                      Revogado em: {c.revogadoEm.toLocaleDateString("pt-BR")}
+                    </div>
+                  ) : (
+                    <div className="text-emerald-600 dark:text-emerald-400 font-medium pt-1">
+                      Ativo
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </section>
         )}
