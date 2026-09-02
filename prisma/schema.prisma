@@ -184,19 +184,20 @@ model Usuario {
 // ===== Recepção =====
 
 model Paciente {
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cerId        String     @db.Uuid
+  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId               String     @db.Uuid
   // ponytail: unique global (não parcial) enquanto não há reativação de soft-delete
-  cpf          String?    @unique @db.Citext
-  cns          String?    @unique @db.Citext
-  nome         String
-  dtnasc       DateTime
-  sexo         Sexo
-  enderecoJson Json?      @db.JsonB
-  ubsId        String?
-  origem       OrigemDado @default(digitado)
-  ativo        Boolean    @default(true)
-  criadoEm     DateTime   @default(now()) @db.Timestamptz(3)
+  cpf                 String?    @unique @db.Citext
+  cns                 String?    @unique @db.Citext
+  nome                String
+  dtnasc              DateTime
+  sexo                Sexo
+  enderecoJson        Json?      @db.JsonB
+  ubsId               String?
+  origem              OrigemDado @default(digitado)
+  ativo               Boolean    @default(true)
+  encaminhadoTriagem  Boolean    @default(false)
+  criadoEm            DateTime   @default(now()) @db.Timestamptz(3)
 
   cer            Cer             @relation(fields: [cerId], references: [id], onDelete: Restrict)
   cuidadores     Cuidador[]

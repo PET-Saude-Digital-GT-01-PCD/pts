@@ -305,6 +305,7 @@ async function main() {
       nome: "Maria Exemplo",
       dtnasc: new Date("1995-03-15"),
       sexo: "FEMININO",
+      encaminhadoTriagem: true,
     },
   });
 
@@ -467,7 +468,7 @@ async function main() {
   });
   await prisma.usuario.upsert({
     where: { email: "triador@pts.local" },
-    update: { papelId: papelTriador.id, status: "ATIVO" },
+    update: { papelId: papelTriador.id, status: "ATIVO", senhaHash: await bcrypt.hash("triador123", 10) },
     create: {
       email: "triador@pts.local",
       senhaHash: await bcrypt.hash("triador123", 10),

@@ -158,6 +158,18 @@ export async function criarTriagem(input: unknown): Promise<ResultadoTriagem> {
         },
       });
 
+      // Resetar flag de encaminhamento após triagem registrada
+      const ptsRow = await tx.pts.findUnique({
+        where: { id: ptsId },
+        select: { pacienteId: true },
+      });
+      if (ptsRow) {
+        await tx.paciente.update({
+          where: { id: ptsRow.pacienteId },
+          data: { encaminhadoTriagem: false },
+        });
+      }
+
       return triagem.id;
     });
 
