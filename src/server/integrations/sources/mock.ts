@@ -13,6 +13,10 @@ export const IDENTIFICADORES_TESTE = {
 
 const BASELINE_COMPLETA: BaselinePaciente = {
   identificador: IDENTIFICADORES_TESTE.COMPLETO,
+  nome: "Maria Exemplo da Silva",
+  dtnasc: "1995-03-15",
+  sexo: "FEMININO",
+  endereco: "Rua das Flores, 123",
   diagnosticos: ["Paralisia cerebral quadriplégica", "Epilepsia"],
   alergias: ["Dipirona"],
   medicacoes: [
@@ -24,6 +28,9 @@ const BASELINE_COMPLETA: BaselinePaciente = {
 
 const BASELINE_PARCIAL: BaselinePaciente = {
   identificador: IDENTIFICADORES_TESTE.PARCIAL,
+  nome: "João Exemplo",
+  dtnasc: "1988-07-22",
+  sexo: "MASCULINO",
   diagnosticos: ["Síndrome de Down"],
   alergias: [],
   medicacoes: [],

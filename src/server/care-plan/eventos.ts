@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { exigirUmaDas } from "@/server/care-plan/acesso";
+import { revalidatePath } from "next/cache";
 
 type Resultado =
   | { ok: true; eventoId: string }
@@ -57,6 +58,7 @@ export async function registrarEvento(input: unknown): Promise<Resultado> {
       return evento.id;
     });
 
+    revalidatePath(`/casos/${ptsId}`);
     return { ok: true, eventoId };
   } catch (e) {
     return {
