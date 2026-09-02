@@ -86,7 +86,7 @@ export default async function PacientePage({
           <Linha rotulo="Sexo" valor={paciente.sexo} />
           <Linha 
             rotulo="Endereço" 
-            valor={paciente.enderecoJson ? (paciente.enderecoJson as any).logradouro : "—"} 
+            valor={paciente.enderecoJson ? (paciente.enderecoJson as Record<string, string>).logradouro || (paciente.enderecoJson as Record<string, string>).endereco || (paciente.enderecoJson as Record<string, string>).rua || String(paciente.enderecoJson) : "—"} 
           />
         </dl>
 
