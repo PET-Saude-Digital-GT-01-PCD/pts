@@ -137,6 +137,8 @@ const PAPEIS_BASE = [
       "care-plan.mural.ler",
       "care-plan.mural.escrever",
       "triage.triagem.ver",
+      // encerramento por contrarreferência (#62) emite a guia junto
+      "triage.contrarreferencia.emissao",
     ],
   },
   {

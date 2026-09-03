@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { criarTriagem } from "@/server/triage/registrar";
+import { GuiaContrarreferenciaForm } from "@/components/guia-contrarreferencia-form";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -193,15 +194,6 @@ export function TriagemForm({
             />
           </div>
 
-          {naoElegivel ? (
-            <p
-              role="alert"
-              data-testid="nao-elegivel"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {naoElegivel} Procure a unidade básica de saúde (APS).
-            </p>
-          ) : null}
           {erro ? (
             <p role="alert" className="text-sm text-destructive">
               {erro}
@@ -212,6 +204,26 @@ export function TriagemForm({
             {pending ? "Classificando…" : ptsId ? "Registrar re-triagem" : "Concluir triagem"}
           </Button>
         </form>
+
+        {naoElegivel ? (
+          // Fora do <form> acima: <form> dentro de <form> é HTML inválido e o
+          // browser confunde os submits (o botão "Emitir guia" acabava
+          // reenviando a triagem).
+          <div className="mt-4 space-y-2">
+            <p
+              role="alert"
+              data-testid="nao-elegivel"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {naoElegivel} Procure a unidade básica de saúde (APS).
+            </p>
+            <GuiaContrarreferenciaForm
+              pacienteId={pacienteId}
+              ptsId={ptsId}
+              motivoInicial={naoElegivel}
+            />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

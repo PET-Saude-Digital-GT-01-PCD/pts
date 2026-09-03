@@ -6,6 +6,7 @@ import type { StatusPts, TipoEncerramento } from "@prisma/client";
 
 import { transicionarStatusPts } from "@/server/care-plan/pts";
 import { transicoesValidas } from "@/server/care-plan/maquina-status";
+import { emitirContrarreferencia } from "@/server/triage/contrarreferencia";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +42,9 @@ export function TransicaoStatusForm({
   const [erro, setErro] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [aberto, setAberto] = useState<"avancar" | "encerrar" | null>(null);
+  const [tipoEncerramento, setTipoEncerramento] =
+    useState<TipoEncerramento>("ALTA");
+  const [guiaEmitida, setGuiaEmitida] = useState<string | null>(null);
 
   const todosDestinos = transicoesValidas(status);
   const destinosAvancar = podeRevisar
@@ -48,7 +52,12 @@ export function TransicaoStatusForm({
     : [];
   const podeEncerrarAgora = podeEncerrar && todosDestinos.includes("FECHADO");
 
-  if (destinosAvancar.length === 0 && !podeEncerrarAgora) return null;
+  // guiaEmitida: mesmo se o PTS acabou de ser encerrado (e portanto não há
+  // mais nenhuma transição/encerramento possível daqui), a confirmação da
+  // guia continua visível em vez do componente desmontar sozinho.
+  if (destinosAvancar.length === 0 && !podeEncerrarAgora && !guiaEmitida) {
+    return null;
+  }
 
   async function enviarAvanco(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,18 +85,41 @@ export function TransicaoStatusForm({
     setErro(null);
     setPending(true);
     const form = new FormData(event.currentTarget);
+    const motivo = form.get("motivo");
     const r = await transicionarStatusPts({
       ptsId,
       para: "FECHADO",
-      motivo: form.get("motivo"),
+      motivo,
       tipoEncerramento: form.get("tipoEncerramento"),
       version: versao,
     });
-    setPending(false);
     if (!r.ok) {
+      setPending(false);
       setErro(r.erro);
       return;
     }
+
+    // Encerramento por contrarreferência também emite a guia (texto
+    // pré-preenchido a partir do motivo, revisável antes de encerrar).
+    if (tipoEncerramento === "CONTRARREFERENCIA") {
+      const destinoUbs = form.get("destinoUbs");
+      const planoCuidados = form.get("planoCuidados");
+      const guia = await emitirContrarreferencia({
+        ptsId,
+        motivo,
+        destinoUbs:
+          typeof destinoUbs === "string" && destinoUbs.trim()
+            ? destinoUbs.trim()
+            : undefined,
+        planoCuidados:
+          typeof planoCuidados === "string" && planoCuidados.trim()
+            ? planoCuidados.trim()
+            : undefined,
+      });
+      if (guia.ok) setGuiaEmitida(guia.contrarreferenciaId);
+    }
+
+    setPending(false);
     setAberto(null);
     router.refresh();
   }
@@ -160,7 +192,10 @@ export function TransicaoStatusForm({
                 id="tipoEncerramento"
                 name="tipoEncerramento"
                 className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-                defaultValue="ALTA"
+                value={tipoEncerramento}
+                onChange={(e) =>
+                  setTipoEncerramento(e.target.value as TipoEncerramento)
+                }
               >
                 {(Object.keys(ROTULOS_TIPO_ENCERRAMENTO) as TipoEncerramento[]).map(
                   (t) => (
@@ -176,10 +211,47 @@ export function TransicaoStatusForm({
               <Input id="motivo-encerramento" name="motivo" required maxLength={500} />
             </div>
           </div>
+
+          {tipoEncerramento === "CONTRARREFERENCIA" && (
+            <div className="grid gap-4 rounded-md border border-dashed p-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="destinoUbs">UBS/APS de destino (opcional)</Label>
+                <Input id="destinoUbs" name="destinoUbs" maxLength={120} />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="planoCuidados">
+                  Plano de cuidados à APS (opcional — pré-preenchido a partir do
+                  motivo, revise antes de encerrar)
+                </Label>
+                <textarea
+                  id="planoCuidados"
+                  name="planoCuidados"
+                  rows={3}
+                  maxLength={2000}
+                  className="border-input bg-background rounded-md border px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+          )}
+
           <Button type="submit" disabled={pending}>
             {pending ? "Encerrando…" : "Confirmar encerramento"}
           </Button>
         </form>
+      )}
+
+      {guiaEmitida && (
+        <p className="text-sm text-emerald-600" data-testid="guia-emitida-encerramento">
+          Guia de contrarreferência emitida.{" "}
+          <a
+            href={`/contrarreferencia/${guiaEmitida}`}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            Ver/imprimir
+          </a>
+        </p>
       )}
 
       {erro && (
