@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { Semaforo, type SemaforoStatus } from "@/components/ui/semaforo";
 
 import { db } from "@/lib/db";
@@ -278,6 +279,12 @@ export default async function PainelCasoPage({
             sugestao={sugestaoSemaforo}
           />
         )}
+        <Link
+          href={`/portal/${pts.id}`}
+          className="inline-block text-sm text-primary underline underline-offset-2"
+        >
+          Ver como portal do cidadão
+        </Link>
       </header>
 
       <section aria-label="Timeline do caso" className="space-y-2">
