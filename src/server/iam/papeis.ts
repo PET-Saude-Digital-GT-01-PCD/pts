@@ -267,7 +267,7 @@ export async function atribuirPapelUsuario(
   usuarioId: string,
   papelId: string,
 ): Promise<Resultado> {
-  const user = await requirePermissao("admin.usuarios.ver");
+  const user = await requirePermissao("admin.papeis.gerenciar");
 
   const [usuario, papel] = await Promise.all([
     db.usuario.findUnique({ where: { id: usuarioId } }),

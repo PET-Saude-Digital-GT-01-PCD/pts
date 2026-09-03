@@ -75,8 +75,16 @@ export async function queryCasosPorPapel(
 
   if (visao === "GESTAO") {
     const [porStatus, porSemaforo] = await Promise.all([
-      db.pts.groupBy({ by: ["status"], _count: { _all: true } }),
-      db.pts.groupBy({ by: ["semaforoReuniao"], _count: { _all: true } }),
+      db.pts.groupBy({
+        by: ["status"],
+        where: { cerId: usuario.cerId ?? undefined },
+        _count: { _all: true },
+      }),
+      db.pts.groupBy({
+        by: ["semaforoReuniao"],
+        where: { cerId: usuario.cerId ?? undefined },
+        _count: { _all: true },
+      }),
     ]);
     return {
       visao: "GESTAO",

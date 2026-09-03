@@ -2,11 +2,13 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { requirePermissao } from "@/server/iam/session";
+import { recursosDoUsuario, requirePermissao } from "@/server/iam/session";
 import { AtribuirPapelForm } from "./atribuir-papel-form";
 
 export default async function UsuariosPage() {
   const user = await requirePermissao("admin.usuarios.ver");
+  const recursos = await recursosDoUsuario(user.papelId);
+  const podeAtribuirPapel = recursos.includes("admin.papeis.gerenciar");
 
   const [usuarios, papeis] = await Promise.all([
     db.usuario.findMany({
@@ -49,7 +51,13 @@ export default async function UsuariosPage() {
                 {u.email} · {u.status}
               </p>
             </div>
-            <AtribuirPapelForm usuario={u} papeis={papeis} />
+            {podeAtribuirPapel ? (
+              <AtribuirPapelForm usuario={u} papeis={papeis} />
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                {papeis.find((p) => p.id === u.papelId)?.nome ?? "—"}
+              </span>
+            )}
           </div>
         ))}
       </div>

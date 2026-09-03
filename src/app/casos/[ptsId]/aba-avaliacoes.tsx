@@ -77,7 +77,13 @@ export function PainelDivergencia({
   );
 }
 
-export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
+export async function AbaAvaliacoes({
+  ptsId,
+  podeEscrever,
+}: {
+  ptsId: string;
+  podeEscrever: boolean;
+}) {
   const lista = await listarAvaliacoesSoap(ptsId);
   const avaliacoes = lista.ok ? lista.avaliacoes : [];
 
@@ -89,19 +95,22 @@ export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
 
   return (
     <div className="space-y-8">
-      {escopos.map((esp) => (
-        <section key={esp} aria-label={`Nova avaliação ${esp}`} className="space-y-4">
-          <h3 className="text-md font-medium">
-            Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
-          </h3>
-          <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
-        </section>
-      ))}
+      {podeEscrever &&
+        escopos.map((esp) => (
+          <section key={esp} aria-label={`Nova avaliação ${esp}`} className="space-y-4">
+            <h3 className="text-md font-medium">
+              Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
+            </h3>
+            <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
+          </section>
+        ))}
 
-      <section aria-label="Nova avaliação SOAP" className="space-y-4">
-        <h3 className="text-md font-medium">Nova avaliação SOAP</h3>
-        <SoapForm ptsId={ptsId} />
-      </section>
+      {podeEscrever && (
+        <section aria-label="Nova avaliação SOAP" className="space-y-4">
+          <h3 className="text-md font-medium">Nova avaliação SOAP</h3>
+          <SoapForm ptsId={ptsId} />
+        </section>
+      )}
 
       <section aria-label="Avaliações registradas" className="space-y-3" data-testid="lista-soap">
         <h3 className="text-md font-medium">Avaliações registradas</h3>

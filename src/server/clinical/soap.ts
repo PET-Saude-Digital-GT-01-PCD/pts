@@ -5,6 +5,7 @@ import { Especialidade } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
+import { assertPtsMutavel } from "@/server/care-plan/acesso";
 import { avaliacaoSoapSchema } from "@/server/clinical/soap-schema";
 
 type Resultado =
@@ -43,8 +44,7 @@ export async function criarAvaliacaoSoap(input: unknown): Promise<Resultado> {
 
   try {
     const avaliacaoId = await db.$transaction(async (tx) => {
-      const pts = await tx.pts.findUnique({ where: { id: ptsId }, select: { id: true } });
-      if (!pts) throw new Error("PTS não encontrado.");
+      await assertPtsMutavel(ptsId, tx);
 
       const avaliacao = await tx.avaliacao.create({
         data: {
