@@ -479,6 +479,24 @@ async function main() {
     },
   });
 
+  // ===== referência (issue #59: ciclo de vida do PTS) =====
+  const papelReferencia = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "REFERENCIA" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "referencia@pts.local" },
+    update: { papelId: papelReferencia.id, status: "ATIVO" },
+    create: {
+      email: "referencia@pts.local",
+      senhaHash: await bcrypt.hash("referencia123", 10),
+      nome: "Referência Exemplo",
+      categoria: "ENFERMEIRO",
+      papelId: papelReferencia.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
   console.log(
     `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
   );
