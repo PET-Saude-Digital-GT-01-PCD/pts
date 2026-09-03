@@ -461,6 +461,24 @@ async function main() {
     },
   });
 
+  // ===== referência: revisão do PTS (#70) =====
+  const papelReferencia = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "REFERENCIA" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "referencia@pts.local" },
+    update: { papelId: papelReferencia.id, status: "ATIVO" },
+    create: {
+      email: "referencia@pts.local",
+      senhaHash: await bcrypt.hash("referencia123", 10),
+      nome: "Referência Exemplo",
+      categoria: "ENFERMEIRO",
+      papelId: papelReferencia.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
   // ===== triagem (issue #18) =====
   const papelTriador = await prisma.papel.findUniqueOrThrow({
     where: { cerId_nome: { cerId: cer.id, nome: "TRIADOR" } },

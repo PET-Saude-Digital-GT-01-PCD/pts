@@ -16,6 +16,7 @@ import { AbaAvaliacoes } from "./aba-avaliacoes";
 import { AbaTriagem } from "./aba-triagem";
 import { AbaMetas } from "./aba-metas";
 import { AbaMural } from "./aba-mural";
+import { AbaRevisoes } from "./aba-revisoes";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -74,10 +75,11 @@ export default async function PainelCasoPage({
   });
   if (!pts) notFound();
 
-  const [faltaRecente, podeMetaEscrever, podeMuralEscrever] = await Promise.all([
+  const [faltaRecente, podeMetaEscrever, podeMuralEscrever, podeRevisar] = await Promise.all([
     temFaltaRecente(pts.id),
     temUmaDas(["care-plan.meta.escrever"]),
     temUmaDas(["care-plan.mural.escrever"]),
+    temUmaDas(["care-plan.pts.revisar"]),
   ]);
 
   const timeline: ItemTimeline[] = montarTimeline({
@@ -123,6 +125,19 @@ export default async function PainelCasoPage({
               {pts.motivoEncerramento
                 ? ` Motivo: ${pts.motivoEncerramento}`
                 : ""}
+            </p>
+          )}
+          {pts.status === "REAVALIACAO" && podeRevisar && (
+            <p
+              data-testid="banner-sugestao-revisao"
+              role="status"
+              className="w-full rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
+            >
+              PTS em reavaliação — considere{" "}
+              <a href={`/casos/${pts.id}?aba=revisoes`} className="underline">
+                registrar uma revisão
+              </a>{" "}
+              marcando este momento.
             </p>
           )}
         </div>
@@ -174,6 +189,8 @@ export default async function PainelCasoPage({
             <AbaMetas ptsId={pts.id} podeEscrever={podeMetaEscrever} donoId={usuario.id} />
           ) : abaAtiva === "mural" ? (
             <AbaMural ptsId={pts.id} podeEscrever={podeMuralEscrever} />
+          ) : abaAtiva === "revisoes" ? (
+            <AbaRevisoes ptsId={pts.id} podeEscrever={podeRevisar} />
           ) : null}
         </div>
       </section>
