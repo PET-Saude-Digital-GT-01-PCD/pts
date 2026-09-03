@@ -49,7 +49,7 @@ export async function aprovarUsuario(usuarioId: string): Promise<Resultado> {
 
     revalidatePath("/dashboard/usuarios");
     return { ok: true };
-  } catch {
+  } catch (err) {
     console.error("Erro ao aprovar usuário:", err);
     return { ok: false, erro: "Erro ao aprovar o usuário." };
   }
@@ -102,7 +102,7 @@ export async function rejeitarUsuario(
 
     revalidatePath("/dashboard/usuarios");
     return { ok: true };
-  } catch {
+  } catch (err) {
     console.error("Erro ao rejeitar usuário:", err);
     return { ok: false, erro: "Erro ao rejeitar o usuário." };
   }
