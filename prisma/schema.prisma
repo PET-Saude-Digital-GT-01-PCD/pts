@@ -40,6 +40,13 @@ enum StatusUsuario {
   BLOQUEADO
 }
 
+enum TipoCampoFormulario {
+  TEXTO
+  NUMERO
+  SELECT
+  BOOLEANO
+}
+
 enum StatusPts {
   EM_AVALIACAO
   PACTACAO
@@ -119,17 +126,21 @@ enum StatusOutboundEvent {
 // ===== Tenant e acesso =====
 
 model Cer {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome      String
-  municipio String   @db.Citext
-  escopos   Escopo[]
-  criadaEm  DateTime @default(now()) @db.Timestamptz(3)
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                String
+  municipio           String   @db.Citext
+  escopos             Escopo[]
+  // papel atribuído a quem se auto-cadastra em /cadastro; null = auto-cadastro desabilitado
+  papelAutocadastroId String?  @db.Uuid
+  criadaEm            DateTime @default(now()) @db.Timestamptz(3)
 
-  usuarios  Usuario[]
-  pacientes Paciente[]
-  pts       Pts[]
-  papeis    Papel[]
-  ppisLocais PpiLocal[]
+  usuarios          Usuario[]
+  pacientes         Paciente[]
+  pts               Pts[]
+  papeis            Papel[]
+  ppisLocais        PpiLocal[]
+  papelAutocadastro Papel?             @relation("autocadastro", fields: [papelAutocadastroId], references: [id], onDelete: SetNull)
+  formulariosConfig FormularioConfig[]
 
   @@map("cer")
 }
@@ -143,9 +154,10 @@ model Papel {
   ativo     Boolean   @default(true)
   criadoEm  DateTime  @default(now()) @db.Timestamptz(3)
 
-  cer      Cer            @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  usuarios Usuario[]
-  recursos PapelRecurso[]
+  cer              Cer            @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  usuarios         Usuario[]
+  recursos         PapelRecurso[]
+  cersAutocadastro Cer[]          @relation("autocadastro")
 
   @@unique([cerId, nome])
   @@map("papel")
@@ -175,15 +187,16 @@ model PapelRecurso {
 }
 
 model Usuario {
-  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cerId     String                @db.Uuid
-  email     String                @unique @db.Citext
-  senhaHash String
-  nome      String
-  categoria CategoriaProfissional
-  papelId   String                @db.Uuid
-  status    StatusUsuario         @default(ATIVO)
-  criadoEm  DateTime              @default(now()) @db.Timestamptz(3)
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId               String                @db.Uuid
+  email               String                @unique @db.Citext
+  senhaHash           String
+  nome                String
+  categoria           CategoriaProfissional
+  papelId             String                @db.Uuid
+  status              StatusUsuario         @default(ATIVO)
+  camposDinamicosJson Json?                 @db.JsonB
+  criadoEm            DateTime              @default(now()) @db.Timestamptz(3)
 
   cer                Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
   papel              Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
@@ -199,6 +212,25 @@ model Usuario {
   contrarreferenciasEmitidas Contrarreferencia[]
 
   @@map("usuario")
+}
+
+model FormularioConfig {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId       String              @db.Uuid
+  entidade    String
+  campo       String
+  rotulo      String
+  tipo        TipoCampoFormulario
+  obrigatorio Boolean             @default(false)
+  visivel     Boolean             @default(true)
+  opcoesJson  Json?               @db.JsonB
+  ordem       Int                 @default(0)
+  criadoEm    DateTime            @default(now()) @db.Timestamptz(3)
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@unique([cerId, entidade, campo])
+  @@map("formulario_config")
 }
 
 // ===== Recepção =====
