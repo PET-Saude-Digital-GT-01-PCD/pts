@@ -12,6 +12,7 @@ const NAV_CONFIG = [
   { requires: "admin.papeis.gerenciar", label: "Papéis", href: "/dashboard/papeis", icon: "ShieldCheck" },
   { requires: "admin.config.org.editar", label: "Identidade visual", href: "/dashboard/config-org", icon: "Settings" },
   { requires: "care-plan.equipe.gerenciar", label: "Equipes dos casos", href: "/dashboard/casos", icon: "Users" },
+  { requires: "governanca.auditoria.ver", label: "Auditoria", href: "/governanca/auditoria", icon: "FileText" },
 ] as const;
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
