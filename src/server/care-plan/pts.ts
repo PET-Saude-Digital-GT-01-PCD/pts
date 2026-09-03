@@ -12,6 +12,7 @@ import {
   podeTransicionar,
 } from "@/server/care-plan/maquina-status";
 import { enfileirarOutbound } from "@/server/integrations/outbound/persistida";
+import { notificarPtsAberto } from "@/server/integrations/notify/pts-aberto";
 
 type Resultado =
   | { ok: true; ptsId: string }
@@ -48,7 +49,7 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
   const { pacienteId, refProfissionalId } = parsed.data;
 
   try {
-    const ptsId = await db.$transaction(async (tx) => {
+    const resultado = await db.$transaction(async (tx) => {
       // ponytail: checagem-então-insere tem janela de corrida; unique parcial
       // no banco é o upgrade quando houver concorrência real de abertura.
       const ativoExistente = await tx.pts.findFirst({
@@ -63,7 +64,7 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
 
       const paciente = await tx.paciente.findUnique({
         where: { id: pacienteId },
-        select: { cerId: true },
+        select: { cerId: true, nome: true },
       });
       if (!paciente) throw new Error("Paciente não encontrado.");
 
@@ -99,10 +100,17 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
         status: pts.status,
       });
 
-      return pts.id;
+      return { ptsId: pts.id, pacienteNome: paciente.nome };
     });
 
-    return { ok: true, ptsId };
+    // Fora da transação: I/O de rede não trava a escrita clínica (ADR-0008).
+    // notificarPtsAberto isola sua própria falha — nunca propaga aqui.
+    await notificarPtsAberto({
+      pacienteNome: resultado.pacienteNome,
+      ptsId: resultado.ptsId,
+    });
+
+    return { ok: true, ptsId: resultado.ptsId };
   } catch (e) {
     return {
       ok: false,

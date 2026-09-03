@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { randomUUID } from "node:crypto";
+import { iniciarServidorSmtpFalso } from "../helpers/fake-smtp";
 
 // Sessão mockada: usecases dependem do usuário logado; o resto é DB real.
 const sessao = vi.hoisted(() => ({
@@ -120,6 +121,65 @@ describe("care-plan/pts — abrirPts", () => {
     sessao.chaves = ["clinical.soap.ler"];
     const pacienteId = await criarPaciente();
     await expect(abrirPts({ pacienteId })).rejects.toThrow(/permiss/i);
+  });
+
+  describe("notificação à eSF (#64)", () => {
+    const ENV_ORIGINAL = { ...process.env };
+
+    beforeEach(() => {
+      process.env = { ...ENV_ORIGINAL, NOTIFY_ESF_EMAIL: "esf@local.test" };
+    });
+    afterEach(() => {
+      process.env = { ...ENV_ORIGINAL };
+    });
+
+    it("PTS aberto dispara e-mail via SMTP com o nome do paciente", async () => {
+      const fake = await iniciarServidorSmtpFalso();
+      process.env.SMTP_HOST = "127.0.0.1";
+      process.env.SMTP_PORT = String(fake.port);
+
+      try {
+        sessao.chaves = ["recepcao.paciente.cadastrar"];
+        const paciente = await db.paciente.create({
+          data: {
+            cerId: CER_ID,
+            nome: "Paciente Notificação",
+            dtnasc: new Date("1990-01-01"),
+            sexo: "OUTRO",
+          },
+        });
+        pacienteIds.push(paciente.id);
+
+        const r = await abrirPts({ pacienteId: paciente.id });
+        expect(r.ok).toBe(true);
+        if (r.ok) ptsIds.push(r.ptsId);
+
+        expect(fake.mensagens).toHaveLength(1);
+        expect(fake.mensagens[0]).toContain("Paciente Notificação");
+      } finally {
+        await fake.fechar();
+      }
+    });
+
+    it("SMTP indisponível não impede a abertura do PTS (ADR-0008)", async () => {
+      process.env.SMTP_HOST = "127.0.0.1";
+      process.env.SMTP_PORT = "1"; // porta sem servidor
+
+      sessao.chaves = ["recepcao.paciente.cadastrar"];
+      const paciente = await db.paciente.create({
+        data: {
+          cerId: CER_ID,
+          nome: "Paciente SMTP Indisponível",
+          dtnasc: new Date("1990-01-01"),
+          sexo: "OUTRO",
+        },
+      });
+      pacienteIds.push(paciente.id);
+
+      const r = await abrirPts({ pacienteId: paciente.id });
+      expect(r.ok).toBe(true);
+      if (r.ok) ptsIds.push(r.ptsId);
+    });
   });
 });
 
