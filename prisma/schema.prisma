@@ -141,8 +141,22 @@ model Cer {
   ppisLocais        PpiLocal[]
   papelAutocadastro Papel?             @relation("autocadastro", fields: [papelAutocadastroId], references: [id], onDelete: SetNull)
   formulariosConfig FormularioConfig[]
+  orgConfig         OrgConfig?
 
   @@map("cer")
+}
+
+model OrgConfig {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId         String   @unique @db.Uuid
+  nomeExibido   String?
+  logoUrl       String?
+  parceirosJson Json?    @db.JsonB
+  atualizadoEm  DateTime @updatedAt
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@map("org_config")
 }
 
 model Papel {

@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("home carrega com título do produto", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("PTS Digital", { exact: true })).toBeVisible();
+  await expect(page).toHaveTitle("PTS Digital");
 });
 
 test("healthcheck responde ok", async ({ request }) => {
