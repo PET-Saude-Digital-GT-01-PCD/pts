@@ -38,7 +38,8 @@ export async function autocadastrar(
 
   // 3. Valida email único
   const emailSchema = z.string().email();
-  const emailParsed = emailSchema.safeParse(payload.email);
+  const emailNormalized = payload.email.trim().toLowerCase();
+  const emailParsed = emailSchema.safeParse(emailNormalized);
   if (!emailParsed.success) {
     return { ok: false, erro: "E-mail inválido." };
   }
@@ -55,12 +56,14 @@ export async function autocadastrar(
   if (!payload.senha || payload.senha.length < 6) {
     return { ok: false, erro: "A senha deve ter no mínimo 6 caracteres." };
   }
-
-  // 5. Determina papel padrão: primeiro papel não-ADMIN ativo do CER
+  // ponytail: teto = rate-limit por IP + CAPTCHA por sessão; upgrade = integrar
+  // provedor (ex.: reCAPTCHA ou Turnstile) em middleware global quando houver tráfego
+  // maior. Por ora, o fluxo livre serve para piloto controlado.
   const papelPadrao = await db.papel.findFirst({
     where: { cerId, ativo: true, base: { not: "ADMIN" } },
     orderBy: { nome: "asc" },
   });
+  // ponytail: papel padrão = primeira heurística (por nome); upgrade = org configurar papel padrão no formulario_config / org_config
   if (!papelPadrao) {
     return { ok: false, erro: "Nenhum papel configurado para este CER. Contate o administrador." };
   }
@@ -83,11 +86,19 @@ export async function autocadastrar(
     "PSICOLOGO",
     "ENFERMEIRO",
   ] as const;
-  const categoria = categoriaValida.includes(
-    payload.categoria as (typeof categoriaValida)[number],
-  )
-    ? (payload.categoria as CategoriaProfissional)
-    : undefined;
+
+  const categoriaRaw = payload.categoria ?? "";
+  if (
+    !categoriaValida.includes(
+      (payload.categoria || "").toUpperCase() as (typeof categoriaValida)[number],
+    )
+  ) {
+    return {
+      ok: false,
+      erro: `Categoria inválida. As opções são: ${categoriaValida.join(", ")}.`,
+    };
+  }
+  const categoria = payload.categoria as (typeof categoriaValida)[number];
 
   // 8. Hash da senha + criação do usuário PENDENTE em transação atômica
   const senhaHash = await bcrypt.hash(payload.senha, 10);
@@ -97,7 +108,7 @@ export async function autocadastrar(
       const novoUsuario = await tx.usuario.create({
         data: {
           cerId,
-          email: emailParsed.data,
+          email: emailNormalized,
           senhaHash,
           nome: payload.nome.trim(),
           categoria: categoria ?? null,

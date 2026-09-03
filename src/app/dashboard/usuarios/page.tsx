@@ -7,9 +7,9 @@ import { AtribuirPapelForm } from "./atribuir-papel-form";
 import { AprovarForm } from "./aprovar-form";
 
 const STATUS_BADGE: Record<string, string> = {
-  ATIVO: "bg-emerald-100 text-emerald-800",
-  PENDENTE: "bg-yellow-100 text-yellow-800",
-  BLOQUEADO: "bg-red-100 text-red-800",
+  ATIVO: "bg-emerald-100/80 text-emerald-800 dark:bg-emerald-100/80 dark:text-emerald-800",
+  PENDENTE: "bg-yellow-100/80 text-yellow-800 dark:bg-yellow-100/80 dark:text-yellow-800",
+  BLOQUEADO: "bg-red-100/80 text-red-800 dark:bg-red-100/80 dark:text-red-800",
 };
 
 export default async function UsuariosPage() {
