@@ -621,7 +621,7 @@ async function main() {
   const papelReferencia = await prisma.papel.findUniqueOrThrow({
     where: { cerId_nome: { cerId: cer.id, nome: "REFERENCIA" } },
   });
-  await prisma.usuario.upsert({
+  const referenciaExemplo = await prisma.usuario.upsert({
     where: { email: "referencia@pts.local" },
     update: { papelId: papelReferencia.id, status: "ATIVO" },
     create: {
@@ -632,6 +632,19 @@ async function main() {
       papelId: papelReferencia.id,
       status: "ATIVO",
       cerId: cer.id,
+    },
+  });
+
+  // equipe do caso (#69): referência não é a referência formal (fisio é) nem
+  // consta na equipe de PTS_ATIVO_ID por padrão — precisa do vínculo pra
+  // exercer ciclo de vida/revisão (#59/#70) sobre esse PTS de exemplo.
+  await prisma.equipePts.upsert({
+    where: { usuarioId_ptsId: { usuarioId: referenciaExemplo.id, ptsId: PTS_ATIVO_ID } },
+    update: {},
+    create: {
+      usuarioId: referenciaExemplo.id,
+      ptsId: PTS_ATIVO_ID,
+      papelNoCaso: "Referência do caso",
     },
   });
 
