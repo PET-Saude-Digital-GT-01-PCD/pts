@@ -9,6 +9,7 @@ const NAV_CONFIG = [
   { requires: "care-plan.meta.escrever", label: "Metas", href: "/metas", icon: "Target" },
   { requires: "admin.usuarios.ver", label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
   { requires: "admin.papeis.gerenciar", label: "Papéis", href: "/dashboard/papeis", icon: "ShieldCheck" },
+  { requires: "governanca.dashboard.ver", label: "Indicadores", href: "/governanca", icon: "BarChart3" },
 ] as const;
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
