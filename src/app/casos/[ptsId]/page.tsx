@@ -17,6 +17,7 @@ import { AbaTriagem } from "./aba-triagem";
 import { AbaMetas } from "./aba-metas";
 import { AbaMural } from "./aba-mural";
 import { TransicaoStatusForm } from "./transicao-status-form";
+import { EventoForm } from "./evento-form";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -81,12 +82,14 @@ export default async function PainelCasoPage({
     podeMuralEscreverPerm,
     podePtsRevisar,
     podePtsEncerrar,
+    podeRegistrarEvento,
   ] = await Promise.all([
     temFaltaRecente(pts.id),
     temUmaDas(["care-plan.meta.escrever"]),
     temUmaDas(["care-plan.mural.escrever"]),
     temUmaDas(["care-plan.pts.revisar"]),
     temUmaDas(["care-plan.pts.encerrar"]),
+    temUmaDas(["care-plan.pts.revisar", "clinical.avaliacao.escrever"]),
   ]);
 
   // PTS FECHADO → somente leitura para a equipe, em toda aba de escrita.
@@ -165,6 +168,9 @@ export default async function PainelCasoPage({
 
       <section aria-label="Timeline do caso" className="space-y-2">
         <h2 className="text-lg font-medium">Timeline</h2>
+        {podeRegistrarEvento && naoFechado && (
+          <EventoForm ptsId={pts.id} />
+        )}
         {timeline.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhum evento registrado ainda.
