@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { StatusPts } from "@prisma/client";
+import { StatusPts, TipoEncerramento } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import {
@@ -11,6 +11,9 @@ import {
   mensagemTransicaoInvalida,
   podeTransicionar,
 } from "@/server/care-plan/maquina-status";
+import { enfileirarOutbound } from "@/server/integrations/outbound/persistida";
+import { notificarPtsAberto } from "@/server/integrations/notify/pts-aberto";
+import { avaliarVinculoCaso } from "@/server/shared/acesso-caso";
 
 type Resultado =
   | { ok: true; ptsId: string }
@@ -31,6 +34,7 @@ const transicionarPtsSchema = z.object({
   ptsId: uuid,
   para: z.nativeEnum(StatusPts),
   motivo: z.string().trim().max(500).optional(),
+  tipoEncerramento: z.nativeEnum(TipoEncerramento).optional(),
   version: z.number().int().min(0),
 });
 
@@ -43,10 +47,14 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
   const parsed = abrirPtsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
 
-  const { pacienteId, refProfissionalId } = parsed.data;
+  const { pacienteId, refProfissionalId: refProfissionalIdInformado } = parsed.data;
+  // Referência atribuída no nascimento do PTS (#69): quem abre o caso vira a
+  // referência por padrão, salvo indicação explícita — sem isso o caso
+  // nasceria sem vínculo e ninguém conseguiria acessá-lo depois.
+  const refProfissionalId = refProfissionalIdInformado ?? user.id;
 
   try {
-    const ptsId = await db.$transaction(async (tx) => {
+    const resultado = await db.$transaction(async (tx) => {
       // ponytail: checagem-então-insere tem janela de corrida; unique parcial
       // no banco é o upgrade quando houver concorrência real de abertura.
       const ativoExistente = await tx.pts.findFirst({
@@ -61,7 +69,7 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
 
       const paciente = await tx.paciente.findUnique({
         where: { id: pacienteId },
-        select: { cerId: true },
+        select: { cerId: true, nome: true },
       });
       if (!paciente) throw new Error("Paciente não encontrado.");
 
@@ -90,10 +98,24 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
         },
       });
 
-      return pts.id;
+      // Marcador de PTS ativo no e-SUS PEC (PRD M1) — envio real é Fase 2.
+      await enfileirarOutbound(tx, "MARKER_ESUS", {
+        ptsId: pts.id,
+        pacienteId,
+        status: pts.status,
+      });
+
+      return { ptsId: pts.id, pacienteNome: paciente.nome };
     });
 
-    return { ok: true, ptsId };
+    // Fora da transação: I/O de rede não trava a escrita clínica (ADR-0008).
+    // notificarPtsAberto isola sua própria falha — nunca propaga aqui.
+    await notificarPtsAberto({
+      pacienteNome: resultado.pacienteNome,
+      ptsId: resultado.ptsId,
+    });
+
+    return { ok: true, ptsId: resultado.ptsId };
   } catch (e) {
     return {
       ok: false,
@@ -106,14 +128,21 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
   const parsed = transicionarPtsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
 
-  const { ptsId, para, motivo, version } = parsed.data;
+  const { ptsId, para, motivo, tipoEncerramento, version } = parsed.data;
 
   const user = await exigirUmaDas([
     para === "FECHADO" ? "care-plan.pts.encerrar" : "care-plan.pts.revisar",
   ]);
 
-  const pts = await db.pts.findUnique({ where: { id: ptsId } });
+  const pts = await db.pts.findUnique({
+    where: { id: ptsId },
+    include: { equipePts: { select: { usuarioId: true } } },
+  });
   if (!pts) return { ok: false, erro: "PTS não encontrado." };
+
+  if (!avaliarVinculoCaso(user.id, pts, pts.equipePts.map((m) => m.usuarioId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
 
   if (!podeTransicionar(pts.status, para)) {
     return {
@@ -129,6 +158,13 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
     };
   }
 
+  if (para === "FECHADO" && !tipoEncerramento) {
+    return {
+      ok: false,
+      erro: "Encerramento exige o tipo (alta, contrarreferência ou descontinuação).",
+    };
+  }
+
   try {
     await db.$transaction(async (tx) => {
       // Lock otimista: updateMany condicionado à versão conhecida.
@@ -138,7 +174,11 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
           status: para,
           versao: version + 1,
           ...(para === "FECHADO"
-            ? { motivoEncerramento: motivo, encerramentoEm: new Date() }
+            ? {
+                motivoEncerramento: motivo,
+                tipoEncerramento,
+                encerramentoEm: new Date(),
+              }
             : {}),
         },
       });
@@ -159,6 +199,7 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
             status: para,
             versao: version + 1,
             ...(motivo ? { motivo } : {}),
+            ...(tipoEncerramento ? { tipoEncerramento } : {}),
           },
         },
       });

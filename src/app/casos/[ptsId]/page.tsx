@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { Semaforo, type SemaforoStatus } from "@/components/ui/semaforo";
 
 import { db } from "@/lib/db";
@@ -11,11 +12,30 @@ import {
   type ItemTimeline,
 } from "@/server/care-plan/painel";
 import { temFaltaRecente } from "@/server/care-plan/eventos";
+import {
+  verificarConflitoMetas,
+  type MetaParaConflito,
+} from "@/server/care-plan/conflitos";
+import { alertasDoCaso } from "@/server/care-plan/dashboard";
+import {
+  semaforoDeReuniao,
+  type EntradaReuniao,
+} from "@/server/care-plan/semaforo-reuniao";
+import {
+  calcularDivergencia,
+  type EntradaAvaliacao,
+  type EntradaRelato,
+} from "@/server/clinical/divergencia";
+import { avaliarVinculoCaso } from "@/server/shared/acesso-caso";
 import { AbasNav, ehAba } from "./abas";
 import { AbaAvaliacoes } from "./aba-avaliacoes";
 import { AbaTriagem } from "./aba-triagem";
 import { AbaMetas } from "./aba-metas";
 import { AbaMural } from "./aba-mural";
+import { TransicaoStatusForm } from "./transicao-status-form";
+import { EventoForm } from "./evento-form";
+import { SemaforoReuniaoForm } from "./semaforo-reuniao-form";
+import { AbaRevisoes } from "./aba-revisoes";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -49,6 +69,7 @@ export default async function PainelCasoPage({
       paciente: true,
       cer: true,
       refProfissional: true,
+      equipePts: { select: { usuarioId: true } },
       triagens: {
         select: {
           id: true,
@@ -62,10 +83,23 @@ export default async function PainelCasoPage({
       },
       revisoes: { select: { id: true, numero: true, motivo: true, data: true } },
       metas: {
-        select: { id: true, descTecnica: true, dataPactuacao: true },
+        select: {
+          id: true,
+          descTecnica: true,
+          dataPactuacao: true,
+          status: true,
+          prazo: true,
+          criteriosJson: true,
+          dono: { select: { categoria: true } },
+        },
       },
       avaliacoes: {
-        select: { id: true, especialidade: true, criadaEm: true },
+        select: {
+          id: true,
+          especialidade: true,
+          criadaEm: true,
+          dadosJson: true,
+        },
       },
       eventos: {
         select: { id: true, tipo: true, data: true },
@@ -74,11 +108,40 @@ export default async function PainelCasoPage({
   });
   if (!pts) notFound();
 
-  const [faltaRecente, podeMetaEscrever, podeMuralEscrever] = await Promise.all([
+  // Vínculo ao caso (#69): acesso clínico individual exige ser a referência
+  // ou membro da equipe do caso, além do recurso (permissão) já checado acima.
+  if (
+    !avaliarVinculoCaso(
+      usuario.id,
+      pts,
+      pts.equipePts.map((m) => m.usuarioId),
+    )
+  ) {
+    redirect("/");
+  }
+
+  const [
+    faltaRecente,
+    podeMetaEscreverPerm,
+    podeMuralEscreverPerm,
+    podePtsRevisar,
+    podePtsEncerrar,
+    podeRegistrarEvento,
+  ] = await Promise.all([
     temFaltaRecente(pts.id),
     temUmaDas(["care-plan.meta.escrever"]),
     temUmaDas(["care-plan.mural.escrever"]),
+    temUmaDas(["care-plan.pts.revisar"]),
+    temUmaDas(["care-plan.pts.encerrar"]),
+    temUmaDas(["care-plan.pts.revisar", "clinical.avaliacao.escrever"]),
   ]);
+
+  // PTS FECHADO → somente leitura para a equipe, em toda aba de escrita.
+  // TransicaoStatusForm já se autolimita pelas transições válidas do status
+  // (transicoesValidas("FECHADO") === []), não precisa do gate aqui.
+  const naoFechado = pts.status !== "FECHADO";
+  const podeMetaEscrever = podeMetaEscreverPerm && naoFechado;
+  const podeMuralEscrever = podeMuralEscreverPerm && naoFechado;
 
   const timeline: ItemTimeline[] = montarTimeline({
     aberturaEm: pts.aberturaEm,
@@ -88,6 +151,54 @@ export default async function PainelCasoPage({
     triagens: pts.triagens,
     eventosCuidado: pts.eventos,
   });
+
+  // Entrada da classificação de reunião (plano/13 §11, heurística v1).
+  const metasParaConflito: MetaParaConflito[] = pts.metas.map((m) => {
+    const criterios = m.criteriosJson as Record<string, unknown> | null;
+    const dominioFuncional =
+      criterios && typeof criterios.dominioFuncional === "string"
+        ? criterios.dominioFuncional
+        : null;
+    return {
+      id: m.id,
+      ptsId: pts.id,
+      status: m.status,
+      dataPactuacao: m.dataPactuacao,
+      prazo: m.prazo,
+      dominioFuncional,
+      donoCategoria: m.dono.categoria,
+    };
+  });
+  const conflitosMeta = verificarConflitoMetas(metasParaConflito).length;
+
+  // Divergência relevante (ALTA/MEDIA) em qualquer avaliação SOAP do caso.
+  const divergenciaEspecialidades = pts.avaliacoes
+    .filter((a) => a.especialidade === "SOAP")
+    .some((a) => {
+      const dados = (a.dadosJson ?? {}) as Record<string, unknown>;
+      const itens = calcularDivergencia(
+        (dados.relato ?? {}) as EntradaRelato,
+        (dados.avaliacaoClinica ?? {}) as EntradaAvaliacao,
+      );
+      return itens.some((d) => d.grau === "ALTA" || d.grau === "MEDIA");
+    });
+
+  // pendenciaAjuste reusa os mesmos alertas do dashboard (meta vencida /
+  // caso parado em avaliação) — sinal de "precisa de atenção" já existente.
+  const pendenciaAjuste =
+    alertasDoCaso(
+      { status: pts.status, aberturaEm: pts.aberturaEm },
+      pts.metas.map((m) => ({ prazo: m.prazo, status: m.status })),
+      new Date(),
+    ).length > 0;
+
+  const entradaReuniao: EntradaReuniao = {
+    divergenciaEspecialidades,
+    conflitosMeta,
+    eventoRisco: faltaRecente,
+    pendenciaAjuste,
+  };
+  const sugestaoSemaforo = semaforoDeReuniao(entradaReuniao);
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6 p-8">
@@ -100,9 +211,11 @@ export default async function PainelCasoPage({
           >
             {LABEL_STATUS[pts.status] ?? pts.status}
           </span>
-          <Semaforo
-            status={pts.semaforoReuniao.toLowerCase() as SemaforoStatus}
-          />
+          <span data-testid="semaforo-reuniao-badge">
+            <Semaforo
+              status={pts.semaforoReuniao.toLowerCase() as SemaforoStatus}
+            />
+          </span>
           {faltaRecente && (
             <p
               data-testid="alerta-falta"
@@ -125,6 +238,19 @@ export default async function PainelCasoPage({
                 : ""}
             </p>
           )}
+          {pts.status === "REAVALIACAO" && podePtsRevisar && (
+            <p
+              data-testid="banner-sugestao-revisao"
+              role="status"
+              className="w-full rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
+            >
+              PTS em reavaliação — considere{" "}
+              <a href={`/casos/${pts.id}?aba=revisoes`} className="underline">
+                registrar uma revisão
+              </a>{" "}
+              marcando este momento.
+            </p>
+          )}
         </div>
         <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
           <div>
@@ -138,10 +264,34 @@ export default async function PainelCasoPage({
             <dd className="inline text-foreground">{pts.cer.nome}</dd>
           </div>
         </dl>
+        <TransicaoStatusForm
+          ptsId={pts.id}
+          status={pts.status}
+          versao={pts.versao}
+          podeRevisar={podePtsRevisar}
+          podeEncerrar={podePtsEncerrar}
+        />
+        {podePtsRevisar && naoFechado && (
+          <SemaforoReuniaoForm
+            ptsId={pts.id}
+            versao={pts.versao}
+            entrada={entradaReuniao}
+            sugestao={sugestaoSemaforo}
+          />
+        )}
+        <Link
+          href={`/portal/${pts.id}`}
+          className="inline-block text-sm text-primary underline underline-offset-2"
+        >
+          Ver como portal do cidadão
+        </Link>
       </header>
 
       <section aria-label="Timeline do caso" className="space-y-2">
         <h2 className="text-lg font-medium">Timeline</h2>
+        {podeRegistrarEvento && naoFechado && (
+          <EventoForm ptsId={pts.id} />
+        )}
         {timeline.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhum evento registrado ainda.
@@ -167,13 +317,15 @@ export default async function PainelCasoPage({
         <AbasNav ativa={abaAtiva} ptsId={pts.id} />
         <div role="tabpanel">
           {abaAtiva === "avaliacoes" ? (
-            <AbaAvaliacoes ptsId={pts.id} />
+            <AbaAvaliacoes ptsId={pts.id} podeEscrever={naoFechado} />
           ) : abaAtiva === "triagem" ? (
             <AbaTriagem ptsId={pts.id} versaoPts={pts.versao} triagens={pts.triagens} />
           ) : abaAtiva === "metas" ? (
             <AbaMetas ptsId={pts.id} podeEscrever={podeMetaEscrever} donoId={usuario.id} />
           ) : abaAtiva === "mural" ? (
             <AbaMural ptsId={pts.id} podeEscrever={podeMuralEscrever} />
+          ) : abaAtiva === "revisoes" ? (
+            <AbaRevisoes ptsId={pts.id} podeEscrever={podePtsRevisar} />
           ) : null}
         </div>
       </section>

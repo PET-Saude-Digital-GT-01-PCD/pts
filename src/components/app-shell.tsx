@@ -1,4 +1,5 @@
 import { getCurrentUser, recursosDoUsuario } from "@/server/iam/session";
+import { buscarOrgConfigView } from "@/server/iam/org-config";
 import { Sidebar } from "@/components/sidebar";
 import { SiteHeader } from "@/components/ui/site-header";
 
@@ -9,15 +10,19 @@ const NAV_CONFIG = [
   { requires: "care-plan.meta.escrever", label: "Metas", href: "/metas", icon: "Target" },
   { requires: "admin.usuarios.ver", label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
   { requires: "admin.papeis.gerenciar", label: "Papéis", href: "/dashboard/papeis", icon: "ShieldCheck" },
+  { requires: "admin.config.org.editar", label: "Identidade visual", href: "/dashboard/config-org", icon: "Settings" },
+  { requires: "care-plan.equipe.gerenciar", label: "Equipes dos casos", href: "/dashboard/casos", icon: "Users" },
+  { requires: "governanca.auditoria.ver", label: "Auditoria", href: "/governanca/auditoria", icon: "FileText" },
+  { requires: "governanca.dashboard.ver", label: "Indicadores", href: "/governanca", icon: "BarChart3" },
 ] as const;
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  const [user, orgConfig] = await Promise.all([getCurrentUser(), buscarOrgConfigView()]);
 
   if (!user) {
     return (
       <>
-        <SiteHeader />
+        <SiteHeader orgConfig={orgConfig} />
         {children}
       </>
     );
@@ -44,6 +49,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           nomePapel: user.nomePapel,
           categoria: user.categoria,
         }}
+        orgConfig={orgConfig}
       />
       <main className="flex-1 overflow-y-auto">{children}</main>
     </div>

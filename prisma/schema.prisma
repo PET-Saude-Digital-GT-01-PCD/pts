@@ -40,12 +40,25 @@ enum StatusUsuario {
   BLOQUEADO
 }
 
+enum TipoCampoFormulario {
+  TEXTO
+  NUMERO
+  SELECT
+  BOOLEANO
+}
+
 enum StatusPts {
   EM_AVALIACAO
   PACTACAO
   SEGUIMENTO
   REAVALIACAO
   FECHADO
+}
+
+enum TipoEncerramento {
+  ALTA
+  CONTRARREFERENCIA
+  DESCONTINUACAO
 }
 
 enum Semaforo {
@@ -98,21 +111,52 @@ enum Elegibilidade {
   REVISAO_MANUAL
 }
 
+enum TipoOutboundEvent {
+  MARKER_ESUS
+  REFERRAL
+  NOTIFICACAO
+}
+
+enum StatusOutboundEvent {
+  PENDING
+  SENT
+  FAILED
+}
+
 // ===== Tenant e acesso =====
 
 model Cer {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome      String
-  municipio String   @db.Citext
-  escopos   Escopo[]
-  criadaEm  DateTime @default(now()) @db.Timestamptz(3)
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                String
+  municipio           String   @db.Citext
+  escopos             Escopo[]
+  // papel atribuído a quem se auto-cadastra em /cadastro; null = auto-cadastro desabilitado
+  papelAutocadastroId String?  @db.Uuid
+  criadaEm            DateTime @default(now()) @db.Timestamptz(3)
 
-  usuarios  Usuario[]
-  pacientes Paciente[]
-  pts       Pts[]
-  papeis    Papel[]
+  usuarios          Usuario[]
+  pacientes         Paciente[]
+  pts               Pts[]
+  papeis            Papel[]
+  ppisLocais        PpiLocal[]
+  papelAutocadastro Papel?             @relation("autocadastro", fields: [papelAutocadastroId], references: [id], onDelete: SetNull)
+  formulariosConfig FormularioConfig[]
+  orgConfig         OrgConfig?
 
   @@map("cer")
+}
+
+model OrgConfig {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId         String   @unique @db.Uuid
+  nomeExibido   String?
+  logoUrl       String?
+  parceirosJson Json?    @db.JsonB
+  atualizadoEm  DateTime @updatedAt
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@map("org_config")
 }
 
 model Papel {
@@ -124,9 +168,10 @@ model Papel {
   ativo     Boolean   @default(true)
   criadoEm  DateTime  @default(now()) @db.Timestamptz(3)
 
-  cer      Cer            @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  usuarios Usuario[]
-  recursos PapelRecurso[]
+  cer              Cer            @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  usuarios         Usuario[]
+  recursos         PapelRecurso[]
+  cersAutocadastro Cer[]          @relation("autocadastro")
 
   @@unique([cerId, nome])
   @@map("papel")
@@ -156,15 +201,16 @@ model PapelRecurso {
 }
 
 model Usuario {
-  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cerId     String                @db.Uuid
-  email     String                @unique @db.Citext
-  senhaHash String
-  nome      String
-  categoria CategoriaProfissional
-  papelId   String                @db.Uuid
-  status    StatusUsuario         @default(ATIVO)
-  criadoEm  DateTime              @default(now()) @db.Timestamptz(3)
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId               String                @db.Uuid
+  email               String                @unique @db.Citext
+  senhaHash           String
+  nome                String
+  categoria           CategoriaProfissional
+  papelId             String                @db.Uuid
+  status              StatusUsuario         @default(ATIVO)
+  camposDinamicosJson Json?                 @db.JsonB
+  criadoEm            DateTime              @default(now()) @db.Timestamptz(3)
 
   cer                Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
   papel              Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
@@ -177,8 +223,29 @@ model Usuario {
   metaHistorico      MetaStatusHistorico[]
   eventosRegistrados EventoCuidado[]       @relation("eventosRegistrados")
   discussoes         Discussao[]           @relation("discussoes")
+  contrarreferenciasEmitidas Contrarreferencia[]
+  equipePts                  EquipePts[]
 
   @@map("usuario")
+}
+
+model FormularioConfig {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId       String              @db.Uuid
+  entidade    String
+  campo       String
+  rotulo      String
+  tipo        TipoCampoFormulario
+  obrigatorio Boolean             @default(false)
+  visivel     Boolean             @default(true)
+  opcoesJson  Json?               @db.JsonB
+  ordem       Int                 @default(0)
+  criadoEm    DateTime            @default(now()) @db.Timestamptz(3)
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@unique([cerId, entidade, campo])
+  @@map("formulario_config")
 }
 
 // ===== Recepção =====
@@ -197,12 +264,17 @@ model Paciente {
   origem       OrigemDado @default(digitado)
   ativo        Boolean    @default(true)
   criadoEm     DateTime   @default(now()) @db.Timestamptz(3)
+  // Validação de pactuação PPI (#65)
+  municipioOrigem    String?
+  provisorio         Boolean   @default(false)
+  prazoRegularizacao DateTime? @db.Timestamptz(3)
 
-  cer            Cer             @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  cuidadores     Cuidador[]
-  consentimentos Consentimento[]
-  baseline       Baseline?
-  pts            Pts[]
+  cer                Cer                 @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  cuidadores         Cuidador[]
+  consentimentos     Consentimento[]
+  baseline           Baseline?
+  pts                Pts[]
+  contrarreferencias Contrarreferencia[]
 
   @@index([cpf])
   @@index([cns])
@@ -267,21 +339,40 @@ model Pts {
   aberturaEm         DateTime  @default(now()) @db.Timestamptz(3)
   encerramentoEm     DateTime? @db.Timestamptz(3)
   motivoEncerramento String?
+  tipoEncerramento   TipoEncerramento?
   criadoEm           DateTime  @default(now()) @db.Timestamptz(3)
 
-  paciente        Paciente        @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
-  cer             Cer             @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  refProfissional Usuario?        @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
-  revisoes        PtsRevisao[]
-  triagens        Triagem[]
-  avaliacoes      Avaliacao[]
-  metas           Meta[]
-  eventos         EventoCuidado[]
-  discussoes      Discussao[]
+  paciente           Paciente            @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  cer                Cer                 @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  refProfissional    Usuario?            @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
+  revisoes           PtsRevisao[]
+  triagens           Triagem[]
+  avaliacoes         Avaliacao[]
+  metas              Meta[]
+  eventos            EventoCuidado[]
+  discussoes         Discussao[]
+  contrarreferencias Contrarreferencia[]
+  equipePts          EquipePts[]
 
   @@index([pacienteId])
   @@index([cerId, status])
   @@map("pts")
+}
+
+// Equipe do caso (#69): acesso clínico individual = referência (Pts.refProfissionalId)
+// OU membro daqui. Fora de escopo: histórico de composição (linha apagada = saiu da equipe).
+model EquipePts {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId   String   @db.Uuid
+  ptsId       String   @db.Uuid
+  papelNoCaso String
+  vinculadoEm DateTime @default(now()) @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  pts     Pts     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+
+  @@unique([usuarioId, ptsId])
+  @@map("equipe_pts")
 }
 
 model PtsRevisao {
@@ -440,4 +531,63 @@ model Auditoria {
 
   @@index([entityType, entityId, criadaEm])
   @@map("auditoria")
+}
+
+// Fila outbound persistida (ADR-0006): INSERT na mesma transação da mutação
+// que gera o efeito externo. Worker de entrega (SELECT ... FOR UPDATE SKIP
+// LOCKED + retry/backoff) é Fase 2 — aqui só a persistência e o
+// enfileiramento nas mutações de negócio.
+model OutboundEvent {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo        TipoOutboundEvent
+  payloadJson Json                @db.JsonB
+  payloadHash String
+  status      StatusOutboundEvent @default(PENDING)
+  attempts    Int                 @default(0)
+  lastError   String?
+  nextRetryAt DateTime?           @db.Timestamptz(3)
+  criadoEm    DateTime            @default(now()) @db.Timestamptz(3)
+
+  @@index([status, nextRetryAt])
+  @@index([tipo, payloadHash, status])
+  @@map("outbound_event")
+}
+
+// Guia de contrarreferência (PRD M2): append-only. Sem PTS quando emitida no
+// NAO_ELEGIVEL da triagem (documento avulso ao paciente); com PTS quando
+// emitida no encerramento por contrarreferência.
+model Contrarreferencia {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId        String   @db.Uuid
+  ptsId             String?  @db.Uuid
+  motivo            String
+  planoCuidadosJson Json?    @db.JsonB
+  destinoUbs        String?
+  emitidaPorId      String   @db.Uuid
+  criadaEm          DateTime @default(now()) @db.Timestamptz(3)
+
+  paciente   Paciente @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  pts        Pts?     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  emitidaPor Usuario  @relation(fields: [emitidaPorId], references: [id], onDelete: Restrict)
+
+  @@index([pacienteId])
+  @@index([ptsId])
+  @@map("contrarreferencia")
+}
+
+// ===== Recepção: PPI =====
+
+// Pactuação Programada Integrada por município de origem (PRD M1).
+model PpiLocal {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId           String    @db.Uuid
+  municipioOrigem String    @db.Citext
+  pactuado        Boolean   @default(false)
+  vigenciaAte     DateTime? @db.Timestamptz(3)
+  criadoEm        DateTime  @default(now()) @db.Timestamptz(3)
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@unique([cerId, municipioOrigem])
+  @@map("ppi_local")
 }

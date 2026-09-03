@@ -5,6 +5,7 @@ const TITULOS = {
   metas: "Metas",
   mural: "Mural",
   triagem: "Triagem",
+  revisoes: "Revisões",
 } as const;
 
 export type AbaKey = keyof typeof TITULOS;

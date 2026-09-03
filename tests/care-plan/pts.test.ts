@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { randomUUID } from "node:crypto";
+import { iniciarServidorSmtpFalso } from "../helpers/fake-smtp";
 
 // Sessão mockada: usecases dependem do usuário logado; o resto é DB real.
 const sessao = vi.hoisted(() => ({
@@ -59,6 +60,14 @@ afterAll(async () => {
   await db.auditoria.deleteMany({
     where: { entityType: "pts", entityId: { in: ptsIds }, actorId: adminId },
   });
+  if (ptsIds.length > 0) {
+    await db.outboundEvent.deleteMany({
+      where: {
+        tipo: "MARKER_ESUS",
+        OR: ptsIds.map((id) => ({ payloadJson: { path: ["ptsId"], equals: id } })),
+      },
+    });
+  }
   await db.pts.deleteMany({ where: { id: { in: ptsIds } } });
   await db.paciente.deleteMany({ where: { id: { in: pacienteIds } } });
   await db.$disconnect();
@@ -85,6 +94,13 @@ describe("care-plan/pts — abrirPts", () => {
     });
     expect(aud.actorId).toBe(adminId);
     expect(aud.afterJson).toMatchObject({ status: "EM_AVALIACAO" });
+
+    // Marcador de PTS ativo (#63): enfileirado na mesma transação.
+    const evento = await db.outboundEvent.findFirstOrThrow({
+      where: { tipo: "MARKER_ESUS", payloadJson: { path: ["ptsId"], equals: r.ptsId } },
+    });
+    expect(evento.status).toBe("PENDING");
+    expect(evento.payloadJson).toMatchObject({ pacienteId });
   });
 
   it("recusa segundo PTS ativo para o mesmo paciente", async () => {
@@ -106,13 +122,72 @@ describe("care-plan/pts — abrirPts", () => {
     const pacienteId = await criarPaciente();
     await expect(abrirPts({ pacienteId })).rejects.toThrow(/permiss/i);
   });
+
+  describe("notificação à eSF (#64)", () => {
+    const ENV_ORIGINAL = { ...process.env };
+
+    beforeEach(() => {
+      process.env = { ...ENV_ORIGINAL, NOTIFY_ESF_EMAIL: "esf@local.test" };
+    });
+    afterEach(() => {
+      process.env = { ...ENV_ORIGINAL };
+    });
+
+    it("PTS aberto dispara e-mail via SMTP com o nome do paciente", async () => {
+      const fake = await iniciarServidorSmtpFalso();
+      process.env.SMTP_HOST = "127.0.0.1";
+      process.env.SMTP_PORT = String(fake.port);
+
+      try {
+        sessao.chaves = ["recepcao.paciente.cadastrar"];
+        const paciente = await db.paciente.create({
+          data: {
+            cerId: CER_ID,
+            nome: "Paciente Notificação",
+            dtnasc: new Date("1990-01-01"),
+            sexo: "OUTRO",
+          },
+        });
+        pacienteIds.push(paciente.id);
+
+        const r = await abrirPts({ pacienteId: paciente.id });
+        expect(r.ok).toBe(true);
+        if (r.ok) ptsIds.push(r.ptsId);
+
+        expect(fake.mensagens).toHaveLength(1);
+        expect(fake.mensagens[0]).toContain("Paciente Notificação");
+      } finally {
+        await fake.fechar();
+      }
+    });
+
+    it("SMTP indisponível não impede a abertura do PTS (ADR-0008)", async () => {
+      process.env.SMTP_HOST = "127.0.0.1";
+      process.env.SMTP_PORT = "1"; // porta sem servidor
+
+      sessao.chaves = ["recepcao.paciente.cadastrar"];
+      const paciente = await db.paciente.create({
+        data: {
+          cerId: CER_ID,
+          nome: "Paciente SMTP Indisponível",
+          dtnasc: new Date("1990-01-01"),
+          sexo: "OUTRO",
+        },
+      });
+      pacienteIds.push(paciente.id);
+
+      const r = await abrirPts({ pacienteId: paciente.id });
+      expect(r.ok).toBe(true);
+      if (r.ok) ptsIds.push(r.ptsId);
+    });
+  });
 });
 
 describe("care-plan/pts — transicionarStatusPts", () => {
   async function ptsEm(status: "EM_AVALIACAO" | "REAVALIACAO", versao: number) {
     const pacienteId = await criarPaciente();
     const pts = await db.pts.create({
-      data: { pacienteId, cerId: CER_ID, status, versao },
+      data: { pacienteId, cerId: CER_ID, status, versao, refProfissionalId: adminId },
     });
     ptsIds.push(pts.id);
     return pts;
@@ -164,6 +239,7 @@ describe("care-plan/pts — transicionarStatusPts", () => {
     const r = await transicionarStatusPts({
       ptsId: pts.id,
       para: "FECHADO",
+      tipoEncerramento: "ALTA",
       version: 1,
     });
     expect(r.ok).toBe(false);
@@ -171,7 +247,7 @@ describe("care-plan/pts — transicionarStatusPts", () => {
     expect(r.erro).toContain("motivo");
   });
 
-  it("FECHADO com motivo grava motivoEncerramento + encerramentoEm", async () => {
+  it("recusa FECHADO sem tipoEncerramento", async () => {
     sessao.chaves = ["care-plan.pts.encerrar"];
     const pts = await ptsEm("REAVALIACAO", 1);
 
@@ -181,11 +257,31 @@ describe("care-plan/pts — transicionarStatusPts", () => {
       motivo: "Alta funcional.",
       version: 1,
     });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.erro).toContain("tipo");
+
+    const inalterado = await db.pts.findUniqueOrThrow({ where: { id: pts.id } });
+    expect(inalterado.status).toBe("REAVALIACAO");
+  });
+
+  it("FECHADO com motivo e tipo grava motivoEncerramento + tipoEncerramento + encerramentoEm", async () => {
+    sessao.chaves = ["care-plan.pts.encerrar"];
+    const pts = await ptsEm("REAVALIACAO", 1);
+
+    const r = await transicionarStatusPts({
+      ptsId: pts.id,
+      para: "FECHADO",
+      motivo: "Alta funcional.",
+      tipoEncerramento: "ALTA",
+      version: 1,
+    });
     expect(r.ok).toBe(true);
 
     const fechado = await db.pts.findUniqueOrThrow({ where: { id: pts.id } });
     expect(fechado.status).toBe("FECHADO");
     expect(fechado.motivoEncerramento).toBe("Alta funcional.");
+    expect(fechado.tipoEncerramento).toBe("ALTA");
     expect(fechado.encerramentoEm).not.toBeNull();
   });
 

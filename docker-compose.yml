@@ -33,6 +33,10 @@ services:
     environment:
       DATABASE_URL: postgresql://pts:pts@db:5432/pts?schema=public
       CI: "true"
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      SMTP_FROM: pts@local.test
+      NOTIFY_ESF_EMAIL: esf-demo@pts.local
     depends_on:
       db:
         condition: service_healthy

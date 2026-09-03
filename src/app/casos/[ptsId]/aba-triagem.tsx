@@ -2,6 +2,7 @@ import type { Semaforo } from "@prisma/client";
 
 import { Semaforo as SemaforoBadge, type SemaforoStatus } from "@/components/ui/semaforo";
 import { classificacaoVigente } from "@/server/triage/classificacao-vigente";
+import { listarContrarreferenciasPts } from "@/server/triage/contrarreferencia";
 import { AjusteForm } from "./ajuste-form";
 import { TriagemForm } from "./triagem-form";
 
@@ -20,7 +21,7 @@ const ELEGIBILIDADE_LABEL: Record<string, string> = {
   NAO_ELEGIVEL: "Não elegível",
 };
 
-export function AbaTriagem({
+export async function AbaTriagem({
   ptsId,
   versaoPts,
   triagens,
@@ -29,6 +30,7 @@ export function AbaTriagem({
   versaoPts: number;
   triagens: TriagemResumo[];
 }) {
+  const guias = await listarContrarreferenciasPts(ptsId);
   const maisRecente = triagens[0];
   const vigente = maisRecente
     ? classificacaoVigente(
@@ -78,6 +80,32 @@ export function AbaTriagem({
                 <span className="text-muted-foreground">
                   {ELEGIBILIDADE_LABEL[t.resultadoElegibilidade]}
                 </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {guias.length > 0 ? (
+        <section className="space-y-2" data-testid="guias-contrarreferencia">
+          <h3 className="text-sm font-medium">Guias de contrarreferência</h3>
+          <ul className="space-y-1 text-sm">
+            {guias.map((g) => (
+              <li key={g.id} className="flex flex-wrap items-center gap-2">
+                <time className="text-muted-foreground tabular-nums">
+                  {g.criadaEm.toLocaleDateString("pt-BR")}
+                </time>
+                {g.destinoUbs && (
+                  <span className="text-muted-foreground">→ {g.destinoUbs}</span>
+                )}
+                <a
+                  href={`/contrarreferencia/${g.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  Ver/imprimir
+                </a>
               </li>
             ))}
           </ul>

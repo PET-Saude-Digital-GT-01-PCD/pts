@@ -5,7 +5,10 @@ import { Especialidade } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
+import { assertPtsMutavel } from "@/server/care-plan/acesso";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 import { avaliacaoSoapSchema } from "@/server/clinical/soap-schema";
+import { calcularAshworth, somaGlasgow } from "@/server/clinical/escalas";
 
 type Resultado =
   | { ok: true; avaliacaoId: string }
@@ -41,16 +44,29 @@ export async function criarAvaliacaoSoap(input: unknown): Promise<Resultado> {
     return { ok: false, erro: "Sem permissão para registrar avaliação SOAP." };
   }
 
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
+  // score automático das escalas clínicas do bloco O (#66)
+  const ashworth = dadosJson.escalasObjetivo?.ashworth
+    ? calcularAshworth(dadosJson.escalasObjetivo.ashworth)
+    : null;
+  const glasgow = dadosJson.escalasObjetivo?.glasgow
+    ? somaGlasgow(dadosJson.escalasObjetivo.glasgow)
+    : null;
+  const temEscala = (ashworth && ashworth.gruposAvaliados > 0) || (glasgow && glasgow.completo);
+
   try {
     const avaliacaoId = await db.$transaction(async (tx) => {
-      const pts = await tx.pts.findUnique({ where: { id: ptsId }, select: { id: true } });
-      if (!pts) throw new Error("PTS não encontrado.");
+      await assertPtsMutavel(ptsId, tx);
 
       const avaliacao = await tx.avaliacao.create({
         data: {
           ptsId,
           especialidade: Especialidade.SOAP,
           dadosJson,
+          escoresJson: temEscala ? { ashworth, glasgow } : undefined,
           avaliadorId: user.id,
           versao: 0,
         },
@@ -90,6 +106,7 @@ export async function listarAvaliacoesSoap(
       avaliacoes: {
         id: string;
         dadosJson: unknown;
+        escoresJson: unknown;
         versao: number;
         criadaEm: Date;
         avaliadorNome: string;
@@ -97,10 +114,15 @@ export async function listarAvaliacoesSoap(
     }
   | { ok: false; erro: string }
 > {
+  let user;
   try {
-    await exigirUmaDas(["clinical.soap.ler"]);
+    user = await exigirUmaDas(["clinical.soap.ler"]);
   } catch {
     return { ok: false, erro: "Sem permissão para ler avaliações SOAP." };
+  }
+
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
   }
 
   const avaliacoes = await db.avaliacao.findMany({
@@ -109,6 +131,7 @@ export async function listarAvaliacoesSoap(
     select: {
       id: true,
       dadosJson: true,
+      escoresJson: true,
       versao: true,
       criadaEm: true,
       avaliador: { select: { nome: true } },
@@ -120,6 +143,7 @@ export async function listarAvaliacoesSoap(
     avaliacoes: avaliacoes.map((a) => ({
       id: a.id,
       dadosJson: a.dadosJson,
+      escoresJson: a.escoresJson,
       versao: a.versao,
       criadaEm: a.criadaEm,
       avaliadorNome: a.avaliador.nome,
