@@ -111,8 +111,22 @@ model Cer {
   pacientes Paciente[]
   pts       Pts[]
   papeis    Papel[]
+  orgConfig OrgConfig?
 
   @@map("cer")
+}
+
+model OrgConfig {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId         String   @unique @db.Uuid
+  nomeExibido   String?
+  logoUrl       String?
+  parceirosJson Json?    @db.JsonB
+  atualizadoEm  DateTime @updatedAt
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@map("org_config")
 }
 
 model Papel {

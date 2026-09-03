@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { WaveDivider } from "@/components/ui/wave-divider";
+import { buscarOrgConfigView } from "@/server/iam/org-config";
 
 const colaboradores = [
   { src: "/assets/logos/sus-digital.png", alt: "Logo SUS Digital" },
@@ -15,7 +16,9 @@ const colaboradores = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const orgConfig = await buscarOrgConfigView();
+
   return (
     <main className="flex min-h-screen flex-col">
       <section className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-16 text-center sm:py-24">
@@ -62,6 +65,27 @@ export default function Home() {
             PCD
           </p>
         </div>
+        {orgConfig.parceiros.length > 0 ? (
+          <div
+            className="mx-auto w-full max-w-6xl border-t px-6 py-6"
+            data-testid="parceiros-org"
+          >
+            <p className="text-center text-xs font-medium text-muted-foreground">
+              Parceiros locais
+            </p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
+              {orgConfig.parceiros.map((parceiro) => (
+                // eslint-disable-next-line @next/next/no-img-element -- URL externa configurada pelo admin (#68)
+                <img
+                  key={parceiro.nome}
+                  src={parceiro.logoUrl}
+                  alt={parceiro.nome}
+                  className="h-8 w-auto object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 sm:h-10"
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </footer>
     </main>
   );
