@@ -6,6 +6,7 @@ import { Especialidade } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
 import { avaliacaoSoapSchema } from "@/server/clinical/soap-schema";
+import { calcularAshworth, somaGlasgow } from "@/server/clinical/escalas";
 
 type Resultado =
   | { ok: true; avaliacaoId: string }
@@ -41,6 +42,15 @@ export async function criarAvaliacaoSoap(input: unknown): Promise<Resultado> {
     return { ok: false, erro: "Sem permissão para registrar avaliação SOAP." };
   }
 
+  // score automático das escalas clínicas do bloco O (#66)
+  const ashworth = dadosJson.escalasObjetivo?.ashworth
+    ? calcularAshworth(dadosJson.escalasObjetivo.ashworth)
+    : null;
+  const glasgow = dadosJson.escalasObjetivo?.glasgow
+    ? somaGlasgow(dadosJson.escalasObjetivo.glasgow)
+    : null;
+  const temEscala = (ashworth && ashworth.gruposAvaliados > 0) || (glasgow && glasgow.completo);
+
   try {
     const avaliacaoId = await db.$transaction(async (tx) => {
       const pts = await tx.pts.findUnique({ where: { id: ptsId }, select: { id: true } });
@@ -51,6 +61,7 @@ export async function criarAvaliacaoSoap(input: unknown): Promise<Resultado> {
           ptsId,
           especialidade: Especialidade.SOAP,
           dadosJson,
+          escoresJson: temEscala ? { ashworth, glasgow } : undefined,
           avaliadorId: user.id,
           versao: 0,
         },
@@ -90,6 +101,7 @@ export async function listarAvaliacoesSoap(
       avaliacoes: {
         id: string;
         dadosJson: unknown;
+        escoresJson: unknown;
         versao: number;
         criadaEm: Date;
         avaliadorNome: string;
@@ -109,6 +121,7 @@ export async function listarAvaliacoesSoap(
     select: {
       id: true,
       dadosJson: true,
+      escoresJson: true,
       versao: true,
       criadaEm: true,
       avaliador: { select: { nome: true } },
@@ -120,6 +133,7 @@ export async function listarAvaliacoesSoap(
     avaliacoes: avaliacoes.map((a) => ({
       id: a.id,
       dadosJson: a.dadosJson,
+      escoresJson: a.escoresJson,
       versao: a.versao,
       criadaEm: a.criadaEm,
       avaliadorNome: a.avaliador.nome,

@@ -72,3 +72,40 @@ test("painel de divergência mostra contraste ALTA sem bloquear salvar", async (
   await expect(painel.getByTestId("divergencia-alta")).toContainText("Mobilidade");
   await expect(painel.getByTestId("divergencia-baixa")).toContainText("Autonomia");
 });
+
+test("escalas Ashworth e Glasgow calculam total ao vivo e persistem em escoresJson (#66)", async ({
+  page,
+}) => {
+  await login(page, "medico@pts.local", "medico123");
+  await page.goto(`/casos/${PTS_ATIVO_ID}?aba=avaliacoes`);
+
+  await page.getByLabel("Subjetivo").fill("Paciente sonolento, sem queixas verbais.");
+  await page
+    .getByLabel("Objetivo")
+    .fill("Espasticidade em MMSS; rebaixamento leve do nível de consciência.");
+  await page
+    .getByLabel("Avaliacao", { exact: false })
+    .fill("Espasticidade e rebaixamento em investigação.");
+
+  // Ashworth: só 2 grupos avaliados → total 6, média 3.0
+  await page.getByLabel("Cotovelo — flexores").selectOption("2");
+  await page.getByLabel("Punho — flexores").selectOption("4");
+  await expect(page.getByTestId("ashworth-total")).toContainText("Total: 6");
+  await expect(page.getByTestId("ashworth-total")).toContainText("Média: 3.0");
+  await expect(page.getByTestId("ashworth-total")).toContainText("2 grupo(s) avaliado(s)");
+
+  // Glasgow: preenchimento parcial não calcula total
+  await page.getByLabel("Abertura ocular (1–4)").selectOption("3");
+  await expect(page.getByTestId("glasgow-total")).toContainText("preencha os 3 campos");
+
+  await page.getByLabel("Resposta verbal (1–5)").selectOption("4");
+  await page.getByLabel("Resposta motora (1–6)").selectOption("5");
+  await expect(page.getByTestId("glasgow-total")).toContainText("Total: 12");
+
+  await page.getByRole("button", { name: "Salvar avaliação SOAP" }).click();
+  await expect(page.getByTestId("soap-ok")).toBeVisible();
+
+  const lista = page.getByTestId("lista-soap");
+  await expect(lista.getByText("Ashworth: total 6 (2 grupo(s))").first()).toBeVisible();
+  await expect(lista.getByText("Glasgow: 12/15").first()).toBeVisible();
+});
