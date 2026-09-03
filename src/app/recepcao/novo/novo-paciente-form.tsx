@@ -30,6 +30,8 @@ export function NovoPacienteForm({
   const [erro, setErro] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [pacienteId, setPacienteId] = useState<string | null>(null);
+  const [provisorio, setProvisorio] = useState(false);
+  const [prazoRegularizacao, setPrazoRegularizacao] = useState<Date | null>(null);
 
   const docInicialLimpo = documentoInicial.replace(/\D+/g, "");
   const prefillCpf = docInicialLimpo.length === 11 ? documentoInicial : "";
@@ -47,6 +49,7 @@ export function NovoPacienteForm({
       cns: form.get("cns") ?? undefined,
       dtnasc: form.get("dtnasc"),
       sexo: form.get("sexo"),
+      municipioOrigem: form.get("municipioOrigem"),
       enderecoJson: form.get("endereco")
         ? { logradouro: form.get("endereco") }
         : undefined,
@@ -58,6 +61,10 @@ export function NovoPacienteForm({
       return;
     }
 
+    setProvisorio(resultado.provisorio);
+    setPrazoRegularizacao(
+      resultado.prazoRegularizacao ? new Date(resultado.prazoRegularizacao) : null,
+    );
     setPacienteId(resultado.pacienteId);
   }
 
@@ -68,6 +75,17 @@ export function NovoPacienteForm({
           Paciente cadastrado. Complete as seções abaixo ou{" "}
           <ConcluirLink pacienteId={pacienteId} router={router} />.
         </p>
+        {provisorio && prazoRegularizacao ? (
+          <p
+            role="alert"
+            data-testid="alerta-provisorio"
+            className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning"
+          >
+            Cadastro provisório — PPI não pactuada para o município de
+            origem. Regularizar até{" "}
+            {prazoRegularizacao.toLocaleDateString("pt-BR")}.
+          </p>
+        ) : null}
         <SecaoBaseline pacienteId={pacienteId} />
         <SecaoCuidador pacienteId={pacienteId} />
         <SecaoConsentimento pacienteId={pacienteId} />
@@ -128,6 +146,17 @@ export function NovoPacienteForm({
                 <option value="OUTRO">Outro</option>
               </select>
             </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="municipioOrigem">Município de origem</Label>
+            <Input
+              id="municipioOrigem"
+              name="municipioOrigem"
+              required
+              minLength={2}
+              maxLength={120}
+              placeholder="Ex.: Recife"
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="endereco">Endereço (opcional)</Label>

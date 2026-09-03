@@ -204,6 +204,27 @@ async function upsertPapeis(cerId: string) {
   }
 }
 
+// PPI de exemplo (#65): Recife (sede do CER) pactuada; vizinhos ilustram os
+// outros dois casos — não pactuado e pactuado com vigência já vencida.
+async function upsertPpisLocais(cerId: string) {
+  const PPIS = [
+    { municipioOrigem: "Recife", pactuado: true, vigenciaAte: null },
+    { municipioOrigem: "Olinda", pactuado: false, vigenciaAte: null },
+    {
+      municipioOrigem: "Jaboatão dos Guararapes",
+      pactuado: true,
+      vigenciaAte: new Date("2026-01-01"),
+    },
+  ];
+  for (const p of PPIS) {
+    await prisma.ppiLocal.upsert({
+      where: { cerId_municipioOrigem: { cerId, municipioOrigem: p.municipioOrigem } },
+      update: { pactuado: p.pactuado, vigenciaAte: p.vigenciaAte },
+      create: { cerId, ...p },
+    });
+  }
+}
+
 async function main() {
   const cer = await prisma.cer.upsert({
     where: { id: CER_PILOTO_ID },
@@ -218,6 +239,7 @@ async function main() {
 
   await upsertRecursos();
   await upsertPapeis(cer.id);
+  await upsertPpisLocais(cer.id);
 
   const papelAdmin = await prisma.papel.findUniqueOrThrow({
     where: { cerId_nome: { cerId: cer.id, nome: "ADMIN" } },

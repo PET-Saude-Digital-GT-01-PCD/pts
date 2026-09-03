@@ -6,6 +6,11 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requirePermissao } from "@/server/iam/session";
 import { soDigitos, validarCns, validarCpf } from "@/server/reception/documentos";
+import {
+  buscarPpiLocal,
+  ppiPactuadaAgora,
+  PRAZO_REGULARIZACAO_DIAS,
+} from "@/server/reception/ppi";
 
 const pacienteInputSchema = z.object({
   nome: z.string().trim().min(3, "Nome muito curto.").max(120),
@@ -23,10 +28,16 @@ const pacienteInputSchema = z.object({
   sexo: z.enum(["MASCULINO", "FEMININO", "OUTRO"]),
   enderecoJson: z.record(z.unknown()).optional(),
   ubsId: z.string().uuid().optional(),
+  municipioOrigem: z.string().trim().min(2, "Município é obrigatório.").max(120),
 });
 
 export type ResultadoPaciente =
-  | { ok: true; pacienteId: string }
+  | {
+      ok: true;
+      pacienteId: string;
+      provisorio: boolean;
+      prazoRegularizacao: Date | null;
+    }
   | { ok: false; erro: string };
 
 export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> {
@@ -55,6 +66,13 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
     };
   }
 
+  const ppi = await buscarPpiLocal(cerId, dados.municipioOrigem);
+  const pactuado = ppiPactuadaAgora(ppi, new Date());
+  const provisorio = !pactuado;
+  const prazoRegularizacao = provisorio
+    ? new Date(Date.now() + PRAZO_REGULARIZACAO_DIAS * 24 * 60 * 60 * 1000)
+    : null;
+
   try {
     return await db.$transaction(async (tx) => {
       const paciente = await tx.paciente.create({
@@ -69,6 +87,9 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
             ? (dados.enderecoJson as Prisma.InputJsonValue)
             : undefined,
           ubsId: dados.ubsId,
+          municipioOrigem: dados.municipioOrigem,
+          provisorio,
+          prazoRegularizacao,
         },
       });
 
@@ -78,11 +99,23 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
           action: "paciente.criar",
           entityType: "paciente",
           entityId: paciente.id,
-          afterJson: { nome: paciente.nome, cpf: paciente.cpf, cns: paciente.cns },
+          afterJson: {
+            nome: paciente.nome,
+            cpf: paciente.cpf,
+            cns: paciente.cns,
+            municipioOrigem: dados.municipioOrigem,
+            pactuadoPpi: pactuado,
+            provisorio,
+          },
         },
       });
 
-      return { ok: true as const, pacienteId: paciente.id };
+      return {
+        ok: true as const,
+        pacienteId: paciente.id,
+        provisorio,
+        prazoRegularizacao,
+      };
     });
   } catch (erro) {
     // ponytail: corrida entre checagem e create cai no unique do banco
