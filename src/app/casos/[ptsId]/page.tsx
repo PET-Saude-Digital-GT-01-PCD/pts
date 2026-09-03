@@ -47,7 +47,7 @@ export default async function PainelCasoPage({
     where: { id: ptsId },
     include: {
       paciente: true,
-      cer: true,
+      cer: { select: { id: true, nome: true } },
       refProfissional: true,
       triagens: {
         select: {
