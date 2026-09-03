@@ -129,6 +129,7 @@ model Cer {
   pacientes Paciente[]
   pts       Pts[]
   papeis    Papel[]
+  ppisLocais PpiLocal[]
 
   @@map("cer")
 }
@@ -216,6 +217,10 @@ model Paciente {
   origem       OrigemDado @default(digitado)
   ativo        Boolean    @default(true)
   criadoEm     DateTime   @default(now()) @db.Timestamptz(3)
+  // Validação de pactuação PPI (#65)
+  municipioOrigem    String?
+  provisorio         Boolean   @default(false)
+  prazoRegularizacao DateTime? @db.Timestamptz(3)
 
   cer                Cer                 @relation(fields: [cerId], references: [id], onDelete: Restrict)
   cuidadores         Cuidador[]
@@ -504,4 +509,21 @@ model Contrarreferencia {
   @@index([pacienteId])
   @@index([ptsId])
   @@map("contrarreferencia")
+}
+
+// ===== Recepção: PPI =====
+
+// Pactuação Programada Integrada por município de origem (PRD M1).
+model PpiLocal {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId           String    @db.Uuid
+  municipioOrigem String    @db.Citext
+  pactuado        Boolean   @default(false)
+  vigenciaAte     DateTime? @db.Timestamptz(3)
+  criadoEm        DateTime  @default(now()) @db.Timestamptz(3)
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@unique([cerId, municipioOrigem])
+  @@map("ppi_local")
 }
