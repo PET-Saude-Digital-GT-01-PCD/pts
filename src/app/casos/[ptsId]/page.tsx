@@ -16,6 +16,7 @@ import { AbaAvaliacoes } from "./aba-avaliacoes";
 import { AbaTriagem } from "./aba-triagem";
 import { AbaMetas } from "./aba-metas";
 import { AbaMural } from "./aba-mural";
+import { EventoForm } from "./evento-form";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -74,10 +75,16 @@ export default async function PainelCasoPage({
   });
   if (!pts) notFound();
 
-  const [faltaRecente, podeMetaEscrever, podeMuralEscrever] = await Promise.all([
+  const [
+    faltaRecente,
+    podeMetaEscrever,
+    podeMuralEscrever,
+    podeRegistrarEvento,
+  ] = await Promise.all([
     temFaltaRecente(pts.id),
     temUmaDas(["care-plan.meta.escrever"]),
     temUmaDas(["care-plan.mural.escrever"]),
+    temUmaDas(["care-plan.pts.revisar", "clinical.avaliacao.escrever"]),
   ]);
 
   const timeline: ItemTimeline[] = montarTimeline({
@@ -142,6 +149,9 @@ export default async function PainelCasoPage({
 
       <section aria-label="Timeline do caso" className="space-y-2">
         <h2 className="text-lg font-medium">Timeline</h2>
+        {podeRegistrarEvento && pts.status !== "FECHADO" && (
+          <EventoForm ptsId={pts.id} />
+        )}
         {timeline.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhum evento registrado ainda.
