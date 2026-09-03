@@ -2,6 +2,7 @@ import { requirePermissao } from "@/server/iam/session";
 import { zaritAlto } from "@/server/reception/zarit";
 import { diasAteRegularizacao } from "@/server/reception/ppi";
 import { TriagemForm } from "@/app/casos/[ptsId]/triagem-form";
+import { buscarPosicaoNaFila } from "@/server/triage/fila-espera";
 import { db } from "@/lib/db";
 
 export default async function PacientePage({
@@ -16,6 +17,7 @@ export default async function PacientePage({
     where: { id },
     select: {
       id: true,
+      cerId: true,
       nome: true,
       cpf: true,
       cns: true,
@@ -42,6 +44,11 @@ export default async function PacientePage({
       </main>
     );
   }
+
+  const ptsAtivoId = paciente.pts[0]?.id;
+  const posicaoFila = ptsAtivoId
+    ? await buscarPosicaoNaFila(ptsAtivoId, paciente.cerId)
+    : null;
 
   return (
     <main className="flex flex-col items-center gap-8 p-8">
@@ -72,6 +79,16 @@ export default async function PacientePage({
             {diasAteRegularizacao(paciente.prazoRegularizacao, new Date()) < 0
               ? " (vencido)"
               : ""}
+          </p>
+        ) : null}
+        {posicaoFila ? (
+          <p
+            role="status"
+            data-testid="fila-amarela"
+            className="text-warning rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm font-medium"
+          >
+            Fila de espera (Amarelo): posição {posicaoFila.posicao} — estimativa de{" "}
+            {posicaoFila.estimativaDias} dia(s) até a chamada.
           </p>
         ) : null}
         <dl className="divide-y rounded-md border">
