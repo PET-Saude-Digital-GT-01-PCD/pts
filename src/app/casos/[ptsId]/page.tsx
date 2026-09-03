@@ -16,6 +16,7 @@ import { AbaAvaliacoes } from "./aba-avaliacoes";
 import { AbaTriagem } from "./aba-triagem";
 import { AbaMetas } from "./aba-metas";
 import { AbaMural } from "./aba-mural";
+import { TransicaoStatusForm } from "./transicao-status-form";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -74,14 +75,23 @@ export default async function PainelCasoPage({
   });
   if (!pts) notFound();
 
-  const [faltaRecente, podeMetaEscreverPerm, podeMuralEscreverPerm] =
-    await Promise.all([
-      temFaltaRecente(pts.id),
-      temUmaDas(["care-plan.meta.escrever"]),
-      temUmaDas(["care-plan.mural.escrever"]),
-    ]);
+  const [
+    faltaRecente,
+    podeMetaEscreverPerm,
+    podeMuralEscreverPerm,
+    podePtsRevisar,
+    podePtsEncerrar,
+  ] = await Promise.all([
+    temFaltaRecente(pts.id),
+    temUmaDas(["care-plan.meta.escrever"]),
+    temUmaDas(["care-plan.mural.escrever"]),
+    temUmaDas(["care-plan.pts.revisar"]),
+    temUmaDas(["care-plan.pts.encerrar"]),
+  ]);
 
   // PTS FECHADO → somente leitura para a equipe, em toda aba de escrita.
+  // TransicaoStatusForm já se autolimita pelas transições válidas do status
+  // (transicoesValidas("FECHADO") === []), não precisa do gate aqui.
   const naoFechado = pts.status !== "FECHADO";
   const podeMetaEscrever = podeMetaEscreverPerm && naoFechado;
   const podeMuralEscrever = podeMuralEscreverPerm && naoFechado;
@@ -144,6 +154,13 @@ export default async function PainelCasoPage({
             <dd className="inline text-foreground">{pts.cer.nome}</dd>
           </div>
         </dl>
+        <TransicaoStatusForm
+          ptsId={pts.id}
+          status={pts.status}
+          versao={pts.versao}
+          podeRevisar={podePtsRevisar}
+          podeEncerrar={podePtsEncerrar}
+        />
       </header>
 
       <section aria-label="Timeline do caso" className="space-y-2">
