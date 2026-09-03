@@ -3,7 +3,7 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { exigirUmaDas } from "@/server/care-plan/acesso";
+import { assertPtsMutavel, exigirUmaDas } from "@/server/care-plan/acesso";
 
 type Resultado =
   | { ok: true; eventoId: string }
@@ -29,16 +29,7 @@ export async function registrarEvento(input: unknown): Promise<Resultado> {
 
   try {
     const eventoId = await db.$transaction(async (tx) => {
-      const pts = await tx.pts.findUnique({
-        where: { id: ptsId },
-        select: { status: true },
-      });
-      if (!pts) throw new Error("PTS não encontrado.");
-      if (pts.status === "FECHADO") {
-        throw new Error(
-          "PTS fechado é somente leitura; não registra novos eventos.",
-        );
-      }
+      await assertPtsMutavel(ptsId, tx);
 
       const evento = await tx.eventoCuidado.create({
         data: { ptsId, tipo, data, observacao, registradoPorId: user.id },

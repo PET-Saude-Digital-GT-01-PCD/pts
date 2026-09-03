@@ -4,7 +4,11 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { exigirUmaDas, temUmaDas } from "@/server/care-plan/acesso";
+import {
+  assertPtsMutavel,
+  exigirUmaDas,
+  temUmaDas,
+} from "@/server/care-plan/acesso";
 import { muralInputSchema } from "@/server/care-plan/mural-schema";
 
 type Resultado =
@@ -61,11 +65,7 @@ export async function comentarMural(input: unknown): Promise<Resultado> {
 
   try {
     await db.$transaction(async (tx) => {
-      const ptsExiste = await tx.pts.findUnique({
-        where: { id: ptsId },
-        select: { id: true },
-      });
-      if (!ptsExiste) throw new Error("PTS não encontrado.");
+      await assertPtsMutavel(ptsId, tx);
 
       const comentario = await tx.discussao.create({
         data: { ptsId, autorId: user.id, texto },

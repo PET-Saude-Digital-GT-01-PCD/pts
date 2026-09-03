@@ -4,7 +4,11 @@ import { Prisma, StatusMeta } from "@prisma/client";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { exigirUmaDas, temUmaDas } from "@/server/care-plan/acesso";
+import {
+  assertPtsMutavel,
+  exigirUmaDas,
+  temUmaDas,
+} from "@/server/care-plan/acesso";
 import {
   metaInputSchema,
   transicaoStatusValida,
@@ -85,11 +89,7 @@ export async function criarMeta(input: unknown): Promise<Resultado> {
 
   try {
     await db.$transaction(async (tx) => {
-      const ptsExiste = await tx.pts.findUnique({
-        where: { id: dados.ptsId },
-        select: { id: true },
-      });
-      if (!ptsExiste) throw new Error("PTS não encontrado.");
+      await assertPtsMutavel(dados.ptsId, tx);
 
       const meta = await tx.meta.create({
         data: {
@@ -157,6 +157,8 @@ export async function mudarStatusMeta(
         where: { id: metaId },
         select: { id: true, ptsId: true, status: true, versao: true },
       });
+
+      await assertPtsMutavel(meta.ptsId, tx);
 
       if (!transicaoStatusValida(meta.status, para)) {
         throw new Error(

@@ -74,11 +74,17 @@ export default async function PainelCasoPage({
   });
   if (!pts) notFound();
 
-  const [faltaRecente, podeMetaEscrever, podeMuralEscrever] = await Promise.all([
-    temFaltaRecente(pts.id),
-    temUmaDas(["care-plan.meta.escrever"]),
-    temUmaDas(["care-plan.mural.escrever"]),
-  ]);
+  const [faltaRecente, podeMetaEscreverPerm, podeMuralEscreverPerm] =
+    await Promise.all([
+      temFaltaRecente(pts.id),
+      temUmaDas(["care-plan.meta.escrever"]),
+      temUmaDas(["care-plan.mural.escrever"]),
+    ]);
+
+  // PTS FECHADO → somente leitura para a equipe, em toda aba de escrita.
+  const naoFechado = pts.status !== "FECHADO";
+  const podeMetaEscrever = podeMetaEscreverPerm && naoFechado;
+  const podeMuralEscrever = podeMuralEscreverPerm && naoFechado;
 
   const timeline: ItemTimeline[] = montarTimeline({
     aberturaEm: pts.aberturaEm,
@@ -167,7 +173,7 @@ export default async function PainelCasoPage({
         <AbasNav ativa={abaAtiva} ptsId={pts.id} />
         <div role="tabpanel">
           {abaAtiva === "avaliacoes" ? (
-            <AbaAvaliacoes ptsId={pts.id} />
+            <AbaAvaliacoes ptsId={pts.id} podeEscrever={naoFechado} />
           ) : abaAtiva === "triagem" ? (
             <AbaTriagem ptsId={pts.id} versaoPts={pts.versao} triagens={pts.triagens} />
           ) : abaAtiva === "metas" ? (

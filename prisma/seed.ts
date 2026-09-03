@@ -147,8 +147,9 @@ const PAPEIS_BASE = [
       "governanca.dashboard.ver",
       "governanca.auditoria.ver",
       "governanca.relatorios.ver",
+      // leitura apenas (Perguntas/03 §3.6); triage.semaforo.ajustar é escrita
+      // clínica e fica vedado à base GESTOR (guardrail em iam/permissoes.ts).
       "triage.triagem.ver",
-      "triage.semaforo.ajustar",
     ],
   },
   {

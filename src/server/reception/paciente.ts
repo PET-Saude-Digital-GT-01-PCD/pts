@@ -44,7 +44,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
     return { ok: false, erro: "Informe CPF ou CNS." };
   }
 
-  const duplicidade = await buscarDuplicidade({
+  const duplicidade = await buscarDuplicidade(cerId, {
     cpf: dados.cpf || undefined,
     cns: dados.cns || undefined,
   });
@@ -97,6 +97,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
 }
 
 async function buscarDuplicidade(
+  cerId: string,
   where: { cpf?: string; cns?: string },
 ): Promise<{ id: string; nome: string } | null> {
   const ou = [
@@ -104,7 +105,10 @@ async function buscarDuplicidade(
     where.cns ? { cns: where.cns } : null,
   ].filter((c): c is NonNullable<typeof c> => c !== null);
   if (ou.length === 0) return null;
-  return db.paciente.findFirst({ where: { OR: ou }, select: { id: true, nome: true } });
+  return db.paciente.findFirst({
+    where: { cerId, OR: ou },
+    select: { id: true, nome: true },
+  });
 }
 
 export type PacienteBuscado = {
@@ -117,12 +121,15 @@ export type PacienteBuscado = {
 export async function buscarPacientePorDocumento(
   entrada: unknown,
 ): Promise<PacienteBuscado | null> {
-  await requirePermissao("recepcao.paciente.ver");
+  const user = await requirePermissao("recepcao.paciente.ver");
   const doc = soDigitos(typeof entrada === "string" ? entrada : "");
   if (doc.length !== 11 && doc.length !== 15) return null;
 
   return db.paciente.findFirst({
-    where: doc.length === 11 ? { cpf: doc } : { cns: doc },
+    where: {
+      cerId: user.cerId ?? undefined,
+      ...(doc.length === 11 ? { cpf: doc } : { cns: doc }),
+    },
     select: { id: true, nome: true, cpf: true, cns: true },
   });
 }
