@@ -34,6 +34,7 @@ import { AbaMural } from "./aba-mural";
 import { TransicaoStatusForm } from "./transicao-status-form";
 import { EventoForm } from "./evento-form";
 import { SemaforoReuniaoForm } from "./semaforo-reuniao-form";
+import { AbaRevisoes } from "./aba-revisoes";
 
 const LABEL_STATUS: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -236,6 +237,19 @@ export default async function PainelCasoPage({
                 : ""}
             </p>
           )}
+          {pts.status === "REAVALIACAO" && podePtsRevisar && (
+            <p
+              data-testid="banner-sugestao-revisao"
+              role="status"
+              className="w-full rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
+            >
+              PTS em reavaliação — considere{" "}
+              <a href={`/casos/${pts.id}?aba=revisoes`} className="underline">
+                registrar uma revisão
+              </a>{" "}
+              marcando este momento.
+            </p>
+          )}
         </div>
         <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
           <div>
@@ -303,6 +317,8 @@ export default async function PainelCasoPage({
             <AbaMetas ptsId={pts.id} podeEscrever={podeMetaEscrever} donoId={usuario.id} />
           ) : abaAtiva === "mural" ? (
             <AbaMural ptsId={pts.id} podeEscrever={podeMuralEscrever} />
+          ) : abaAtiva === "revisoes" ? (
+            <AbaRevisoes ptsId={pts.id} podeEscrever={podePtsRevisar} />
           ) : null}
         </div>
       </section>
