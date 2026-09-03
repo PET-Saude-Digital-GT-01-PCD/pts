@@ -8,7 +8,16 @@ const CER_ID = "00000000-0000-4000-8000-000000000001";
 const pacienteIds: string[] = [];
 const ptsIds: string[] = [];
 
+let fisioId: string | undefined;
+
 async function criarPts(status: "EM_AVALIACAO" | "FECHADO" = "EM_AVALIACAO") {
+  if (!fisioId) {
+    const fisio = await db.usuario.findUniqueOrThrow({
+      where: { email: "fisio@pts.local" },
+      select: { id: true },
+    });
+    fisioId = fisio.id;
+  }
   const paciente = await db.paciente.create({
     data: {
       cerId: CER_ID,
@@ -19,7 +28,7 @@ async function criarPts(status: "EM_AVALIACAO" | "FECHADO" = "EM_AVALIACAO") {
   });
   pacienteIds.push(paciente.id);
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID, status },
+    data: { pacienteId: paciente.id, cerId: CER_ID, status, refProfissionalId: fisioId },
   });
   ptsIds.push(pts.id);
   return pts.id;

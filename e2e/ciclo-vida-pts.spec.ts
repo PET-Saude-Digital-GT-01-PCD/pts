@@ -9,10 +9,19 @@ const PTS_ATIVO_ID = "00000000-0000-4000-8000-000000000010";
 const pacienteIds: string[] = [];
 const ptsIds: string[] = [];
 
+let referenciaId: string | undefined;
+
 async function criarPts(
   status: "EM_AVALIACAO" | "REAVALIACAO" = "EM_AVALIACAO",
   versao = 0,
 ) {
+  if (!referenciaId) {
+    const referencia = await db.usuario.findUniqueOrThrow({
+      where: { email: "referencia@pts.local" },
+      select: { id: true },
+    });
+    referenciaId = referencia.id;
+  }
   const paciente = await db.paciente.create({
     data: {
       cerId: CER_ID,
@@ -23,7 +32,13 @@ async function criarPts(
   });
   pacienteIds.push(paciente.id);
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID, status, versao },
+    data: {
+      pacienteId: paciente.id,
+      cerId: CER_ID,
+      status,
+      versao,
+      refProfissionalId: referenciaId,
+    },
   });
   ptsIds.push(pts.id);
   return pts.id;

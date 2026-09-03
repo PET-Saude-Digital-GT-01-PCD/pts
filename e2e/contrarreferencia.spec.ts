@@ -73,6 +73,7 @@ test("NAO_ELEGIVEL na triagem oferece emissão de guia; resumo imprimível abre 
   await page.getByLabel("Nome completo").fill("Paciente Não Elegível");
   await page.getByLabel("Data de nascimento").fill("1990-05-10");
   await page.getByLabel("Sexo").selectOption("FEMININO");
+  await page.getByLabel("Município de origem").fill("Recife");
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText(/Paciente cadastrado/)).toBeVisible({ timeout: 15_000 });
 
@@ -118,8 +119,17 @@ test("encerramento por contrarreferência emite guia e ela aparece na aba triage
     },
   });
   pacienteIds.push(paciente.id);
+  const referencia = await db.usuario.findUniqueOrThrow({
+    where: { email: "referencia@pts.local" },
+    select: { id: true },
+  });
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID, status: "REAVALIACAO" },
+    data: {
+      pacienteId: paciente.id,
+      cerId: CER_ID,
+      status: "REAVALIACAO",
+      refProfissionalId: referencia.id,
+    },
   });
   ptsIds.push(pts.id);
 

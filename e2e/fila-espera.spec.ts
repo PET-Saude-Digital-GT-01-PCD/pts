@@ -61,6 +61,7 @@ test("paciente classificado Amarelo entra na fila de espera com posição e esti
   await page.getByLabel("Nome completo").fill("Nora Fila Amarela");
   await page.getByLabel("Data de nascimento").fill("1990-05-10");
   await page.getByLabel("Sexo").selectOption("FEMININO");
+  await page.getByLabel("Município de origem").fill("Recife");
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText(/Paciente cadastrado/)).toBeVisible({ timeout: 15_000 });
 

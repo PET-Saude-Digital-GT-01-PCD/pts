@@ -8,7 +8,16 @@ const CER_ID = "00000000-0000-4000-8000-000000000001";
 const pacienteIds: string[] = [];
 const ptsIds: string[] = [];
 
+let referenciaId: string | undefined;
+
 async function criarPts(status: "EM_AVALIACAO" | "FECHADO" = "EM_AVALIACAO") {
+  if (!referenciaId) {
+    const referencia = await db.usuario.findUniqueOrThrow({
+      where: { email: "referencia@pts.local" },
+      select: { id: true },
+    });
+    referenciaId = referencia.id;
+  }
   const paciente = await db.paciente.create({
     data: {
       cerId: CER_ID,
@@ -19,7 +28,7 @@ async function criarPts(status: "EM_AVALIACAO" | "FECHADO" = "EM_AVALIACAO") {
   });
   pacienteIds.push(paciente.id);
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID, status },
+    data: { pacienteId: paciente.id, cerId: CER_ID, status, refProfissionalId: referenciaId },
   });
   ptsIds.push(pts.id);
   return pts.id;
@@ -30,6 +39,7 @@ test.afterAll(async () => {
     where: { entityType: "pts", entityId: { in: ptsIds }, action: "pts.semaforo_reuniao" },
   });
   await db.eventoCuidado.deleteMany({ where: { ptsId: { in: ptsIds } } });
+  await db.equipePts.deleteMany({ where: { ptsId: { in: ptsIds } } });
   await db.pts.deleteMany({ where: { id: { in: ptsIds } } });
   await db.paciente.deleteMany({ where: { id: { in: pacienteIds } } });
   await db.$disconnect();
@@ -102,6 +112,15 @@ test("usuário sem care-plan.pts.revisar não vê o botão de classificar reuni�
   page,
 }) => {
   const ptsId = await criarPts();
+  const fisio = await db.usuario.findUniqueOrThrow({
+    where: { email: "fisio@pts.local" },
+    select: { id: true },
+  });
+  // vínculo ao caso (#69) sem ser referência: entra na equipe para a
+  // asserção testar a ausência do botão por PERMISSÃO, não por redirect.
+  await db.equipePts.create({
+    data: { ptsId, usuarioId: fisio.id, papelNoCaso: "Fisioterapeuta" },
+  });
   await login(page, "fisio@pts.local", "fisio123");
   await page.goto(`/casos/${ptsId}`);
   await expect(page.getByTestId("abrir-classificar-reuniao")).toHaveCount(0);
