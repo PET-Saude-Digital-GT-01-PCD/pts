@@ -195,6 +195,7 @@ model Usuario {
   metaHistorico      MetaStatusHistorico[]
   eventosRegistrados EventoCuidado[]       @relation("eventosRegistrados")
   discussoes         Discussao[]           @relation("discussoes")
+  contrarreferenciasEmitidas Contrarreferencia[]
 
   @@map("usuario")
 }
@@ -216,11 +217,12 @@ model Paciente {
   ativo        Boolean    @default(true)
   criadoEm     DateTime   @default(now()) @db.Timestamptz(3)
 
-  cer            Cer             @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  cuidadores     Cuidador[]
-  consentimentos Consentimento[]
-  baseline       Baseline?
-  pts            Pts[]
+  cer                Cer                 @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  cuidadores         Cuidador[]
+  consentimentos     Consentimento[]
+  baseline           Baseline?
+  pts                Pts[]
+  contrarreferencias Contrarreferencia[]
 
   @@index([cpf])
   @@index([cns])
@@ -288,15 +290,16 @@ model Pts {
   tipoEncerramento   TipoEncerramento?
   criadoEm           DateTime  @default(now()) @db.Timestamptz(3)
 
-  paciente        Paciente        @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
-  cer             Cer             @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  refProfissional Usuario?        @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
-  revisoes        PtsRevisao[]
-  triagens        Triagem[]
-  avaliacoes      Avaliacao[]
-  metas           Meta[]
-  eventos         EventoCuidado[]
-  discussoes      Discussao[]
+  paciente          Paciente            @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  cer               Cer                 @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  refProfissional   Usuario?            @relation("referencia", fields: [refProfissionalId], references: [id], onDelete: SetNull)
+  revisoes          PtsRevisao[]
+  triagens          Triagem[]
+  avaliacoes        Avaliacao[]
+  metas             Meta[]
+  eventos           EventoCuidado[]
+  discussoes        Discussao[]
+  contrarreferencias Contrarreferencia[]
 
   @@index([pacienteId])
   @@index([cerId, status])
@@ -479,4 +482,26 @@ model OutboundEvent {
   @@index([status, nextRetryAt])
   @@index([tipo, payloadHash, status])
   @@map("outbound_event")
+}
+
+// Guia de contrarreferência (PRD M2): append-only. Sem PTS quando emitida no
+// NAO_ELEGIVEL da triagem (documento avulso ao paciente); com PTS quando
+// emitida no encerramento por contrarreferência.
+model Contrarreferencia {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId        String   @db.Uuid
+  ptsId             String?  @db.Uuid
+  motivo            String
+  planoCuidadosJson Json?    @db.JsonB
+  destinoUbs        String?
+  emitidaPorId      String   @db.Uuid
+  criadaEm          DateTime @default(now()) @db.Timestamptz(3)
+
+  paciente   Paciente @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  pts        Pts?     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  emitidaPor Usuario  @relation(fields: [emitidaPorId], references: [id], onDelete: Restrict)
+
+  @@index([pacienteId])
+  @@index([ptsId])
+  @@map("contrarreferencia")
 }

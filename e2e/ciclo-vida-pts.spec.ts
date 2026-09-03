@@ -31,6 +31,15 @@ async function criarPts(
 
 test.afterAll(async () => {
   await db.auditoria.deleteMany({ where: { entityType: "pts", entityId: { in: ptsIds } } });
+  // Encerramento por contrarreferência (#62) emite guia vinculada ao PTS.
+  const guias = await db.contrarreferencia.findMany({
+    where: { ptsId: { in: ptsIds } },
+    select: { id: true },
+  });
+  await db.auditoria.deleteMany({
+    where: { entityType: "contrarreferencia", entityId: { in: guias.map((g) => g.id) } },
+  });
+  await db.contrarreferencia.deleteMany({ where: { ptsId: { in: ptsIds } } });
   await db.pts.deleteMany({ where: { id: { in: ptsIds } } });
   await db.paciente.deleteMany({ where: { id: { in: pacienteIds } } });
   await db.$disconnect();
