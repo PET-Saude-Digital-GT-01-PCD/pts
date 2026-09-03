@@ -145,7 +145,12 @@ export async function queryCasosPorPapel(
   }
 
   const meusPts = await db.pts.findMany({
-    where: { refProfissionalId: usuario.id },
+    where: {
+      OR: [
+        { refProfissionalId: usuario.id },
+        { equipePts: { some: { usuarioId: usuario.id } } },
+      ],
+    },
     select: {
       id: true,
       status: true,

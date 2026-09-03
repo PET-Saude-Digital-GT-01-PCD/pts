@@ -36,6 +36,7 @@ const RECURSOS = [
   ["care-plan.pts.encerrar", "care-plan", "Encaminhar encerramento"],
   ["care-plan.mural.ler", "care-plan", "Ler mural do caso"],
   ["care-plan.mural.escrever", "care-plan", "Participar do mural do caso"],
+  ["care-plan.equipe.gerenciar", "care-plan", "Vincular/desvincular profissionais à equipe do caso"],
   ["governanca.dashboard.ver", "governanca", "Dashboards de indicadores e filas"],
   ["governanca.auditoria.ver", "governanca", "Trilha de auditoria (leitura)"],
   ["governanca.relatorios.ver", "governanca", "Relatórios de produção e qualidade"],
@@ -152,6 +153,7 @@ const PAPEIS_BASE = [
       // leitura apenas (Perguntas/03 §3.6); triage.semaforo.ajustar é escrita
       // clínica e fica vedado à base GESTOR (guardrail em iam/permissoes.ts).
       "triage.triagem.ver",
+      "care-plan.equipe.gerenciar",
     ],
   },
   {
@@ -535,7 +537,7 @@ async function main() {
   const papelMedico = await prisma.papel.findUniqueOrThrow({
     where: { cerId_nome: { cerId: cer.id, nome: "MEDICO" } },
   });
-  await prisma.usuario.upsert({
+  const medicoSoap = await prisma.usuario.upsert({
     where: { email: "medico@pts.local" },
     update: { papelId: papelMedico.id, status: "ATIVO" },
     create: {
@@ -544,6 +546,54 @@ async function main() {
       nome: "Médico Exemplo",
       categoria: "MEDICO",
       papelId: papelMedico.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
+  // ===== equipe do caso (#69): médico não é a referência de PTS_ATIVO_ID
+  // (fisio é) — precisa estar na equipe pra ter acesso clínico ao caso.
+  await prisma.equipePts.upsert({
+    where: { usuarioId_ptsId: { usuarioId: medicoSoap.id, ptsId: PTS_ATIVO_ID } },
+    update: {},
+    create: {
+      usuarioId: medicoSoap.id,
+      ptsId: PTS_ATIVO_ID,
+      papelNoCaso: "Avaliação médica (SOAP)",
+    },
+  });
+
+  // usuária clínica sem vínculo a nenhum caso — pra testar acesso negado (#69)
+  const papelTo = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "TERAPEUTA_OCUPACIONAL" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "to@pts.local" },
+    update: { papelId: papelTo.id, status: "ATIVO" },
+    create: {
+      email: "to@pts.local",
+      senhaHash: await bcrypt.hash("to123456", 10),
+      nome: "Terapeuta Ocupacional Sem Vínculo",
+      categoria: "TERAPEUTA_OCUPACIONAL",
+      papelId: papelTo.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
+  // gestor: visão agregada, gerencia equipe, sem acesso a conteúdo clínico individual (#69)
+  const papelGestor = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "GESTOR" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "gestor@pts.local" },
+    update: { papelId: papelGestor.id, status: "ATIVO" },
+    create: {
+      email: "gestor@pts.local",
+      senhaHash: await bcrypt.hash("gestor123", 10),
+      nome: "Gestora",
+      categoria: "ENFERMEIRO",
+      papelId: papelGestor.id,
       status: "ATIVO",
       cerId: cer.id,
     },

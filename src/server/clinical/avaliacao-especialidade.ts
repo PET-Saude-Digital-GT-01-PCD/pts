@@ -10,6 +10,7 @@ import {
   type SessaoUsuario,
 } from "@/server/iam/session";
 import { assertPtsMutavel } from "@/server/care-plan/acesso";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 import {
   marcarCif,
   especialidadesDoUsuario,
@@ -87,6 +88,10 @@ export async function criarAvaliacaoEspecialidade(
     };
   }
 
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
   // códigos CIF derivados em background do preenchimento do checklist
   const cif = marcarCif(especialidade, dadosJson);
 
@@ -149,6 +154,10 @@ export async function listarAvaliacoesEspecialidade(ptsId: string) {
     user = await exigirUmaDas(["clinical.avaliacao.ler"]);
   } catch {
     return { ok: false as const, erro: "Sem permissão para ler avaliações." };
+  }
+
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false as const, erro: "Você não está vinculado a este caso." };
   }
 
   const escopos = especialidadesDoUsuario(user.categoria);

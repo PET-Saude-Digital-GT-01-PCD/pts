@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 import {
   semaforoDeReuniao,
   type EntradaReuniao,
@@ -43,6 +44,11 @@ export async function atualizarSemaforoReuniao(
   }
 
   const { ptsId, version, ...dados } = parsed.data;
+
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
   const entrada: EntradaReuniao = dados;
   const classificacao = semaforoDeReuniao(entrada);
 
