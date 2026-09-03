@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { exigirUmaDas } from "@/server/care-plan/acesso";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 
 type Resultado =
   | { ok: true; eventoId: string }
@@ -26,6 +27,10 @@ export async function registrarEvento(input: unknown): Promise<Resultado> {
   if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
 
   const { ptsId, tipo, data, observacao } = parsed.data;
+
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
 
   try {
     const eventoId = await db.$transaction(async (tx) => {

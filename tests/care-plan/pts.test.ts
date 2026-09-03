@@ -112,7 +112,7 @@ describe("care-plan/pts — transicionarStatusPts", () => {
   async function ptsEm(status: "EM_AVALIACAO" | "REAVALIACAO", versao: number) {
     const pacienteId = await criarPaciente();
     const pts = await db.pts.create({
-      data: { pacienteId, cerId: CER_ID, status, versao },
+      data: { pacienteId, cerId: CER_ID, status, versao, refProfissionalId: adminId },
     });
     ptsIds.push(pts.id);
     return pts;

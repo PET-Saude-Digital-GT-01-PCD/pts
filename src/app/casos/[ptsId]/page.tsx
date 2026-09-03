@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Semaforo, type SemaforoStatus } from "@/components/ui/semaforo";
 
 import { db } from "@/lib/db";
@@ -11,6 +11,7 @@ import {
   type ItemTimeline,
 } from "@/server/care-plan/painel";
 import { temFaltaRecente } from "@/server/care-plan/eventos";
+import { avaliarVinculoCaso } from "@/server/shared/acesso-caso";
 import { AbasNav, ehAba } from "./abas";
 import { AbaAvaliacoes } from "./aba-avaliacoes";
 import { AbaTriagem } from "./aba-triagem";
@@ -49,6 +50,7 @@ export default async function PainelCasoPage({
       paciente: true,
       cer: true,
       refProfissional: true,
+      equipePts: { select: { usuarioId: true } },
       triagens: {
         select: {
           id: true,
@@ -73,6 +75,18 @@ export default async function PainelCasoPage({
     },
   });
   if (!pts) notFound();
+
+  // Vínculo ao caso (#69): acesso clínico individual exige ser a referência
+  // ou membro da equipe do caso, além do recurso (permissão) já checado acima.
+  if (
+    !avaliarVinculoCaso(
+      usuario.id,
+      pts,
+      pts.equipePts.map((m) => m.usuarioId),
+    )
+  ) {
+    redirect("/");
+  }
 
   const [faltaRecente, podeMetaEscrever, podeMuralEscrever] = await Promise.all([
     temFaltaRecente(pts.id),

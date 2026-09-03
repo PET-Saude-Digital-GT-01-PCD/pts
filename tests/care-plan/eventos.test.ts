@@ -61,7 +61,7 @@ async function ptsAberto(status: "EM_AVALIACAO" | "FECHADO" = "EM_AVALIACAO") {
   });
   pacienteIds.push(paciente.id);
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID, status },
+    data: { pacienteId: paciente.id, cerId: CER_ID, status, refProfissionalId: adminId },
   });
   ptsIds.push(pts.id);
   return pts;

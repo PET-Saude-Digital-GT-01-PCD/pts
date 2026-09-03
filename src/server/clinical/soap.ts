@@ -5,6 +5,7 @@ import { Especialidade } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 import { avaliacaoSoapSchema } from "@/server/clinical/soap-schema";
 
 type Resultado =
@@ -39,6 +40,10 @@ export async function criarAvaliacaoSoap(input: unknown): Promise<Resultado> {
     user = await exigirUmaDas(["clinical.soap.escrever"]);
   } catch {
     return { ok: false, erro: "Sem permissão para registrar avaliação SOAP." };
+  }
+
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
   }
 
   try {
@@ -97,10 +102,15 @@ export async function listarAvaliacoesSoap(
     }
   | { ok: false; erro: string }
 > {
+  let user;
   try {
-    await exigirUmaDas(["clinical.soap.ler"]);
+    user = await exigirUmaDas(["clinical.soap.ler"]);
   } catch {
     return { ok: false, erro: "Sem permissão para ler avaliações SOAP." };
+  }
+
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
   }
 
   const avaliacoes = await db.avaliacao.findMany({

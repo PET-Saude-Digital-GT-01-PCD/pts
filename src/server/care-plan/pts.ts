@@ -11,6 +11,7 @@ import {
   mensagemTransicaoInvalida,
   podeTransicionar,
 } from "@/server/care-plan/maquina-status";
+import { avaliarVinculoCaso } from "@/server/shared/acesso-caso";
 
 type Resultado =
   | { ok: true; ptsId: string }
@@ -43,7 +44,11 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
   const parsed = abrirPtsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
 
-  const { pacienteId, refProfissionalId } = parsed.data;
+  const { pacienteId, refProfissionalId: refProfissionalIdInformado } = parsed.data;
+  // Referência atribuída no nascimento do PTS (#69): quem abre o caso vira a
+  // referência por padrão, salvo indicação explícita — sem isso o caso
+  // nasceria sem vínculo e ninguém conseguiria acessá-lo depois.
+  const refProfissionalId = refProfissionalIdInformado ?? user.id;
 
   try {
     const ptsId = await db.$transaction(async (tx) => {
@@ -112,8 +117,15 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
     para === "FECHADO" ? "care-plan.pts.encerrar" : "care-plan.pts.revisar",
   ]);
 
-  const pts = await db.pts.findUnique({ where: { id: ptsId } });
+  const pts = await db.pts.findUnique({
+    where: { id: ptsId },
+    include: { equipePts: { select: { usuarioId: true } } },
+  });
   if (!pts) return { ok: false, erro: "PTS não encontrado." };
+
+  if (!avaliarVinculoCaso(user.id, pts, pts.equipePts.map((m) => m.usuarioId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
 
   if (!podeTransicionar(pts.status, para)) {
     return {

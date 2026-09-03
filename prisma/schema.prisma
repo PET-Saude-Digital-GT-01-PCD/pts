@@ -177,6 +177,7 @@ model Usuario {
   metaHistorico      MetaStatusHistorico[]
   eventosRegistrados EventoCuidado[]       @relation("eventosRegistrados")
   discussoes         Discussao[]           @relation("discussoes")
+  equipePts          EquipePts[]
 
   @@map("usuario")
 }
@@ -278,10 +279,27 @@ model Pts {
   metas           Meta[]
   eventos         EventoCuidado[]
   discussoes      Discussao[]
+  equipePts       EquipePts[]
 
   @@index([pacienteId])
   @@index([cerId, status])
   @@map("pts")
+}
+
+// Equipe do caso (#69): acesso clínico individual = referência (Pts.refProfissionalId)
+// OU membro daqui. Fora de escopo: histórico de composição (linha apagada = saiu da equipe).
+model EquipePts {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId   String   @db.Uuid
+  ptsId       String   @db.Uuid
+  papelNoCaso String
+  vinculadoEm DateTime @default(now()) @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  pts     Pts     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+
+  @@unique([usuarioId, ptsId])
+  @@map("equipe_pts")
 }
 
 model PtsRevisao {
