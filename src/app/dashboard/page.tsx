@@ -133,6 +133,16 @@ export default async function DashboardPage() {
       <header>
         <h1 className="text-2xl font-semibold">Meus casos</h1>
       </header>
+      {visao.visao === "RECEPCAO_TRIAGEM" && visao.filaAmarela.total > 0 ? (
+        <p
+          role="status"
+          data-testid="fila-amarela-resumo"
+          className="text-warning w-fit rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm font-medium"
+        >
+          Fila de espera (Amarelo): {visao.filaAmarela.total} paciente(s) · próxima
+          estimativa {visao.filaAmarela.proximaEstimativaDias} dia(s)
+        </p>
+      ) : null}
       <Grade casos={visao.casos} />
     </main>
   );
