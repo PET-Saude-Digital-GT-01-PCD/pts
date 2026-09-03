@@ -20,6 +20,11 @@ type ItemGrade = {
   justificativa: string;
 };
 
+type EscoresSoap = {
+  ashworth?: { total: number; media: number | null; gruposAvaliados: number } | null;
+  glasgow?: { total: number | null; completo: boolean } | null;
+};
+
 function itensGrade(v: unknown): ItemGrade[] {
   if (typeof v !== "object" || v === null) return [];
   const plano = (v as { plano?: unknown }).plano;
@@ -160,6 +165,7 @@ export async function AbaAvaliacoes({
             {avaliacoes.map((a) => {
               const dados = a.dadosJson as Record<string, unknown>;
               const grade = itensGrade(a.dadosJson);
+              const escores = (a.escoresJson ?? null) as EscoresSoap | null;
               return (
                 <li key={a.id} className="rounded-lg border p-4 text-sm">
                   <p className="mb-1 text-xs text-muted-foreground">
@@ -176,6 +182,21 @@ export async function AbaAvaliacoes({
                       </div>
                     ))}
                   </div>
+                  {(escores?.ashworth || escores?.glasgow?.completo) && (
+                    <div className="mt-2 flex flex-wrap gap-2 border-t pt-2">
+                      {escores.ashworth && (
+                        <span className="rounded-full border border-violet-500/40 bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                          Ashworth: total {escores.ashworth.total} (
+                          {escores.ashworth.gruposAvaliados} grupo(s))
+                        </span>
+                      )}
+                      {escores.glasgow?.completo && (
+                        <span className="rounded-full border border-amber-500/40 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                          Glasgow: {escores.glasgow.total}/15
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {grade.length > 0 && (
                     <ul className="mt-2 space-y-1 border-t pt-2">
                       {grade.map((item, i) => (
