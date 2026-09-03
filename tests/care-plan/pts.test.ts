@@ -59,6 +59,14 @@ afterAll(async () => {
   await db.auditoria.deleteMany({
     where: { entityType: "pts", entityId: { in: ptsIds }, actorId: adminId },
   });
+  if (ptsIds.length > 0) {
+    await db.outboundEvent.deleteMany({
+      where: {
+        tipo: "MARKER_ESUS",
+        OR: ptsIds.map((id) => ({ payloadJson: { path: ["ptsId"], equals: id } })),
+      },
+    });
+  }
   await db.pts.deleteMany({ where: { id: { in: ptsIds } } });
   await db.paciente.deleteMany({ where: { id: { in: pacienteIds } } });
   await db.$disconnect();
@@ -85,6 +93,13 @@ describe("care-plan/pts — abrirPts", () => {
     });
     expect(aud.actorId).toBe(adminId);
     expect(aud.afterJson).toMatchObject({ status: "EM_AVALIACAO" });
+
+    // Marcador de PTS ativo (#63): enfileirado na mesma transação.
+    const evento = await db.outboundEvent.findFirstOrThrow({
+      where: { tipo: "MARKER_ESUS", payloadJson: { path: ["ptsId"], equals: r.ptsId } },
+    });
+    expect(evento.status).toBe("PENDING");
+    expect(evento.payloadJson).toMatchObject({ pacienteId });
   });
 
   it("recusa segundo PTS ativo para o mesmo paciente", async () => {

@@ -98,6 +98,18 @@ enum Elegibilidade {
   REVISAO_MANUAL
 }
 
+enum TipoOutboundEvent {
+  MARKER_ESUS
+  REFERRAL
+  NOTIFICACAO
+}
+
+enum StatusOutboundEvent {
+  PENDING
+  SENT
+  FAILED
+}
+
 // ===== Tenant e acesso =====
 
 model Cer {
@@ -440,4 +452,24 @@ model Auditoria {
 
   @@index([entityType, entityId, criadaEm])
   @@map("auditoria")
+}
+
+// Fila outbound persistida (ADR-0006): INSERT na mesma transação da mutação
+// que gera o efeito externo. Worker de entrega (SELECT ... FOR UPDATE SKIP
+// LOCKED + retry/backoff) é Fase 2 — aqui só a persistência e o
+// enfileiramento nas mutações de negócio.
+model OutboundEvent {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo        TipoOutboundEvent
+  payloadJson Json                @db.JsonB
+  payloadHash String
+  status      StatusOutboundEvent @default(PENDING)
+  attempts    Int                 @default(0)
+  lastError   String?
+  nextRetryAt DateTime?           @db.Timestamptz(3)
+  criadoEm    DateTime            @default(now()) @db.Timestamptz(3)
+
+  @@index([status, nextRetryAt])
+  @@index([tipo, payloadHash, status])
+  @@map("outbound_event")
 }

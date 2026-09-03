@@ -11,6 +11,7 @@ import {
   mensagemTransicaoInvalida,
   podeTransicionar,
 } from "@/server/care-plan/maquina-status";
+import { enfileirarOutbound } from "@/server/integrations/outbound/persistida";
 
 type Resultado =
   | { ok: true; ptsId: string }
@@ -88,6 +89,13 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
             versao: pts.versao,
           },
         },
+      });
+
+      // Marcador de PTS ativo no e-SUS PEC (PRD M1) — envio real é Fase 2.
+      await enfileirarOutbound(tx, "MARKER_ESUS", {
+        ptsId: pts.id,
+        pacienteId,
+        status: pts.status,
       });
 
       return pts.id;
