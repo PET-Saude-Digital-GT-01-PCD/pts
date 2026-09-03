@@ -166,7 +166,36 @@ const PAPEIS_BASE = [
       "admin.config.org.editar",
     ],
   },
+  {
+    // papel padrão de quem se auto-cadastra em /cadastro (issue #15): sem
+    // recursos até o admin revisar e atribuir o papel profissional correto
+    // na aprovação.
+    nome: "AUTOCADASTRO",
+    descricao: "Aguardando aprovação do admin — sem recursos",
+    base: "CLINICO",
+    recursos: [],
+  },
 ];
+
+// Campos dinâmicos padrão do formulário de auto-cadastro (issue #15, plano/12).
+const FORMULARIO_CADASTRO_USUARIO = [
+  {
+    campo: "telefone",
+    rotulo: "Telefone de contato",
+    tipo: "TEXTO",
+    obrigatorio: false,
+    visivel: true,
+    ordem: 1,
+  },
+  {
+    campo: "registroConselho",
+    rotulo: "Registro no conselho de classe (CRM/CREFITO/CRP/COREN)",
+    tipo: "TEXTO",
+    obrigatorio: false,
+    visivel: true,
+    ordem: 2,
+  },
+] as const;
 
 async function upsertRecursos() {
   for (const [chave, grupo, descricao] of RECURSOS) {
@@ -204,6 +233,31 @@ async function upsertPapeis(cerId: string) {
   }
 }
 
+async function upsertFormularioCadastroUsuario(cerId: string) {
+  for (const campo of FORMULARIO_CADASTRO_USUARIO) {
+    await prisma.formularioConfig.upsert({
+      where: { cerId_entidade_campo: { cerId, entidade: "usuario", campo: campo.campo } },
+      update: {
+        rotulo: campo.rotulo,
+        tipo: campo.tipo as never,
+        obrigatorio: campo.obrigatorio,
+        visivel: campo.visivel,
+        ordem: campo.ordem,
+      },
+      create: {
+        cerId,
+        entidade: "usuario",
+        campo: campo.campo,
+        rotulo: campo.rotulo,
+        tipo: campo.tipo as never,
+        obrigatorio: campo.obrigatorio,
+        visivel: campo.visivel,
+        ordem: campo.ordem,
+      },
+    });
+  }
+}
+
 async function main() {
   const cer = await prisma.cer.upsert({
     where: { id: CER_PILOTO_ID },
@@ -218,6 +272,15 @@ async function main() {
 
   await upsertRecursos();
   await upsertPapeis(cer.id);
+  await upsertFormularioCadastroUsuario(cer.id);
+
+  const papelAutocadastro = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "AUTOCADASTRO" } },
+  });
+  await prisma.cer.update({
+    where: { id: cer.id },
+    data: { papelAutocadastroId: papelAutocadastro.id },
+  });
 
   const papelAdmin = await prisma.papel.findUniqueOrThrow({
     where: { cerId_nome: { cerId: cer.id, nome: "ADMIN" } },
