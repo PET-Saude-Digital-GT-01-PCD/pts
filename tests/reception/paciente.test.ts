@@ -122,6 +122,7 @@ describe("reception/paciente — escopo de CER", () => {
       cpf: CPF_B,
       dtnasc: "1991-02-02",
       sexo: "OUTRO",
+      municipioOrigem: "Teste",
     });
     expect(r.ok).toBe(false);
     if (r.ok) return;
@@ -140,6 +141,7 @@ describe("reception/paciente — escopo de CER", () => {
       cpf: CPF_B,
       dtnasc: "1991-02-02",
       sexo: "OUTRO",
+      municipioOrigem: "Teste",
     });
     expect(r.ok).toBe(false);
     if (r.ok) return;
@@ -153,6 +155,7 @@ describe("reception/paciente — escopo de CER", () => {
       cpf: CPF_A,
       dtnasc: "1992-03-03",
       sexo: "OUTRO",
+      municipioOrigem: "Teste",
     });
     expect(r.ok).toBe(true);
     if (r.ok) pacienteIds.push(r.pacienteId);
