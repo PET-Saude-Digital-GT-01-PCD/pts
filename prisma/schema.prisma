@@ -48,6 +48,12 @@ enum StatusPts {
   FECHADO
 }
 
+enum TipoEncerramento {
+  ALTA
+  CONTRARREFERENCIA
+  DESCONTINUACAO
+}
+
 enum Semaforo {
   VERDE
   AMARELO
@@ -279,6 +285,7 @@ model Pts {
   aberturaEm         DateTime  @default(now()) @db.Timestamptz(3)
   encerramentoEm     DateTime? @db.Timestamptz(3)
   motivoEncerramento String?
+  tipoEncerramento   TipoEncerramento?
   criadoEm           DateTime  @default(now()) @db.Timestamptz(3)
 
   paciente        Paciente        @relation(fields: [pacienteId], references: [id], onDelete: Restrict)

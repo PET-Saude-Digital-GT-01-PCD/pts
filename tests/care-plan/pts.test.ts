@@ -239,6 +239,7 @@ describe("care-plan/pts — transicionarStatusPts", () => {
     const r = await transicionarStatusPts({
       ptsId: pts.id,
       para: "FECHADO",
+      tipoEncerramento: "ALTA",
       version: 1,
     });
     expect(r.ok).toBe(false);
@@ -246,7 +247,7 @@ describe("care-plan/pts — transicionarStatusPts", () => {
     expect(r.erro).toContain("motivo");
   });
 
-  it("FECHADO com motivo grava motivoEncerramento + encerramentoEm", async () => {
+  it("recusa FECHADO sem tipoEncerramento", async () => {
     sessao.chaves = ["care-plan.pts.encerrar"];
     const pts = await ptsEm("REAVALIACAO", 1);
 
@@ -256,11 +257,31 @@ describe("care-plan/pts — transicionarStatusPts", () => {
       motivo: "Alta funcional.",
       version: 1,
     });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.erro).toContain("tipo");
+
+    const inalterado = await db.pts.findUniqueOrThrow({ where: { id: pts.id } });
+    expect(inalterado.status).toBe("REAVALIACAO");
+  });
+
+  it("FECHADO com motivo e tipo grava motivoEncerramento + tipoEncerramento + encerramentoEm", async () => {
+    sessao.chaves = ["care-plan.pts.encerrar"];
+    const pts = await ptsEm("REAVALIACAO", 1);
+
+    const r = await transicionarStatusPts({
+      ptsId: pts.id,
+      para: "FECHADO",
+      motivo: "Alta funcional.",
+      tipoEncerramento: "ALTA",
+      version: 1,
+    });
     expect(r.ok).toBe(true);
 
     const fechado = await db.pts.findUniqueOrThrow({ where: { id: pts.id } });
     expect(fechado.status).toBe("FECHADO");
     expect(fechado.motivoEncerramento).toBe("Alta funcional.");
+    expect(fechado.tipoEncerramento).toBe("ALTA");
     expect(fechado.encerramentoEm).not.toBeNull();
   });
 

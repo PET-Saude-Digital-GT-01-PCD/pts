@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { StatusPts } from "@prisma/client";
+import { StatusPts, TipoEncerramento } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import {
@@ -33,6 +33,7 @@ const transicionarPtsSchema = z.object({
   ptsId: uuid,
   para: z.nativeEnum(StatusPts),
   motivo: z.string().trim().max(500).optional(),
+  tipoEncerramento: z.nativeEnum(TipoEncerramento).optional(),
   version: z.number().int().min(0),
 });
 
@@ -122,7 +123,7 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
   const parsed = transicionarPtsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
 
-  const { ptsId, para, motivo, version } = parsed.data;
+  const { ptsId, para, motivo, tipoEncerramento, version } = parsed.data;
 
   const user = await exigirUmaDas([
     para === "FECHADO" ? "care-plan.pts.encerrar" : "care-plan.pts.revisar",
@@ -145,6 +146,13 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
     };
   }
 
+  if (para === "FECHADO" && !tipoEncerramento) {
+    return {
+      ok: false,
+      erro: "Encerramento exige o tipo (alta, contrarreferência ou descontinuação).",
+    };
+  }
+
   try {
     await db.$transaction(async (tx) => {
       // Lock otimista: updateMany condicionado à versão conhecida.
@@ -154,7 +162,11 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
           status: para,
           versao: version + 1,
           ...(para === "FECHADO"
-            ? { motivoEncerramento: motivo, encerramentoEm: new Date() }
+            ? {
+                motivoEncerramento: motivo,
+                tipoEncerramento,
+                encerramentoEm: new Date(),
+              }
             : {}),
         },
       });
@@ -175,6 +187,7 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
             status: para,
             versao: version + 1,
             ...(motivo ? { motivo } : {}),
+            ...(tipoEncerramento ? { tipoEncerramento } : {}),
           },
         },
       });
