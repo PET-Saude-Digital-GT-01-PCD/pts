@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { requirePermissao } from "@/server/iam/session";
+import { recursosDoUsuario, requirePermissao } from "@/server/iam/session";
+import { listarPendentes } from "@/server/iam/admissao";
 import { AtribuirPapelForm } from "./atribuir-papel-form";
 import { AprovarForm } from "./aprovar-form";
 
@@ -14,6 +15,9 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default async function UsuariosPage() {
   const user = await requirePermissao("admin.usuarios.ver");
+  const recursos = await recursosDoUsuario(user.papelId);
+  const podeAtribuirPapel = recursos.includes("admin.papeis.gerenciar");
+  const podeAprovar = recursos.includes("admin.usuarios.aprovar");
 
   const [pendentes, usuarios, papeis] = await Promise.all([
     db.usuario.findMany({
@@ -45,6 +49,7 @@ export default async function UsuariosPage() {
       orderBy: { nome: "asc" },
       select: { id: true, nome: true },
     }),
+    podeAprovar ? listarPendentes() : Promise.resolve([]),
   ]);
 
   return (

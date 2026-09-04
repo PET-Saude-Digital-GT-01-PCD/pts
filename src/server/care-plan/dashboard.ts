@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { StatusMeta, StatusPts, Semaforo } from "@prisma/client";
+import { buscarFilaAmarela } from "@/server/triage/fila-espera";
 
 // ===== Partes puras (testáveis sem I/O) =====
 
@@ -53,9 +54,14 @@ export type CardCaso = {
   alertas: string[];
 };
 
+export type ResumoFilaAmarela = {
+  total: number;
+  proximaEstimativaDias: number | null;
+};
+
 export type VisaoDashboard =
   | { visao: "CLINICA"; casos: CardCaso[] }
-  | { visao: "RECEPCAO_TRIAGEM"; casos: CardCaso[] }
+  | { visao: "RECEPCAO_TRIAGEM"; casos: CardCaso[]; filaAmarela: ResumoFilaAmarela }
   | {
       visao: "GESTAO";
       agregados: {
@@ -75,8 +81,16 @@ export async function queryCasosPorPapel(
 
   if (visao === "GESTAO") {
     const [porStatus, porSemaforo] = await Promise.all([
-      db.pts.groupBy({ by: ["status"], _count: { _all: true } }),
-      db.pts.groupBy({ by: ["semaforoReuniao"], _count: { _all: true } }),
+      db.pts.groupBy({
+        by: ["status"],
+        where: { cerId: usuario.cerId ?? undefined },
+        _count: { _all: true },
+      }),
+      db.pts.groupBy({
+        by: ["semaforoReuniao"],
+        where: { cerId: usuario.cerId ?? undefined },
+        _count: { _all: true },
+      }),
     ]);
     return {
       visao: "GESTAO",
@@ -95,22 +109,25 @@ export async function queryCasosPorPapel(
   if (visao === "RECEPCAO_TRIAGEM") {
     const inicioDia = new Date(agora);
     inicioDia.setHours(0, 0, 0, 0);
-    const ptsHoje = await db.pts.findMany({
-      where: {
-        cerId: usuario.cerId ?? undefined,
-        criadoEm: { gte: inicioDia },
-      },
-      select: {
-        id: true,
-        status: true,
-        aberturaEm: true,
-        semaforoReuniao: true,
-        paciente: { select: { nome: true } },
-        triagens: { select: { classificacao: true }, orderBy: { criadaEm: "desc" }, take: 1 },
-      },
-      orderBy: { criadoEm: "desc" },
-      take: 50,
-    });
+    const [ptsHoje, filaAmarela] = await Promise.all([
+      db.pts.findMany({
+        where: {
+          cerId: usuario.cerId ?? undefined,
+          criadoEm: { gte: inicioDia },
+        },
+        select: {
+          id: true,
+          status: true,
+          aberturaEm: true,
+          semaforoReuniao: true,
+          paciente: { select: { nome: true } },
+          triagens: { select: { classificacao: true }, orderBy: { criadaEm: "desc" }, take: 1 },
+        },
+        orderBy: { criadoEm: "desc" },
+        take: 50,
+      }),
+      usuario.cerId ? buscarFilaAmarela(usuario.cerId) : Promise.resolve([]),
+    ]);
     return {
       visao: "RECEPCAO_TRIAGEM",
       casos: ptsHoje.map((p) => ({
@@ -120,11 +137,20 @@ export async function queryCasosPorPapel(
         semaforo: p.triagens[0]?.classificacao ?? p.semaforoReuniao,
         alertas: [],
       })),
+      filaAmarela: {
+        total: filaAmarela.length,
+        proximaEstimativaDias: filaAmarela[0]?.estimativaDias ?? null,
+      },
     };
   }
 
   const meusPts = await db.pts.findMany({
-    where: { refProfissionalId: usuario.id },
+    where: {
+      OR: [
+        { refProfissionalId: usuario.id },
+        { equipePts: { some: { usuarioId: usuario.id } } },
+      ],
+    },
     select: {
       id: true,
       status: true,

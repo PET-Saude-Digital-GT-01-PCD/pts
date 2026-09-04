@@ -20,6 +20,11 @@ type ItemGrade = {
   justificativa: string;
 };
 
+type EscoresSoap = {
+  ashworth?: { total: number; media: number | null; gruposAvaliados: number } | null;
+  glasgow?: { total: number | null; completo: boolean } | null;
+};
+
 function itensGrade(v: unknown): ItemGrade[] {
   if (typeof v !== "object" || v === null) return [];
   const plano = (v as { plano?: unknown }).plano;
@@ -77,7 +82,13 @@ export function PainelDivergencia({
   );
 }
 
-export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
+export async function AbaAvaliacoes({
+  ptsId,
+  podeEscrever,
+}: {
+  ptsId: string;
+  podeEscrever: boolean;
+}) {
   const lista = await listarAvaliacoesSoap(ptsId);
   const avaliacoes = lista.ok ? lista.avaliacoes : [];
 
@@ -89,19 +100,22 @@ export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
 
   return (
     <div className="space-y-8">
-      {escopos.map((esp) => (
-        <section key={esp} aria-label={`Nova avaliação ${esp}`} className="space-y-4">
-          <h3 className="text-md font-medium">
-            Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
-          </h3>
-          <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
-        </section>
-      ))}
+      {podeEscrever &&
+        escopos.map((esp) => (
+          <section key={esp} aria-label={`Nova avaliação ${esp}`} className="space-y-4">
+            <h3 className="text-md font-medium">
+              Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
+            </h3>
+            <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
+          </section>
+        ))}
 
-      <section aria-label="Nova avaliação SOAP" className="space-y-4">
-        <h3 className="text-md font-medium">Nova avaliação SOAP</h3>
-        <SoapForm ptsId={ptsId} />
-      </section>
+      {podeEscrever && (
+        <section aria-label="Nova avaliação SOAP" className="space-y-4">
+          <h3 className="text-md font-medium">Nova avaliação SOAP</h3>
+          <SoapForm ptsId={ptsId} />
+        </section>
+      )}
 
       <section aria-label="Avaliações registradas" className="space-y-3" data-testid="lista-soap">
         <h3 className="text-md font-medium">Avaliações registradas</h3>
@@ -151,6 +165,7 @@ export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
             {avaliacoes.map((a) => {
               const dados = a.dadosJson as Record<string, unknown>;
               const grade = itensGrade(a.dadosJson);
+              const escores = (a.escoresJson ?? null) as EscoresSoap | null;
               return (
                 <li key={a.id} className="rounded-lg border p-4 text-sm">
                   <p className="mb-1 text-xs text-muted-foreground">
@@ -167,6 +182,21 @@ export async function AbaAvaliacoes({ ptsId }: { ptsId: string }) {
                       </div>
                     ))}
                   </div>
+                  {(escores?.ashworth || escores?.glasgow?.completo) && (
+                    <div className="mt-2 flex flex-wrap gap-2 border-t pt-2">
+                      {escores.ashworth && (
+                        <span className="rounded-full border border-violet-500/40 bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                          Ashworth: total {escores.ashworth.total} (
+                          {escores.ashworth.gruposAvaliados} grupo(s))
+                        </span>
+                      )}
+                      {escores.glasgow?.completo && (
+                        <span className="rounded-full border border-amber-500/40 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                          Glasgow: {escores.glasgow.total}/15
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {grade.length > 0 && (
                     <ul className="mt-2 space-y-1 border-t pt-2">
                       {grade.map((item, i) => (

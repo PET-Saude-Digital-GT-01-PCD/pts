@@ -9,6 +9,8 @@ import {
   recursosDoUsuario,
   type SessaoUsuario,
 } from "@/server/iam/session";
+import { assertPtsMutavel } from "@/server/care-plan/acesso";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 import {
   marcarCif,
   especialidadesDoUsuario,
@@ -86,17 +88,22 @@ export async function criarAvaliacaoEspecialidade(
     };
   }
 
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
   // códigos CIF derivados em background do preenchimento do checklist
   const cif = marcarCif(especialidade, dadosJson);
 
   try {
     const avaliacaoId = await db.$transaction(async (tx) => {
-      const pts = await tx.pts.findUnique({
-        where: { id: ptsId },
-        select: { id: true },
-      });
-      if (!pts) throw new Error("PTS não encontrado.");
+      await assertPtsMutavel(ptsId, tx);
 
+      // pts.versao é o lock otimista do PTS (re-triagem, transição de
+      // status); criar uma avaliação não muda a row do PTS nem é checada
+      // contra essa versão em nenhum fluxo — bumpá-la aqui só gerava
+      // conflitos 409 falsos em re-triagem concorrente. Uniformizado com
+      // soap.ts, que nunca bumpou (auditoria #58).
       const avaliacao = await tx.avaliacao.create({
         data: {
           ptsId,
@@ -106,11 +113,6 @@ export async function criarAvaliacaoEspecialidade(
           avaliadorId: user.id,
           versao: 0,
         },
-      });
-
-      await tx.pts.update({
-        where: { id: ptsId },
-        data: { versao: { increment: 1 } },
       });
 
       await tx.auditoria.create({
@@ -152,6 +154,10 @@ export async function listarAvaliacoesEspecialidade(ptsId: string) {
     user = await exigirUmaDas(["clinical.avaliacao.ler"]);
   } catch {
     return { ok: false as const, erro: "Sem permissão para ler avaliações." };
+  }
+
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false as const, erro: "Você não está vinculado a este caso." };
   }
 
   const escopos = especialidadesDoUsuario(user.categoria);

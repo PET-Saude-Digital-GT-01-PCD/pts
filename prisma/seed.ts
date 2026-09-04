@@ -36,6 +36,7 @@ const RECURSOS = [
   ["care-plan.pts.encerrar", "care-plan", "Encaminhar encerramento"],
   ["care-plan.mural.ler", "care-plan", "Ler mural do caso"],
   ["care-plan.mural.escrever", "care-plan", "Participar do mural do caso"],
+  ["care-plan.equipe.gerenciar", "care-plan", "Vincular/desvincular profissionais à equipe do caso"],
   ["governanca.dashboard.ver", "governanca", "Dashboards de indicadores e filas"],
   ["governanca.auditoria.ver", "governanca", "Trilha de auditoria (leitura)"],
   ["governanca.relatorios.ver", "governanca", "Relatórios de produção e qualidade"],
@@ -137,6 +138,8 @@ const PAPEIS_BASE = [
       "care-plan.mural.ler",
       "care-plan.mural.escrever",
       "triage.triagem.ver",
+      // encerramento por contrarreferência (#62) emite a guia junto
+      "triage.contrarreferencia.emissao",
     ],
   },
   {
@@ -147,8 +150,10 @@ const PAPEIS_BASE = [
       "governanca.dashboard.ver",
       "governanca.auditoria.ver",
       "governanca.relatorios.ver",
+      // leitura apenas (Perguntas/03 §3.6); triage.semaforo.ajustar é escrita
+      // clínica e fica vedado à base GESTOR (guardrail em iam/permissoes.ts).
       "triage.triagem.ver",
-      "triage.semaforo.ajustar",
+      "care-plan.equipe.gerenciar",
     ],
   },
   {
@@ -166,7 +171,36 @@ const PAPEIS_BASE = [
       "admin.config.org.editar",
     ],
   },
+  {
+    // papel padrão de quem se auto-cadastra em /cadastro (issue #15): sem
+    // recursos até o admin revisar e atribuir o papel profissional correto
+    // na aprovação.
+    nome: "AUTOCADASTRO",
+    descricao: "Aguardando aprovação do admin — sem recursos",
+    base: "CLINICO",
+    recursos: [],
+  },
 ];
+
+// Campos dinâmicos padrão do formulário de auto-cadastro (issue #15, plano/12).
+const FORMULARIO_CADASTRO_USUARIO = [
+  {
+    campo: "telefone",
+    rotulo: "Telefone de contato",
+    tipo: "TEXTO",
+    obrigatorio: false,
+    visivel: true,
+    ordem: 1,
+  },
+  {
+    campo: "registroConselho",
+    rotulo: "Registro no conselho de classe (CRM/CREFITO/CRP/COREN)",
+    tipo: "TEXTO",
+    obrigatorio: false,
+    visivel: true,
+    ordem: 2,
+  },
+] as const;
 
 async function upsertRecursos() {
   for (const [chave, grupo, descricao] of RECURSOS) {
@@ -542,7 +576,7 @@ async function main() {
   const papelMedico = await prisma.papel.findUniqueOrThrow({
     where: { cerId_nome: { cerId: cer.id, nome: "MEDICO" } },
   });
-  await prisma.usuario.upsert({
+  const medicoSoap = await prisma.usuario.upsert({
     where: { email: "medico@pts.local" },
     update: { papelId: papelMedico.id, status: "ATIVO" },
     create: {
@@ -551,6 +585,54 @@ async function main() {
       nome: "Médico Exemplo",
       categoria: "MEDICO",
       papelId: papelMedico.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
+  // ===== equipe do caso (#69): médico não é a referência de PTS_ATIVO_ID
+  // (fisio é) — precisa estar na equipe pra ter acesso clínico ao caso.
+  await prisma.equipePts.upsert({
+    where: { usuarioId_ptsId: { usuarioId: medicoSoap.id, ptsId: PTS_ATIVO_ID } },
+    update: {},
+    create: {
+      usuarioId: medicoSoap.id,
+      ptsId: PTS_ATIVO_ID,
+      papelNoCaso: "Avaliação médica (SOAP)",
+    },
+  });
+
+  // usuária clínica sem vínculo a nenhum caso — pra testar acesso negado (#69)
+  const papelTo = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "TERAPEUTA_OCUPACIONAL" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "to@pts.local" },
+    update: { papelId: papelTo.id, status: "ATIVO" },
+    create: {
+      email: "to@pts.local",
+      senhaHash: await bcrypt.hash("to123456", 10),
+      nome: "Terapeuta Ocupacional Sem Vínculo",
+      categoria: "TERAPEUTA_OCUPACIONAL",
+      papelId: papelTo.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
+  // gestor: visão agregada, gerencia equipe, sem acesso a conteúdo clínico individual (#69)
+  const papelGestor = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "GESTOR" } },
+  });
+  await prisma.usuario.upsert({
+    where: { email: "gestor@pts.local" },
+    update: { papelId: papelGestor.id, status: "ATIVO" },
+    create: {
+      email: "gestor@pts.local",
+      senhaHash: await bcrypt.hash("gestor123", 10),
+      nome: "Gestora",
+      categoria: "ENFERMEIRO",
+      papelId: papelGestor.id,
       status: "ATIVO",
       cerId: cer.id,
     },
@@ -571,6 +653,37 @@ async function main() {
       papelId: papelTriador.id,
       status: "ATIVO",
       cerId: cer.id,
+    },
+  });
+
+  // ===== referência (issue #59: ciclo de vida do PTS) =====
+  const papelReferencia = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "REFERENCIA" } },
+  });
+  const referenciaExemplo = await prisma.usuario.upsert({
+    where: { email: "referencia@pts.local" },
+    update: { papelId: papelReferencia.id, status: "ATIVO" },
+    create: {
+      email: "referencia@pts.local",
+      senhaHash: await bcrypt.hash("referencia123", 10),
+      nome: "Referência Exemplo",
+      categoria: "ENFERMEIRO",
+      papelId: papelReferencia.id,
+      status: "ATIVO",
+      cerId: cer.id,
+    },
+  });
+
+  // equipe do caso (#69): referência não é a referência formal (fisio é) nem
+  // consta na equipe de PTS_ATIVO_ID por padrão — precisa do vínculo pra
+  // exercer ciclo de vida/revisão (#59/#70) sobre esse PTS de exemplo.
+  await prisma.equipePts.upsert({
+    where: { usuarioId_ptsId: { usuarioId: referenciaExemplo.id, ptsId: PTS_ATIVO_ID } },
+    update: {},
+    create: {
+      usuarioId: referenciaExemplo.id,
+      ptsId: PTS_ATIVO_ID,
+      papelNoCaso: "Referência do caso",
     },
   });
 
