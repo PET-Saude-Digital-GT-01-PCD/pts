@@ -2,89 +2,98 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import type { TipoCampo } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { autoCadastrar } from "@/server/iam/admissao";
-import type { CampoFormularioConfig } from "@/server/iam/formulario-config";
+import { Logo } from "@/components/ui/logo";
+import { autocadastrar } from "@/server/iam/cadastro";
 
-const CATEGORIA_LABEL: Record<string, string> = {
-  RECEPCAO: "Recepção",
-  TRIADOR: "Triador",
-  MEDICO: "Médico",
-  FISIOTERAPEUTA: "Fisioterapeuta",
-  TERAPEUTA_OCUPACIONAL: "Terapeuta Ocupacional",
-  PSICOLOGO: "Psicólogo",
-  ENFERMEIRO: "Enfermeiro",
+export type CampoConfig = {
+  campo: string;
+  rotulo: string;
+  tipo: TipoCampo;
+  obrigatorio: boolean;
+  opcoesJson: unknown;
 };
 
-function CampoDinamico({ campo }: { campo: CampoFormularioConfig }) {
-  const id = `campo-${campo.campo}`;
-  if (campo.tipo === "BOOLEANO") {
-    return (
-      <div className="flex items-center gap-2">
-        <input id={id} name={campo.campo} type="checkbox" className="h-4 w-4" />
-        <Label htmlFor={id}>
-          {campo.rotulo}
-          {campo.obrigatorio ? " *" : ""}
-        </Label>
-      </div>
-    );
-  }
-  if (campo.tipo === "SELECT") {
-    return (
-      <div className="grid gap-2">
-        <Label htmlFor={id}>
-          {campo.rotulo}
-          {campo.obrigatorio ? " *" : ""}
-        </Label>
+function renderCampo(c: CampoConfig) {
+  const baseProps = {
+    id: `campo-${c.campo}`,
+    name: c.campo,
+    required: c.obrigatorio,
+    className: "w-full",
+  };
+
+  switch (c.tipo) {
+    case "SELECAO": {
+      const opcoes = Array.isArray(c.opcoesJson) ? (c.opcoesJson as string[]) : [];
+      return (
         <select
-          id={id}
-          name={campo.campo}
-          required={campo.obrigatorio}
+          {...baseProps}
           defaultValue=""
-          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+          className="rounded-md border bg-background px-3 py-2 text-sm w-full"
         >
           <option value="" disabled>
             Selecione…
           </option>
-          {(campo.opcoes ?? []).map((op) => (
+          {opcoes.map((op) => (
             <option key={op} value={op}>
-              {op}
+              {op.replace(/_/g, " ")}
             </option>
           ))}
         </select>
-      </div>
-    );
+      );
+    }
+    case "BOOLEAN":
+      return (
+        <input
+          {...baseProps}
+          type="checkbox"
+          className="h-4 w-4"
+        />
+      );
+    case "NUMERO":
+      return <Input {...baseProps} type="number" />;
+    case "DATA":
+      return <Input {...baseProps} type="date" />;
+    default: {
+      // TEXTO — campo senha usa type=password
+      const isPassword = c.campo === "senha";
+      const isEmail = c.campo === "email";
+      return (
+        <Input
+          {...baseProps}
+          type={isPassword ? "password" : isEmail ? "email" : "text"}
+          autoComplete={
+            isPassword ? "new-password" : isEmail ? "email" : undefined
+          }
+          minLength={isPassword ? 6 : undefined}
+        />
+      );
+    }
   }
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor={id}>
-        {campo.rotulo}
-        {campo.obrigatorio ? " *" : ""}
-      </Label>
-      <Input
-        id={id}
-        name={campo.campo}
-        type={campo.tipo === "NUMERO" ? "number" : "text"}
-        required={campo.obrigatorio}
-      />
-    </div>
-  );
 }
 
-export function CadastroForm({ campos }: { campos: CampoFormularioConfig[] }) {
+export function CadastroForm({
+  cerId,
+  campos,
+}: {
+  cerId: string;
+  campos: CampoConfig[];
+}) {
   const [erro, setErro] = useState<string | null>(null);
+  const [sucesso, setSucesso] = useState(false);
   const [pending, setPending] = useState(false);
-  const [enviado, setEnviado] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -92,101 +101,67 @@ export function CadastroForm({ campos }: { campos: CampoFormularioConfig[] }) {
     setPending(true);
 
     const form = new FormData(event.currentTarget);
-    const camposDinamicos: Record<string, unknown> = {};
-    for (const c of campos) {
-      if (c.tipo === "BOOLEANO") {
-        camposDinamicos[c.campo] = form.get(c.campo) === "on";
-      } else {
-        camposDinamicos[c.campo] = form.get(c.campo) ?? undefined;
-      }
+    const payload: Record<string, string> = {};
+    for (const [key, value] of form.entries()) {
+      payload[key] = value.toString();
     }
 
-    const resultado = await autoCadastrar({
-      nome: form.get("nome"),
-      email: form.get("email"),
-      senha: form.get("senha"),
-      categoria: form.get("categoria"),
-      camposDinamicos,
-    });
-    setPending(false);
+    const result = await autocadastrar(cerId, payload);
 
-    if (!resultado.ok) {
-      setErro(resultado.erro);
+    if (!result.ok) {
+      setErro(result.erro ?? "Erro inesperado.");
+      setPending(false);
       return;
     }
-    setEnviado(true);
+
+    setSucesso(true);
+    setPending(false);
   }
 
-  if (enviado) {
+  if (sucesso) {
     return (
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Cadastro enviado</CardTitle>
+      <Card className="w-full max-w-sm" data-testid="cadastro-sucesso">
+        <CardHeader className="items-center text-center">
+          <Logo />
+          <CardTitle>Cadastro enviado!</CardTitle>
+          <CardDescription>
+            Seu cadastro foi recebido e está aguardando aprovação do administrador.
+            Você receberá uma confirmação assim que seu acesso for liberado.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p role="status" className="text-sm text-muted-foreground">
-            Seu cadastro foi enviado e aguarda aprovação do administrador do
-            CER. Você receberá acesso assim que for aprovado.
-          </p>
-          <Link className="text-sm underline" href="/login">
-            Voltar para o login
-          </Link>
-        </CardContent>
+        <CardFooter className="justify-center">
+          <Button asChild variant="outline">
+            <Link href="/login">Ir para o login</Link>
+          </Button>
+        </CardFooter>
       </Card>
     );
   }
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
+    <Card className="w-full max-w-md">
+      <CardHeader className="items-center text-center">
+        <Logo />
         <CardTitle>Solicitar acesso</CardTitle>
         <CardDescription>
-          Cadastro fica pendente até aprovação do administrador.
+          Preencha o formulário para solicitar acesso ao sistema.
+          Seu cadastro passará por aprovação do administrador.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="grid gap-4" onSubmit={onSubmit}>
-          <div className="grid gap-2">
-            <Label htmlFor="nome">Nome completo</Label>
-            <Input id="nome" name="nome" required minLength={3} maxLength={120} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">E-mail</Label>
-            <Input id="email" name="email" type="email" autoComplete="username" required />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="senha">Senha</Label>
-            <Input
-              id="senha"
-              name="senha"
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="categoria">Categoria profissional</Label>
-            <select
-              id="categoria"
-              name="categoria"
-              required
-              defaultValue=""
-              className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-            >
-              <option value="" disabled>
-                Selecione…
-              </option>
-              {Object.entries(CATEGORIA_LABEL).map(([valor, rotulo]) => (
-                <option key={valor} value={valor}>
-                  {rotulo}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {campos.map((campo) => (
-            <CampoDinamico key={campo.campo} campo={campo} />
+        <form id="cadastro-form" className="grid gap-4" onSubmit={onSubmit}>
+          {campos.map((c) => (
+            <div key={c.campo} className="grid gap-2">
+              <Label htmlFor={`campo-${c.campo}`}>
+                {c.rotulo}
+                {c.obrigatorio && (
+                  <span className="text-destructive ml-1" aria-hidden>
+                    *
+                  </span>
+                )}
+              </Label>
+              {renderCampo(c)}
+            </div>
           ))}
 
           {erro ? (
@@ -194,14 +169,18 @@ export function CadastroForm({ campos }: { campos: CampoFormularioConfig[] }) {
               {erro}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending}>
+
+          <Button type="submit" disabled={pending} className="w-full">
             {pending ? "Enviando…" : "Solicitar acesso"}
           </Button>
-          <Link className="text-center text-sm underline" href="/login">
-            Já tenho conta
-          </Link>
         </form>
       </CardContent>
+      <CardFooter className="justify-center text-sm text-muted-foreground">
+        Já tem acesso?{" "}
+        <Link href="/login" className="ml-1 underline">
+          Entrar
+        </Link>
+      </CardFooter>
     </Card>
   );
 }

@@ -64,3 +64,13 @@ export function podeDeletarPapel(
 ): boolean {
   return !emUso && !ultimoAdminAtivo;
 }
+
+/** Aprovação: só possível se o usuário está PENDENTE. */
+export function podeAprovar(status: string): boolean {
+  return status === "PENDENTE";
+}
+
+/** Rejeição: só possível se PENDENTE e motivo com ao menos 10 caracteres. */
+export function podeRejeitar(status: string, motivo: string): boolean {
+  return status === "PENDENTE" && motivo.trim().length >= 10;
+}

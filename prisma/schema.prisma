@@ -92,6 +92,14 @@ enum Sexo {
   OUTRO
 }
 
+enum TipoCampo {
+  TEXTO
+  NUMERO
+  SELECAO
+  BOOLEAN
+  DATA
+}
+
 enum CanalConsentimento {
   TABLET
   WHATSAPP
@@ -126,22 +134,17 @@ enum StatusOutboundEvent {
 // ===== Tenant e acesso =====
 
 model Cer {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome                String
-  municipio           String   @db.Citext
-  escopos             Escopo[]
-  // papel atribuído a quem se auto-cadastra em /cadastro; null = auto-cadastro desabilitado
-  papelAutocadastroId String?  @db.Uuid
-  criadaEm            DateTime @default(now()) @db.Timestamptz(3)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome      String
+  municipio String   @db.Citext
+  escopos   Escopo[]
+  criadaEm  DateTime @default(now()) @db.Timestamptz(3)
 
   usuarios          Usuario[]
   pacientes         Paciente[]
   pts               Pts[]
   papeis            Papel[]
-  ppisLocais        PpiLocal[]
-  papelAutocadastro Papel?             @relation("autocadastro", fields: [papelAutocadastroId], references: [id], onDelete: SetNull)
-  formulariosConfig FormularioConfig[]
-  orgConfig         OrgConfig?
+  formularioConfigs FormularioConfig[]
 
   @@map("cer")
 }
@@ -201,16 +204,16 @@ model PapelRecurso {
 }
 
 model Usuario {
-  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cerId               String                @db.Uuid
-  email               String                @unique @db.Citext
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId               String                 @db.Uuid
+  email               String                 @unique @db.Citext
   senhaHash           String
   nome                String
-  categoria           CategoriaProfissional
-  papelId             String                @db.Uuid
-  status              StatusUsuario         @default(ATIVO)
-  camposDinamicosJson Json?                 @db.JsonB
-  criadoEm            DateTime              @default(now()) @db.Timestamptz(3)
+  categoria           CategoriaProfissional?
+  papelId             String                 @db.Uuid
+  status              StatusUsuario          @default(ATIVO)
+  camposDinamicosJson Json?                  @db.JsonB
+  criadoEm            DateTime               @default(now()) @db.Timestamptz(3)
 
   cer                Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
   papel              Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
@@ -512,6 +515,28 @@ model Discussao {
 
   @@index([ptsId, criadaEm])
   @@map("discussao")
+}
+
+// ===== Formulário dinâmico =====
+
+model FormularioConfig {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId      String     @db.Uuid
+  entidade   String     // ex: "usuario"
+  campo      String     // chave snake_case, ex: "registro_conselho"
+  rotulo     String     // label exibido no formulário
+  tipo       TipoCampo
+  obrigatorio Boolean   @default(false)
+  visivel    Boolean    @default(true)
+  opcoesJson Json?      @db.JsonB // para tipo SELECAO: ["OPCAO_A", "OPCAO_B"]
+  ordem      Int        @default(0)
+  criadoEm  DateTime   @default(now()) @db.Timestamptz(3)
+
+  cer Cer @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
+  @@unique([cerId, entidade, campo])
+  @@index([cerId, entidade, visivel])
+  @@map("formulario_config")
 }
 
 // ===== Governança =====
