@@ -9,7 +9,6 @@ import {
   registrarConsentimento,
   revogarConsentimento,
 } from "@/server/reception/consentimento";
-import { SecaoBaseline } from "@/components/reception/secao-baseline";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -86,7 +85,6 @@ export function NovoPacienteForm({
             {prazoRegularizacao.toLocaleDateString("pt-BR")}.
           </p>
         ) : null}
-        <SecaoBaseline pacienteId={pacienteId} />
         <SecaoCuidador pacienteId={pacienteId} />
         <SecaoConsentimento pacienteId={pacienteId} />
         <Button onClick={() => router.push(`/pacientes/${pacienteId}`)}>
@@ -305,6 +303,7 @@ function SecaoConsentimento({ pacienteId }: { pacienteId: string }) {
     if (!resultado.ok) {
       setErro(resultado.erro);
       setPending(false);
+      return;
     }
 
     setConsentimentoId(resultado.consentimentoId);
