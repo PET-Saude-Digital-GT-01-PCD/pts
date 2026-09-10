@@ -19,6 +19,9 @@ export type SessaoUsuario = {
 export async function getCurrentUser(): Promise<SessaoUsuario | null> {
   const session = await auth();
   if (!session?.user || !session.user.papelId) return null;
+  // Reforço: mesmo que o token ainda não tenha sido revalidado (ver jwt()
+  // em src/lib/auth.ts), nunca trata como logado um status não-ATIVO.
+  if (session.user.status !== "ATIVO") return null;
   return {
     id: session.user.id,
     nome: session.user.nome,

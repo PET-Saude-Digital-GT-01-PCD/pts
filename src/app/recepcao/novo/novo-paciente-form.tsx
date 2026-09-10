@@ -39,6 +39,8 @@ export function NovoPacienteForm({
   const [pending, setPending] = useState(false);
   const [pacienteId, setPacienteId] = useState<string | null>(null);
   const [mostrarFormularioCompleto, setMostrarFormularioCompleto] = useState(false);
+  const [provisorio, setProvisorio] = useState(false);
+  const [prazoRegularizacao, setPrazoRegularizacao] = useState<Date | null>(null);
 
   const docInicialLimpo = documentoInicial.replace(/\D+/g, "");
   
@@ -47,6 +49,7 @@ export function NovoPacienteForm({
   const [nome, setNome] = useState("");
   const [dtnasc, setDtnasc] = useState("");
   const [sexo, setSexo] = useState<"MASCULINO" | "FEMININO" | "OUTRO">("MASCULINO");
+  const [municipioOrigem, setMunicipioOrigem] = useState("");
   const [endereco, setEndereco] = useState("");
   const [origemGeral, setOrigemGeral] = useState<"digitado" | "importado">("digitado");
   
@@ -141,6 +144,7 @@ export function NovoPacienteForm({
       cns: cns || undefined,
       dtnasc,
       sexo,
+      municipioOrigem,
       enderecoJson: endereco ? { logradouro: endereco } : undefined,
       origem: origemGeral,
       baseline: {
@@ -155,6 +159,10 @@ export function NovoPacienteForm({
       return;
     }
 
+    setProvisorio(resultado.provisorio);
+    setPrazoRegularizacao(
+      resultado.prazoRegularizacao ? new Date(resultado.prazoRegularizacao) : null,
+    );
     setPacienteId(resultado.pacienteId);
   }
 
@@ -169,10 +177,40 @@ export function NovoPacienteForm({
 
   if (pacienteId) {
     return (
-      <PosCadastro
-        pacienteId={pacienteId}
-        router={router}
-      />
+      <div className="w-full max-w-lg space-y-6 mx-auto">
+        <p className="text-sm text-muted-foreground text-center">
+          Paciente cadastrado com sucesso. Complete as seções adicionais abaixo.
+        </p>
+        {provisorio && prazoRegularizacao ? (
+          <p
+            role="alert"
+            data-testid="alerta-provisorio"
+            className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning"
+          >
+            Cadastro provisório — PPI não pactuada para o município de
+            origem. Regularizar até{" "}
+            {prazoRegularizacao.toLocaleDateString("pt-BR")}.
+          </p>
+        ) : null}
+        
+        <SecaoCuidador pacienteId={pacienteId} />
+        <SecaoConsentimento pacienteId={pacienteId} />
+
+        <div className="flex gap-3 justify-center">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/recepcao")}
+          >
+            Voltar para recepção
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => router.push(`/pacientes/${pacienteId}`)}
+          >
+            Ver paciente
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -263,6 +301,21 @@ export function NovoPacienteForm({
                 </select>
               </div>
             </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="municipioOrigem">Município de origem</Label>
+              <Input
+                id="municipioOrigem"
+                name="municipioOrigem"
+                required
+                minLength={2}
+                maxLength={120}
+                placeholder="Ex.: Recife"
+                value={municipioOrigem}
+                onChange={(e) => setMunicipioOrigem(e.target.value)}
+              />
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="endereco">Endereço (opcional)</Label>
               <Input 
@@ -346,82 +399,6 @@ export function NovoPacienteForm({
         </form>
       </CardContent>
     </Card>
-  );
-}
-
-function PosCadastro({
-  pacienteId,
-  router,
-}: {
-  pacienteId: string;
-  router: ReturnType<typeof useRouter>;
-}) {
-  const [encPending, startEncaminhar] = useTransition();
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const [erroEnc, setErroEnc] = useState<string | null>(null);
-  const [encaminhado, setEncaminhado] = useState(false);
-  const fecharToast = useCallback(() => setToastMsg(null), []);
-
-  function handleEncaminhar() {
-    setErroEnc(null);
-    startEncaminhar(async () => {
-      const res = await encaminharParaTriagem(pacienteId);
-      if (res.ok) {
-        setEncaminhado(true);
-        setToastMsg("Paciente encaminhado para triagem com sucesso!");
-      } else {
-        setErroEnc(res.erro);
-      }
-    });
-  }
-
-  return (
-    <div className="w-full max-w-lg space-y-6 mx-auto">
-      <p className="text-sm text-muted-foreground text-center">
-        Paciente cadastrado com sucesso. Complete as seções adicionais abaixo.
-      </p>
-      
-      <SecaoCuidador pacienteId={pacienteId} />
-      <SecaoConsentimento pacienteId={pacienteId} />
-
-      {erroEnc && (
-        <p role="alert" className="text-sm text-destructive">
-          {erroEnc}
-        </p>
-      )}
-
-      <div className="flex gap-3 justify-center">
-        {!encaminhado ? (
-          <Button
-            onClick={handleEncaminhar}
-            disabled={encPending}
-            className="gap-2"
-          >
-            <ArrowRight className="h-4 w-4" />
-            {encPending ? "Encaminhando…" : "Encaminhar para triagem"}
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            onClick={() => router.push("/recepcao")}
-          >
-            Voltar para recepção
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          onClick={() => router.push(`/pacientes/${pacienteId}`)}
-        >
-          Ver paciente
-        </Button>
-      </div>
-
-      <ToastSucesso
-        mensagem={toastMsg ?? ""}
-        aberto={!!toastMsg}
-        onFechar={fecharToast}
-      />
-    </div>
   );
 }
 

@@ -4,7 +4,9 @@ import { BasePapel } from "@prisma/client";
 import {
   ehRecursoAdminOnly,
   ehRecursoClinico,
+  ehRecursoVedadoGestor,
   podeDeletarPapel,
+  RECURSOS_ESCRITA_CLINICA_VEDADOS_GESTOR,
   temPermissao,
   validarRecursos,
 } from "@/server/iam/permissoes";
@@ -35,6 +37,22 @@ describe("iam/permissoes", () => {
     });
   });
 
+  describe("ehRecursoVedadoGestor", () => {
+    it("cobre clinical.* e cada recurso de escrita clínica fora do prefixo", () => {
+      expect(ehRecursoVedadoGestor("clinical.soap.ler")).toBe(true);
+      for (const recurso of RECURSOS_ESCRITA_CLINICA_VEDADOS_GESTOR) {
+        expect(ehRecursoVedadoGestor(recurso)).toBe(true);
+      }
+    });
+
+    it("não marca recursos de leitura equivalentes", () => {
+      expect(ehRecursoVedadoGestor("care-plan.meta.ler")).toBe(false);
+      expect(ehRecursoVedadoGestor("care-plan.mural.ler")).toBe(false);
+      expect(ehRecursoVedadoGestor("triage.triagem.ver")).toBe(false);
+      expect(ehRecursoVedadoGestor("governanca.dashboard.ver")).toBe(false);
+    });
+  });
+
   describe("validarRecursos", () => {
     it("GESTOR com recurso clínico viola", () => {
       const r = validarRecursos(BasePapel.GESTOR, [
@@ -49,6 +67,25 @@ describe("iam/permissoes", () => {
       expect(
         validarRecursos(BasePapel.GESTOR, ["clinical.avaliacao.escrever"]).ok,
       ).toBe(false);
+    });
+
+    it.each(RECURSOS_ESCRITA_CLINICA_VEDADOS_GESTOR)(
+      "GESTOR com %s (fora do prefixo clinical.) viola",
+      (recurso) => {
+        const r = validarRecursos(BasePapel.GESTOR, [recurso]);
+        expect(r.ok).toBe(false);
+        expect(r.violacoes).toHaveLength(1);
+      },
+    );
+
+    it("GESTOR com recursos de leitura equivalentes passa", () => {
+      const r = validarRecursos(BasePapel.GESTOR, [
+        "care-plan.meta.ler",
+        "care-plan.mural.ler",
+        "triage.triagem.ver",
+        "governanca.dashboard.ver",
+      ]);
+      expect(r.ok).toBe(true);
     });
 
     it("CLINICO com recurso admin-only viola", () => {

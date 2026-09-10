@@ -74,7 +74,7 @@ beforeAll(async () => {
   });
   pacienteIds.push(paciente.id);
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID },
+    data: { pacienteId: paciente.id, cerId: CER_ID, refProfissionalId: adminId },
   });
   ptsId = pts.id;
 });
@@ -143,6 +143,24 @@ describe("care-plan/metas — criarMeta", () => {
     const input = await inputMetaValida();
     const r = await criarMeta({ ...input, ptsId: randomUUID() });
     expect(r.ok).toBe(false);
+  });
+
+  it("PTS FECHADO recusa criação de meta e não persiste", async () => {
+    sessao.chaves = ["care-plan.meta.escrever"];
+    await db.pts.update({ where: { id: ptsId }, data: { status: "FECHADO" } });
+
+    try {
+      const antes = await db.meta.count({ where: { ptsId } });
+      const r = await criarMeta(await inputMetaValida());
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.erro).toContain("somente leitura");
+      expect(await db.meta.count({ where: { ptsId } })).toBe(antes);
+    } finally {
+      await db.pts.update({
+        where: { id: ptsId },
+        data: { status: "EM_AVALIACAO" },
+      });
+    }
   });
 });
 
@@ -222,6 +240,32 @@ describe("care-plan/metas — mudarStatusMeta", () => {
     });
     expect(intacta.status).toBe("EM_ANDAMENTO");
   });
+
+  it("PTS FECHADO recusa mudança de status e não altera a meta", async () => {
+    const emAndamento = await db.meta.findFirstOrThrow({
+      where: { ptsId, status: "EM_ANDAMENTO" },
+    });
+    await db.pts.update({ where: { id: ptsId }, data: { status: "FECHADO" } });
+
+    try {
+      const r = await mudarStatusMeta({
+        metaId: emAndamento.id,
+        para: "CONCLUIDA",
+        version: emAndamento.versao,
+      });
+      falhou(r);
+      expect(r.erro).toContain("somente leitura");
+      const intacta = await db.meta.findUniqueOrThrow({
+        where: { id: emAndamento.id },
+      });
+      expect(intacta.status).toBe("EM_ANDAMENTO");
+    } finally {
+      await db.pts.update({
+        where: { id: ptsId },
+        data: { status: "EM_AVALIACAO" },
+      });
+    }
+  });
 });
 
 describe("care-plan/mural — comentarMural", () => {
@@ -263,5 +307,23 @@ describe("care-plan/mural — comentarMural", () => {
     const r = await comentarMural({ ptsId, texto: "sem permissão" });
     expect(r.ok).toBe(false);
     expect(await db.discussao.count({ where: { ptsId } })).toBe(antes);
+  });
+
+  it("PTS FECHADO recusa comentário e não persiste", async () => {
+    sessao.chaves = ["care-plan.mural.escrever"];
+    await db.pts.update({ where: { id: ptsId }, data: { status: "FECHADO" } });
+
+    try {
+      const antes = await db.discussao.count({ where: { ptsId } });
+      const r = await comentarMural({ ptsId, texto: "tentativa em PTS fechado" });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.erro).toContain("somente leitura");
+      expect(await db.discussao.count({ where: { ptsId } })).toBe(antes);
+    } finally {
+      await db.pts.update({
+        where: { id: ptsId },
+        data: { status: "EM_AVALIACAO" },
+      });
+    }
   });
 });

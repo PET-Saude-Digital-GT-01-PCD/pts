@@ -18,10 +18,12 @@ import {
   Heart,
   Activity,
   Brain,
+  Settings,
 } from "lucide-react";
 
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
+import type { OrgConfigView } from "@/server/iam/org-config-schema";
 
 type NavItem = {
   label: string;
@@ -50,6 +52,7 @@ const ICONS: Record<string, React.ElementType> = {
   Heart,
   Activity,
   Brain,
+  Settings,
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -69,9 +72,11 @@ function resolveIcon(iconName: string): React.ElementType {
 export function Sidebar({
   itens,
   user,
+  orgConfig,
 }: {
   itens: NavItem[];
   user: SidebarUser;
+  orgConfig?: OrgConfigView;
 }) {
   const pathname = usePathname();
 
@@ -83,7 +88,7 @@ export function Sidebar({
           href="/dashboard"
           className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Logo size="sm" />
+          <Logo size="sm" nome={orgConfig?.nomeExibido} logoUrl={orgConfig?.logoUrl} />
         </Link>
       </div>
 

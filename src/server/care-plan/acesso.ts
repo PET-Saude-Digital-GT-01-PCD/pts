@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 
 import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
 
@@ -20,4 +21,22 @@ export async function exigirUmaDas(chaves: string[]) {
 export async function exigirUmaDasOuRedirect(chaves: string[]) {
   if (!(await temUmaDas(chaves))) redirect("/");
   return requireAuth();
+}
+
+// PTS FECHADO é somente-leitura para a equipe (plano/13 §10). Chamar dentro
+// da transação de qualquer mutação clínica antes de gravar.
+export async function assertPtsMutavel(
+  ptsId: string,
+  tx: Prisma.TransactionClient,
+): Promise<void> {
+  const pts = await tx.pts.findUnique({
+    where: { id: ptsId },
+    select: { status: true },
+  });
+  if (!pts) throw new Error("PTS não encontrado.");
+  if (pts.status === "FECHADO") {
+    throw new Error(
+      "PTS fechado é somente leitura; não aceita novas alterações.",
+    );
+  }
 }

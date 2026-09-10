@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,9 @@ export function LoginForm() {
           <Button type="submit" disabled={pending}>
             {pending ? "Entrando…" : "Entrar"}
           </Button>
+          <Link className="text-center text-sm underline" href="/cadastro">
+            Solicitar acesso
+          </Link>
         </form>
       </CardContent>
     </Card>

@@ -24,7 +24,7 @@ test("guardrail: papel base GESTOR não aceita recurso clínico no save", async 
   await checkboxPorChave(page, "clinical.soap.ler").check();
   await page.getByRole("button", { name: "Criar papel" }).click();
 
-  await expect(page.getByText(/recurso clínico/i)).toBeVisible();
+  await expect(page.getByText(/recurso.*clínic/i)).toBeVisible();
 });
 
 test("admin cria papel CLINICO e ele aparece na lista", async ({ page }) => {

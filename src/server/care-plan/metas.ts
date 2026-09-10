@@ -4,7 +4,13 @@ import { Prisma, StatusMeta } from "@prisma/client";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { exigirUmaDas, temUmaDas } from "@/server/care-plan/acesso";
+import {
+  assertPtsMutavel,
+  exigirUmaDas,
+  temUmaDas,
+} from "@/server/care-plan/acesso";
+import { requireAuth } from "@/server/iam/session";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 import {
   metaInputSchema,
   transicaoStatusValida,
@@ -33,6 +39,8 @@ export type MetaDoPainel = {
 
 export async function listarMetas(ptsId: string): Promise<MetaDoPainel[]> {
   if (!(await temUmaDas(["care-plan.meta.ler"]))) return [];
+  const user = await requireAuth();
+  if (!(await podeAcessarCaso(user.id, ptsId))) return [];
   const rows = await db.meta.findMany({
     where: { ptsId },
     orderBy: [{ status: "asc" }, { prazo: "asc" }],
@@ -83,13 +91,13 @@ export async function criarMeta(input: unknown): Promise<Resultado> {
   }
   const dados = parsed.data;
 
+  if (!(await podeAcessarCaso(user.id, dados.ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
   try {
     await db.$transaction(async (tx) => {
-      const ptsExiste = await tx.pts.findUnique({
-        where: { id: dados.ptsId },
-        select: { id: true },
-      });
-      if (!ptsExiste) throw new Error("PTS não encontrado.");
+      await assertPtsMutavel(dados.ptsId, tx);
 
       const meta = await tx.meta.create({
         data: {
@@ -151,12 +159,23 @@ export async function mudarStatusMeta(
   if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
   const { metaId, para, motivo, version } = parsed.data;
 
+  const metaAtual = await db.meta.findUnique({
+    where: { id: metaId },
+    select: { ptsId: true },
+  });
+  if (!metaAtual) return { ok: false, erro: "Meta não encontrada." };
+  if (!(await podeAcessarCaso(user.id, metaAtual.ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
   try {
     await db.$transaction(async (tx) => {
       const meta = await tx.meta.findUniqueOrThrow({
         where: { id: metaId },
         select: { id: true, ptsId: true, status: true, versao: true },
       });
+
+      await assertPtsMutavel(meta.ptsId, tx);
 
       if (!transicaoStatusValida(meta.status, para)) {
         throw new Error(

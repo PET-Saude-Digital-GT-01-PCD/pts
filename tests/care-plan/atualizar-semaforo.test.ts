@@ -63,7 +63,7 @@ async function criarPts(): Promise<{ id: string; versao: number }> {
   });
   pacienteIds.push(paciente.id);
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID },
+    data: { pacienteId: paciente.id, cerId: CER_ID, refProfissionalId: adminId },
   });
   ptsIds.push(pts.id);
   return { id: pts.id, versao: pts.versao };

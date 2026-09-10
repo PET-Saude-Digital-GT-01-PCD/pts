@@ -9,6 +9,7 @@ import {
   type CardCaso,
 } from "@/server/care-plan/dashboard";
 import { recursosDoUsuario, requireAuth } from "@/server/iam/session";
+import { listarAlertasRegularizacaoPpi } from "@/server/reception/ppi";
 
 const STATUS_LABEL: Record<string, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -128,11 +129,57 @@ export default async function DashboardPage() {
     );
   }
 
+  const alertasPpi =
+    visao.visao === "RECEPCAO_TRIAGEM" && user.cerId
+      ? await listarAlertasRegularizacaoPpi(user.cerId)
+      : [];
+
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
       <header>
-        <h1 className="text-2xl font-semibold">Meus casos</h1>
+        <h1 className="text-2xl font-semibold">
+          {visao.visao === "RECEPCAO_TRIAGEM" ? "Fila do dia" : "Meus casos"}
+        </h1>
       </header>
+      {alertasPpi.length > 0 && (
+        <section
+          aria-label="Cadastros provisórios pendentes de regularização"
+          data-testid="alertas-ppi-dashboard"
+          className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-4"
+        >
+          <h2 className="text-sm font-medium text-warning">
+            {alertasPpi.length}{" "}
+            {alertasPpi.length === 1
+              ? "cadastro provisório precisa"
+              : "cadastros provisórios precisam"}{" "}
+            de regularização
+          </h2>
+          <ul className="space-y-1 text-sm">
+            {alertasPpi.map((a) => (
+              <li key={a.id} className="flex justify-between gap-2">
+                <a href={`/pacientes/${a.id}`} className="underline">
+                  {a.nome}
+                </a>
+                <span className={a.diasRestantes < 0 ? "text-destructive" : "text-warning"}>
+                  {a.diasRestantes < 0
+                    ? `vencido há ${Math.abs(a.diasRestantes)}d`
+                    : `${a.diasRestantes}d restantes`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {visao.visao === "RECEPCAO_TRIAGEM" && visao.filaAmarela.total > 0 ? (
+        <p
+          role="status"
+          data-testid="fila-amarela-resumo"
+          className="text-warning w-fit rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm font-medium"
+        >
+          Fila de espera (Amarelo): {visao.filaAmarela.total} paciente(s) · próxima
+          estimativa {visao.filaAmarela.proximaEstimativaDias} dia(s)
+        </p>
+      ) : null}
       <Grade casos={visao.casos} />
     </main>
   );

@@ -45,6 +45,10 @@ const criarTriagemSchema = z
   })
   .refine((d) => !!d.pacienteId !== !!d.ptsId, {
     message: "Informe pacienteId (nascimento) ou ptsId (re-triagem), não ambos.",
+  })
+  .refine((d) => !d.ptsId || d.version !== undefined, {
+    message: "Re-triagem exige a versão conhecida do PTS (lock otimista).",
+    path: ["version"],
   });
 
 export type ResultadoTriagem =

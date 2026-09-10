@@ -78,6 +78,7 @@ async function cadastrarPaciente(page: import("@playwright/test").Page, cpf: str
   await page.getByLabel("Nome completo").fill(nome);
   await page.getByLabel("Data de nascimento").fill("1990-05-10");
   await page.getByLabel("Sexo").selectOption("FEMININO");
+  await page.getByLabel("Município de origem").fill("Recife");
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText(/Paciente cadastrado/)).toBeVisible({
     timeout: 15_000,
@@ -120,6 +121,7 @@ test("cadastro cria paciente e busca retorna existente; duplicado recusado", asy
   await page.getByLabel("Nome completo").fill("Outro Paciente");
   await page.getByLabel("Data de nascimento").fill("1980-01-01");
   await page.getByLabel("Sexo").selectOption("MASCULINO");
+  await page.getByLabel("Município de origem").fill("Recife");
   await page.getByRole("button", { name: "Cadastrar" }).click();
 
   await expect(page.getByText(/já cadastrado/)).toBeVisible();

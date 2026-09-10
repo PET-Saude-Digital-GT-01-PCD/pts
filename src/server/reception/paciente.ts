@@ -6,6 +6,11 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requirePermissao } from "@/server/iam/session";
 import { soDigitos, validarCns, validarCpf } from "@/server/reception/documentos";
+import {
+  buscarPpiLocal,
+  ppiPactuadaAgora,
+  PRAZO_REGULARIZACAO_DIAS,
+} from "@/server/reception/ppi";
 
 const pacienteInputSchema = z.object({
   nome: z.string().trim().min(3, "Nome muito curto.").max(120),
@@ -23,6 +28,7 @@ const pacienteInputSchema = z.object({
   sexo: z.enum(["MASCULINO", "FEMININO", "OUTRO"]),
   enderecoJson: z.record(z.unknown()).optional(),
   ubsId: z.string().uuid().optional(),
+  municipioOrigem: z.string().trim().min(2, "Município é obrigatório.").max(120),
   origem: z.enum(["importado", "digitado"]).optional(),
   baseline: z
     .object({
@@ -45,7 +51,12 @@ const pacienteInputSchema = z.object({
 });
 
 export type ResultadoPaciente =
-  | { ok: true; pacienteId: string }
+  | {
+      ok: true;
+      pacienteId: string;
+      provisorio: boolean;
+      prazoRegularizacao: Date | null;
+    }
   | { ok: false; erro: string };
 
 export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> {
@@ -63,7 +74,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
     return { ok: false, erro: "Informe CPF ou CNS." };
   }
 
-  const duplicidade = await buscarDuplicidade({
+  const duplicidade = await buscarDuplicidade(cerId, {
     cpf: dados.cpf || undefined,
     cns: dados.cns || undefined,
   });
@@ -73,6 +84,13 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
       erro: `Documento já cadastrado para ${duplicidade.nome}.`,
     };
   }
+
+  const ppi = await buscarPpiLocal(cerId, dados.municipioOrigem);
+  const pactuado = ppiPactuadaAgora(ppi, new Date());
+  const provisorio = !pactuado;
+  const prazoRegularizacao = provisorio
+    ? new Date(Date.now() + PRAZO_REGULARIZACAO_DIAS * 24 * 60 * 60 * 1000)
+    : null;
 
   try {
     return await db.$transaction(async (tx) => {
@@ -88,6 +106,9 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
             ? (dados.enderecoJson as Prisma.InputJsonValue)
             : undefined,
           ubsId: dados.ubsId,
+          municipioOrigem: dados.municipioOrigem,
+          provisorio,
+          prazoRegularizacao,
           origem: dados.origem,
           baseline: dados.baseline
             ? {
@@ -109,11 +130,23 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
           action: "paciente.criar",
           entityType: "paciente",
           entityId: paciente.id,
-          afterJson: { nome: paciente.nome, cpf: paciente.cpf, cns: paciente.cns },
+          afterJson: {
+            nome: paciente.nome,
+            cpf: paciente.cpf,
+            cns: paciente.cns,
+            municipioOrigem: dados.municipioOrigem,
+            pactuadoPpi: pactuado,
+            provisorio,
+          },
         },
       });
 
-      return { ok: true as const, pacienteId: paciente.id };
+      return {
+        ok: true as const,
+        pacienteId: paciente.id,
+        provisorio,
+        prazoRegularizacao,
+      };
     });
   } catch (erro) {
     // ponytail: corrida entre checagem e create cai no unique do banco
@@ -128,6 +161,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
 }
 
 async function buscarDuplicidade(
+  cerId: string,
   where: { cpf?: string; cns?: string },
 ): Promise<{ id: string; nome: string } | null> {
   const ou = [
@@ -135,7 +169,10 @@ async function buscarDuplicidade(
     where.cns ? { cns: where.cns } : null,
   ].filter((c): c is NonNullable<typeof c> => c !== null);
   if (ou.length === 0) return null;
-  return db.paciente.findFirst({ where: { OR: ou }, select: { id: true, nome: true } });
+  return db.paciente.findFirst({
+    where: { cerId, OR: ou },
+    select: { id: true, nome: true },
+  });
 }
 
 export type PacienteBuscado = {
@@ -148,12 +185,15 @@ export type PacienteBuscado = {
 export async function buscarPacientePorDocumento(
   entrada: unknown,
 ): Promise<PacienteBuscado | null> {
-  await requirePermissao("recepcao.paciente.ver");
+  const user = await requirePermissao("recepcao.paciente.ver");
   const doc = soDigitos(typeof entrada === "string" ? entrada : "");
   if (doc.length !== 11 && doc.length !== 15) return null;
 
   return db.paciente.findFirst({
-    where: doc.length === 11 ? { cpf: doc } : { cns: doc },
+    where: {
+      cerId: user.cerId ?? undefined,
+      ...(doc.length === 11 ? { cpf: doc } : { cns: doc }),
+    },
     select: { id: true, nome: true, cpf: true, cns: true },
   });
 }
@@ -309,4 +349,3 @@ export async function pacientesEncaminhadosTriagem(): Promise<PacienteFilaTriage
     },
   });
 }
-

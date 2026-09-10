@@ -1,122 +1,118 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Plus } from "lucide-react";
 
 import { registrarEvento } from "@/server/care-plan/eventos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function EventoForm({
-  ptsId,
-}: {
-  ptsId: string;
-}) {
-  const [aberto, setAberto] = useState(false);
-  const [mensagem, setMensagem] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+const ROTULOS_TIPO: Record<string, string> = {
+  SESSAO: "Sessão",
+  FALTA: "Falta",
+  CANCELAMENTO: "Cancelamento",
+  OUTRO: "Outro",
+};
+
+export function EventoForm({ ptsId }: { ptsId: string }) {
   const router = useRouter();
+  const [aberto, setAberto] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
-  function salvar(formData: FormData) {
-    startTransition(async () => {
-      const tipo = formData.get("tipo") as string;
-      const dataStr = formData.get("data") as string;
-      const observacao = formData.get("observacao") as string;
+  const hoje = new Date().toISOString().slice(0, 10);
 
-      const r = await registrarEvento({
-        ptsId,
-        tipo,
-        data: dataStr ? new Date(dataStr) : undefined,
-        observacao: observacao.trim() || undefined,
-      });
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErro(null);
+    setPending(true);
 
-      if (r.ok) {
-        setAberto(false);
-        setMensagem(null);
-        router.refresh();
-      } else {
-        setMensagem(r.erro);
-      }
+    const form = new FormData(event.currentTarget);
+    const observacao = form.get("observacao");
+    const r = await registrarEvento({
+      ptsId,
+      tipo: form.get("tipo"),
+      data: form.get("data"),
+      observacao:
+        typeof observacao === "string" && observacao.trim()
+          ? observacao.trim()
+          : undefined,
     });
+
+    setPending(false);
+    if (!r.ok) {
+      setErro(r.erro);
+      return;
+    }
+    setAberto(false);
+    router.refresh();
   }
 
   if (!aberto) {
     return (
       <Button
+        type="button"
         variant="outline"
         size="sm"
-        className="gap-1.5"
         onClick={() => setAberto(true)}
+        data-testid="abrir-form-evento"
       >
-        <Plus className="h-4 w-4" />
         Registrar evento
       </Button>
     );
   }
 
   return (
-    <div className="rounded-md border p-4">
-      <h3 className="mb-4 text-sm font-medium">Novo evento na timeline</h3>
-      <form action={salvar} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="tipo">Tipo de evento</Label>
-            <select
-              id="tipo"
-              name="tipo"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              required
-            >
-              <option value="SESSAO">Sessão / Atendimento</option>
-              <option value="FALTA">Falta</option>
-              <option value="CANCELAMENTO">Cancelamento</option>
-              <option value="OUTRO">Outro</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="data">Data</Label>
-            <Input
-              id="data"
-              name="data"
-              type="datetime-local"
-              required
-              defaultValue={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="observacao">Observação (opcional)</Label>
-          <Input
-            id="observacao"
-            name="observacao"
-            placeholder="Detalhes adicionais..."
-            maxLength={500}
-          />
-        </div>
-
-        {mensagem && (
-          <p role="alert" className="text-sm text-destructive">
-            {mensagem}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setAberto(false)}
-            disabled={pending}
+    <form
+      onSubmit={onSubmit}
+      className="grid gap-3 rounded-md border p-3"
+      data-testid="form-evento"
+    >
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-2">
+          <Label htmlFor="tipo-evento">Tipo</Label>
+          <select
+            id="tipo-evento"
+            name="tipo"
+            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+            defaultValue="SESSAO"
           >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={pending}>
-            {pending ? "Salvando..." : "Salvar"}
-          </Button>
+            {Object.entries(ROTULOS_TIPO).map(([valor, rotulo]) => (
+              <option key={valor} value={valor}>
+                {rotulo}
+              </option>
+            ))}
+          </select>
         </div>
-      </form>
-    </div>
+        <div className="grid gap-2">
+          <Label htmlFor="data-evento">Data</Label>
+          <Input id="data-evento" name="data" type="date" required defaultValue={hoje} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="observacao-evento">Observação (opcional)</Label>
+          <Input id="observacao-evento" name="observacao" maxLength={500} />
+        </div>
+      </div>
+      {erro && (
+        <p role="alert" className="text-sm text-destructive">
+          {erro}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending ? "Salvando…" : "Salvar evento"}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setAberto(false)}
+          disabled={pending}
+        >
+          Cancelar
+        </Button>
+      </div>
+    </form>
   );
 }
