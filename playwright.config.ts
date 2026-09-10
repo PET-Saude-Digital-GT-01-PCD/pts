@@ -26,6 +26,6 @@ export default defineConfig({
     command: `pnpm build && AUTH_URL=http://localhost:${e2ePort} pnpm exec next start -p ${e2ePort}`,
     url: `http://localhost:${e2ePort}/api/health`,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 240_000,
   },
 });
