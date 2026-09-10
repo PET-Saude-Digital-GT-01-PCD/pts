@@ -24,7 +24,7 @@ test.describe("Eventos no PTS", () => {
     await page.getByLabel("Observação (opcional)").fill("Sessão de reabilitação inicial.");
     
     // Submeter o formulário
-    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+    await page.getByRole("button", { name: "Salvar evento" }).click();
 
     // Esperar o evento aparecer na timeline
     await expect(page.getByText("Sessão de reabilitação inicial.").first()).toBeVisible();
@@ -44,7 +44,7 @@ test.describe("Eventos no PTS", () => {
     await page.getByLabel("Observação (opcional)").fill("Paciente não compareceu ao ônibus.");
     
     // Submeter o formulário
-    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+    await page.getByRole("button", { name: "Salvar evento" }).click();
 
     // Ver na timeline
     await expect(page.getByText("Paciente não compareceu ao ônibus.").first()).toBeVisible();
