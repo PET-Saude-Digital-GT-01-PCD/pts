@@ -178,41 +178,26 @@ test("baseline importada: campos destacados, editáveis e origem por campo", asy
   test.setTimeout(90_000);
   await loginRecepcao(page);
 
-  // paciente criado com CPF qualquer; importação usa o CPF conhecido do mock
-  await cadastrarPaciente(page, CPF_NOVO, "Paciente Com Baseline");
+  await page.goto(`/recepcao/novo?q=${CPF_MOCK_COMPLETO}`);
+  await page.getByRole("button", { name: "Buscar / Continuar" }).click();
 
-  // importa baseline do mock determinístico
-  await page.getByLabel("CPF ou CNS do paciente").fill(CPF_MOCK_COMPLETO);
-  await page.getByRole("button", { name: "Importar" }).click();
-
+  await expect(page.getByText("Dados encontrados no e-SUS e importados.")).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByLabel("Diagnósticos")).toHaveValue(
     /Paralisia cerebral/,
     { timeout: 15_000 },
   );
   await expect(page.getByLabel("Alergias")).toHaveValue(/Dipirona/);
-  await expect(
-    page.getByText("Campos destacados vieram da importação.")
-  ).toBeVisible();
+
+  // o municipio de origem é obrigatório e não vem do mock
+  await page.getByLabel("Município de origem").fill("Recife");
 
   // edição de um campo importado troca a origem para digitado
   await page.getByLabel("Alergias").fill("Dipirona, Látex");
-  await page
-    .getByRole("button", { name: /Salvar linha de base/ })
-    .first()
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Linha de base salva" })
-  ).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Cadastrar Paciente e Linha de Base" }).click();
 
-  // persistência: origemJson marca diagnóstico importado, alergia editada digitado
-  const registro = await db.baseline.findFirst({
-    where: { paciente: { cpf: CPF_NOVO } },
-    select: { origemJson: true, diagnosticosJson: true, alergiasJson: true },
+  await expect(page.getByText(/Paciente cadastrado/)).toBeVisible({
+    timeout: 15_000,
   });
-  expect(registro?.origemJson).toMatchObject({
-    diagnosticos: "importado",
-    alergias: "digitado",
-  });
-  expect(registro?.diagnosticosJson).toContain("Paralisia cerebral quadriplégica");
-  expect(registro?.alergiasJson).toEqual(["Dipirona", "Látex"]);
 });

@@ -102,7 +102,7 @@ export default async function PainelCasoPage({
         },
       },
       eventos: {
-        select: { id: true, tipo: true, data: true },
+        select: { id: true, tipo: true, data: true, observacao: true },
       },
     },
   });
