@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition, useCallback, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
-import { criarPaciente, encaminharParaTriagem } from "@/server/reception/paciente";
+import { criarPaciente } from "@/server/reception/paciente";
 import { registrarCuidador } from "@/server/reception/cuidador";
 import {
   registrarConsentimento,
@@ -13,7 +13,6 @@ import {
 import { buscarBaseline } from "@/server/reception/baseline";
 import type { CamposBaseline, OrigensBaseline } from "@/server/reception/baseline-campos";
 
-import { ToastSucesso } from "@/components/ui/toast-sucesso";
 import { Button } from "@/components/ui/button";
 import {
   Card,
