@@ -20,7 +20,7 @@ test.describe("Eventos no PTS", () => {
     await page.getByRole("button", { name: /Registrar evento/i }).click();
 
     // Preencher o formulário
-    await page.getByLabel("Tipo de evento").selectOption("SESSAO");
+    await page.getByLabel("Tipo").selectOption("SESSAO");
     await page.getByLabel("Observação (opcional)").fill("Sessão de reabilitação inicial.");
     
     // Submeter o formulário
@@ -40,7 +40,7 @@ test.describe("Eventos no PTS", () => {
     await page.getByRole("button", { name: /Registrar evento/i }).click();
 
     // Preencher o formulário de FALTA
-    await page.getByLabel("Tipo de evento").selectOption("FALTA");
+    await page.getByLabel("Tipo").selectOption("FALTA");
     await page.getByLabel("Observação (opcional)").fill("Paciente não compareceu ao ônibus.");
     
     // Submeter o formulário
