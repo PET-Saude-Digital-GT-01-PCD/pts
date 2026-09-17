@@ -65,16 +65,21 @@ test("paciente classificado Amarelo entra na fila de espera com posição e esti
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page.getByText(/Paciente cadastrado/)).toBeVisible({ timeout: 15_000 });
 
-  await page.context().clearCookies();
-  await login(page, "triador@pts.local", "triador123");
-
   const paciente = await db.paciente.findFirstOrThrow({
     where: { cpf: CPF },
     select: { id: true },
   });
+  await page.goto(`/pacientes/${paciente.id}`);
+  await page.getByRole("button", { name: "Encaminhar para triagem" }).click();
+  await expect(page.getByText("Encaminhado para triagem")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  await page.context().clearCookies();
+  await login(page, "triador@pts.local", "triador123");
 
   // mesma combinação usada em triage.spec.ts para classificação AMARELO
-  await page.goto(`/pacientes/${paciente.id}`);
+  await page.goto(`/triagem/${paciente.id}`);
   await page.getByLabel("CID-10").fill("G40");
   await page.getByLabel("Motivo do encaminhamento").fill("Convulsão em investigação");
   await page.getByLabel("Mobilidade").fill("10");
