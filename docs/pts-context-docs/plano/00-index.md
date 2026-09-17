@@ -34,6 +34,7 @@ Este conjunto de documentos estrutura, da base teórica à implementação digit
 | 15 | **infra-ci-cd-deploy.md** | Docker, GitHub Actions, ambientes, backup, segurança | Como rodar, testar e publicar? |
 | 16 | **ciclos-engenharia.md** | Fluxo Superpowers, TDD, rituais, ordem de construção | Como trabalhar durante o build? |
 | 17 | **rbac-multi-instancia.md** | RBAC configurável + admissão + multi-instância/branding (blocos A–D) | Como adaptar perfis, permissões e identidade por organização? |
+| 18 | **componentizacao-ui.md** | Convenção de camadas, tamanho de arquivo, arquivo satélite, sidebar/RBAC, primitivos shadcn | Como estruturar telas e componentes daqui pra frente? |
 
 ## Ordem de Leitura
 
