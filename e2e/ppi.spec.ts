@@ -34,6 +34,7 @@ test.afterEach(async ({}, testInfo) => {
   const paciente = await db.paciente.findFirst({ where: { cpf }, select: { id: true } });
   if (!paciente) return;
   await db.auditoria.deleteMany({ where: { entityType: "paciente", entityId: paciente.id } });
+  await db.baseline.deleteMany({ where: { pacienteId: paciente.id } });
   await db.paciente.delete({ where: { id: paciente.id } });
 });
 
