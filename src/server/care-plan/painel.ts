@@ -20,7 +20,7 @@ export function montarTimeline(input: {
   metas?: { id: string; descTecnica: string; dataPactuacao: Date }[];
   revisoes?: { id: string; numero: number; motivo: string; data: Date }[];
   triagens?: { id: string; classificacao: string; criadaEm: Date }[];
-  eventosCuidado?: { id: string; tipo: string; data: Date }[];
+  eventosCuidado?: { id: string; tipo: string; data: Date; observacao?: string | null }[];
 }): ItemTimeline[] {
   const itens: ItemTimeline[] = [
     { tipo: "abertura", data: input.aberturaEm, titulo: "PTS aberto" },
@@ -65,6 +65,7 @@ export function montarTimeline(input: {
       tipo: "evento_cuidado",
       data: e.data,
       titulo: `Evento de cuidado (${e.tipo})`,
+      detalhe: e.observacao || undefined,
     });
   }
 
