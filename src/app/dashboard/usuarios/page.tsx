@@ -14,12 +14,15 @@ import { recursosDoUsuario, requirePermissao } from "@/server/iam/session";
 import { listarPendentes } from "@/server/iam/admissao";
 import { AtribuirPapelForm } from "./atribuir-papel-form";
 import { AprovacaoForm } from "./aprovacao-form";
+import { SimularPerfilBtn } from "./simular-perfil-btn";
+import { podeImpersonar } from "@/server/iam/permissoes";
 
 export default async function UsuariosPage() {
   const user = await requirePermissao("admin.usuarios.ver");
   const recursos = await recursosDoUsuario(user.papelId);
   const podeAtribuirPapel = recursos.includes("admin.papeis.gerenciar");
   const podeAprovar = recursos.includes("admin.usuarios.aprovar");
+  const podeSimular = recursos.includes("admin.usuarios.impersonar");
 
   const [usuarios, papeis, pendentes] = await Promise.all([
     db.usuario.findMany({
@@ -31,6 +34,7 @@ export default async function UsuariosPage() {
         email: true,
         status: true,
         papelId: true,
+        papel: { select: { base: true } },
       },
     }),
     db.papel.findMany({
@@ -73,6 +77,7 @@ export default async function UsuariosPage() {
                 <TableHead>E-mail</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Papel</TableHead>
+                {podeSimular ? <TableHead>Ações</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,6 +95,17 @@ export default async function UsuariosPage() {
                       </span>
                     )}
                   </TableCell>
+                  {podeSimular ? (
+                    <TableCell>
+                      {podeImpersonar(user.id, {
+                        id: u.id,
+                        basePapel: u.papel.base,
+                        status: u.status,
+                      }).ok ? (
+                        <SimularPerfilBtn usuarioId={u.id} />
+                      ) : null}
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>

@@ -1,4 +1,4 @@
-import type { BasePapel } from "@prisma/client";
+import type { BasePapel, StatusUsuario } from "@prisma/client";
 
 export const RECURSOS_CLINICOS = ["clinical."];
 export const PREFIXO_ADMIN_ONLY = "admin.";
@@ -63,4 +63,24 @@ export function podeDeletarPapel(
   ultimoAdminAtivo: boolean,
 ): boolean {
   return !emUso && !ultimoAdminAtivo;
+}
+
+export type ResultadoImpersonacao = { ok: true } | { ok: false; erro: string };
+
+// Guardrails de simulação de perfil: nunca a si mesmo, nunca outro ADMIN
+// (evita escalonar privilégio simulando um admin), nunca alvo inativo.
+export function podeImpersonar(
+  atorId: string,
+  alvo: { id: string; basePapel: BasePapel; status: StatusUsuario },
+): ResultadoImpersonacao {
+  if (alvo.id === atorId) {
+    return { ok: false, erro: "Não é possível simular o próprio perfil." };
+  }
+  if (alvo.basePapel === "ADMIN") {
+    return { ok: false, erro: "Não é possível simular um perfil administrador." };
+  }
+  if (alvo.status !== "ATIVO") {
+    return { ok: false, erro: "Usuário alvo não está ativo." };
+  }
+  return { ok: true };
 }

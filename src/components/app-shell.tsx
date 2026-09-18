@@ -1,7 +1,8 @@
-import { getCurrentUser, recursosDoUsuario } from "@/server/iam/session";
+import { getSessaoComRecursos } from "@/server/iam/session";
 import { buscarOrgConfigView } from "@/server/iam/org-config";
 import { Sidebar } from "@/components/sidebar";
 import { SiteHeader } from "@/components/ui/site-header";
+import { ImpersonacaoBanner } from "@/components/impersonacao-banner";
 
 const NAV_CONFIG = [
   { requires: null, label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
@@ -18,7 +19,10 @@ const NAV_CONFIG = [
 ] as const;
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const [user, orgConfig] = await Promise.all([getCurrentUser(), buscarOrgConfigView()]);
+  const [{ user, recursos }, orgConfig] = await Promise.all([
+    getSessaoComRecursos(),
+    buscarOrgConfigView(),
+  ]);
 
   if (!user) {
     return (
@@ -28,8 +32,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </>
     );
   }
-
-  const recursos = await recursosDoUsuario(user.papelId);
 
   const itens = NAV_CONFIG.filter((item) => {
     if (!item.requires) return true;
@@ -52,7 +54,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         }}
         orgConfig={orgConfig}
       />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto">
+        <ImpersonacaoBanner />
+        {children}
+      </main>
     </div>
   );
 }

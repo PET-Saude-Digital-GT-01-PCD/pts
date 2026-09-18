@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { SessionProvider } from "next-auth/react";
 
 import { AppShell } from "@/components/app-shell";
 import { buscarOrgConfigView } from "@/server/iam/org-config";
@@ -28,7 +29,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppShell>{children}</AppShell>
+          <SessionProvider>
+            <AppShell>{children}</AppShell>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

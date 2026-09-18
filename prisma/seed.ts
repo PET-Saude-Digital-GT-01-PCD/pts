@@ -50,6 +50,7 @@ const RECURSOS = [
   ["admin.usuarios.aprovar", "admin", "Aprovar/rejeitar admissão"],
   ["admin.papeis.gerenciar", "admin", "Gerenciar papéis e permissões"],
   ["admin.config.org.editar", "admin", "Editar configurações da org"],
+  ["admin.usuarios.impersonar", "admin", "Simular perfil de outro usuário"],
 ];
 
 // Matriz padrão (Perguntas/03) por papel base. base: CLINICO | GESTOR | ADMIN.
@@ -174,6 +175,7 @@ const PAPEIS_BASE = [
       "admin.usuarios.aprovar",
       "admin.papeis.gerenciar",
       "admin.config.org.editar",
+      "admin.usuarios.impersonar",
     ],
   },
   {
