@@ -1,6 +1,6 @@
 # Documentação — PTS Digital
 
-Guia operacional do repositório: como subir, configurar, testar e versionar. Documentação de planejamento e ADRs ficam em `pts-context-docs/`.
+Guia operacional do repositório: como subir, configurar, testar e versionar. Documentação de planejamento e ADRs ficam em [`pts-context-docs/`](pts-context-docs/README.md).
 
 ## Índice
 
@@ -24,6 +24,6 @@ Guia operacional do repositório: como subir, configurar, testar e versionar. Do
 | UI | Tailwind CSS + shadcn/ui |
 | Testes | Vitest (unit) + Playwright (e2e) |
 | CI | GitHub Actions |
-| Deploy | Docker-first (imagem portável) |
+| Deploy | Vercel (app) + Supabase (banco) — ver [05-ci-cd-deploy.md](05-ci-cd-deploy.md) |
 
-Decisões de arquitetura: `docs/adr/0001–0010` em `pts-context-docs/`.
+Decisões de arquitetura: `pts-context-docs/docs/adr/0001–0011` (link acima).

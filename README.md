@@ -25,19 +25,19 @@ Mais opções de setup (app no host, banco só) em [docs/02-docker-compose.md](d
 src/app/          rotas/screens (server components, server actions)
 src/components/   shadcn/ui + componentes de UI
 src/server/       bounded contexts (nascem com as features)
-src/lib/          db (PrismaClient), utils
-prisma/           schema, migrations, seed
-tests/            unit (Vitest)
-e2e/              Playwright
-docs/             guia operacional (setup, docker, config, commit)
-pts-context-docs/ planejamento completo (base, plano 00–17, ADRs 0001–0010)
+src/lib/                db (PrismaClient), utils
+prisma/                 schema, migrations, seed
+tests/                  unit (Vitest)
+e2e/                    Playwright
+docs/                   guia operacional (setup, docker, config, commit, CI/CD)
+docs/pts-context-docs/  planejamento completo (base, plano 00–18, ADRs 0001–0011)
 ```
 
 ## Documentação
 
 - **Operacional** (subir, configurar, commit, CI/CD): [`docs/`](docs/README.md)
 - **Domínio e linguagem ubíqua**: [`CONTEXT.md`](CONTEXT.md)
-- **Planejamento e ADRs**: [`pts-context-docs/`](pts-context-docs/README.md)
+- **Planejamento e ADRs**: [`docs/pts-context-docs/`](docs/pts-context-docs/README.md)
 
 ## Comandos
 
