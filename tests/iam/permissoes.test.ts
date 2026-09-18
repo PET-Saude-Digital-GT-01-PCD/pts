@@ -6,6 +6,7 @@ import {
   ehRecursoClinico,
   ehRecursoVedadoGestor,
   podeDeletarPapel,
+  podeImpersonar,
   RECURSOS_ESCRITA_CLINICA_VEDADOS_GESTOR,
   temPermissao,
   validarRecursos,
@@ -150,6 +151,40 @@ describe("iam/permissoes", () => {
 
     it("permite deletar papel livre", () => {
       expect(podeDeletarPapel(false, false)).toBe(true);
+    });
+  });
+
+  describe("podeImpersonar", () => {
+    const alvoClinico = {
+      id: "alvo-1",
+      basePapel: BasePapel.CLINICO,
+      status: "ATIVO" as const,
+    };
+
+    it("bloqueia simular o próprio perfil", () => {
+      const r = podeImpersonar("ator-1", { ...alvoClinico, id: "ator-1" });
+      expect(r.ok).toBe(false);
+    });
+
+    it("bloqueia simular um perfil ADMIN", () => {
+      const r = podeImpersonar("ator-1", {
+        ...alvoClinico,
+        basePapel: BasePapel.ADMIN,
+      });
+      expect(r.ok).toBe(false);
+    });
+
+    it("bloqueia simular usuário não-ativo", () => {
+      const r = podeImpersonar("ator-1", {
+        ...alvoClinico,
+        status: "BLOQUEADO" as const,
+      });
+      expect(r.ok).toBe(false);
+    });
+
+    it("permite simular usuário ativo, não-admin, diferente do ator", () => {
+      const r = podeImpersonar("ator-1", alvoClinico);
+      expect(r.ok).toBe(true);
     });
   });
 });

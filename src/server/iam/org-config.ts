@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 
@@ -12,8 +13,12 @@ import {
   type OrgConfigView,
 } from "@/server/iam/org-config-schema";
 
-/** Leitura pública (sem sessão): usada no layout raiz, header e rodapé. */
-export async function buscarOrgConfigView(): Promise<OrgConfigView> {
+/**
+ * Leitura pública (sem sessão): usada no layout raiz, header e rodapé.
+ * `cache()` dedupe as chamadas de generateMetadata + AppShell dentro da
+ * mesma navegação — sem isso são 2 queries Prisma idênticas por request.
+ */
+export const buscarOrgConfigView = cache(async (): Promise<OrgConfigView> => {
   const cer = await buscarCerUnico();
   if (!cer) return resolverOrgConfig(null);
 
@@ -22,7 +27,7 @@ export async function buscarOrgConfigView(): Promise<OrgConfigView> {
     select: { nomeExibido: true, logoUrl: true, parceirosJson: true },
   });
   return resolverOrgConfig(config);
-}
+});
 
 type Resultado = { ok: true } | { ok: false; erro: string };
 

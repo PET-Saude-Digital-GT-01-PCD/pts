@@ -51,10 +51,42 @@ export async function recursosDoUsuario(papelId: string): Promise<string[]> {
   return papel.recursos.map((pr) => pr.recurso.chave);
 }
 
+/**
+ * Junta usuário + recursos em uma chamada, pra o caller (AppShell) poder
+ * rodar em paralelo com outras queries da navegação (ex.: org config) em vez
+ * de esperar getCurrentUser() terminar pra só então buscar os recursos.
+ */
+export async function getSessaoComRecursos(): Promise<{
+  user: SessaoUsuario | null;
+  recursos: string[];
+}> {
+  const user = await getCurrentUser();
+  if (!user) return { user: null, recursos: [] };
+  const recursos = await recursosDoUsuario(user.papelId);
+  return { user, recursos };
+}
+
 export async function requirePermissao(...chaves: string[]): Promise<SessaoUsuario> {
   const user = await requireAuth();
   const recursos = await recursosDoUsuario(user.papelId);
   const possuiTodas = chaves.every((chave) => recursos.includes(chave));
   if (!possuiTodas) redirect("/");
   return user;
+}
+
+/**
+ * Identidade do admin real, mesmo durante uma simulação de perfil (quando
+ * getCurrentUser()/requirePermissao() já refletem o usuário simulado).
+ */
+export async function getAtorReal(): Promise<{
+  atorRealId: string;
+  impersonando: boolean;
+  usuarioSimuladoId: string | null;
+}> {
+  const session = await auth();
+  return {
+    atorRealId: session?.atorRealId ?? "",
+    impersonando: session?.impersonando ?? false,
+    usuarioSimuladoId: session?.impersonando ? session.user?.id ?? null : null,
+  };
 }
