@@ -1,5 +1,7 @@
 # STATUS — execução noturna
 
+> ⚠️ **Histórico**: artefato da execução noturna autônoma de 2026-08-26 (17 issues, sessões S1–S5). Não reflete o estado atual do projeto — dezenas de PRs vieram depois. Para status atual, ver `git log`/PRs recentes, não este arquivo.
+
 Cada sessão mantém o SEU arquivo em `status/S<n>.md` (committado dentro dos próprios PRs). Uma linha por evento, no formato:
 
 ```
