@@ -1,7 +1,9 @@
 # ADR-0007: Docker-first — imagem portável + compose, alvo de deploy plugável
 
 ## Status
-Aceito
+Superado por [ADR-0011](0011-deploy-vercel-supabase.md) (deploy em Vercel +
+Supabase) — texto original preservado abaixo como registro histórico da
+decisão e do contexto em que foi tomada.
 
 ## Contexto
 Contexto acadêmico sem servidor próprio garantido (plano/07). O alvo de produção ainda não está definido (VPS gerenciado vs plataforma). A escolha de deploy não pode prender o código.
