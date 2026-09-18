@@ -14,10 +14,16 @@ checkout → pnpm install (cache) → typecheck → lint → vitest
 - Cache: pnpm store (via `pnpm/action-setup` + `setup-node`).
 - O e2e de login depende do seed: o workflow roda `db:seed` após migrate e injeta `AUTH_SECRET`, `AUTH_URL` e `SEED_ADMIN_SENHA` (valores só de CI).
 
-Workflows futuros (Fase 2, quando o alvo de deploy for definido — ADR 0007):
+### `db-migrate.yml` (push em `main` / `develop`)
 
-- `deploy-staging.yml` — build imagem → push registry → deploy staging → smoke test.
-- `deploy-prod.yml` — build → push → `prisma migrate deploy` → deploy → healthcheck → backup.
+`prisma migrate deploy` no Supabase certo conforme a branch:
+
+| Branch  | Projeto Supabase | Secret (connection string direct / 5432) |
+|---------|------------------|------------------------------------------|
+| develop | `pts-stage`      | `STAGE_DIRECT_URL`                        |
+| main    | `pts-production`  | `PROD_DIRECT_URL`                         |
+
+O deploy da aplicação em si é da Vercel (Git integration), não de workflow.
 
 ## Secrets
 
@@ -30,22 +36,35 @@ Workflows futuros (Fase 2, quando o alvo de deploy for definido — ADR 0007):
 - A mesma imagem serve dev, staging e prod — só varia configuração (env).
 - Migrations não auto-aplicam em dev; produção roda `prisma migrate deploy` antes de subir o app.
 
-## Alvo de deploy (Fase 2)
+## Ambientes
 
-Decisão registrada em ADR 0007: imagem portável + compose, alvo **plugável**.
-
-Candidatos:
-
-| Alvo | Prós | Contras |
+| Ambiente | App | Banco |
 |---|---|---|
-| VPS + Docker Compose + Caddy (TLS) | controle total, sem custo fixo | manutenção própria |
-| Railway / Fly.io / Render | menos manutenção, mesmo deploy | custo por uso |
+| local | `docker compose up` / `pnpm dev` | Postgres 16 no compose |
+| stage | Vercel **Preview** (branch `develop`) | Supabase `pts-stage` |
+| prod  | Vercel **Production** (branch `main`) | Supabase `pts-production` |
 
-O código não muda quando o alvo mudar — só o passo final do workflow.
+`DATABASE_URL` = Supabase Transaction pooler (6543, `?pgbouncer=true&connection_limit=1`);
+`DIRECT_URL` = Session pooler / direct (5432), usada só por `prisma migrate`/`db:seed`.
+`prisma generate` roda no `postinstall` (build da Vercel).
+
+### Setup por projeto Supabase (uma vez, para `pts-stage` e `pts-production`)
+
+1. Copiar as duas connection strings (Project Settings → Database).
+2. Aplicar schema localmente com as URLs exportadas: `pnpm prisma migrate deploy`.
+   Se falhar em `CREATE EXTENSION`: habilitar `pgcrypto` e `citext` em
+   Database → Extensions e repetir.
+3. Seed:
+   - stage: `SEED_DEMO=true pnpm db:seed`
+   - prod: `SEED_ADMIN_SENHA='<forte>' pnpm db:seed` (sem `SEED_DEMO` → só bootstrap).
+4. Vercel → Environment Variables: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`
+   (`openssl rand -base64 33`), `AUTH_URL` — em `Production` (pts-production) e
+   `Preview` (pts-stage). **Não** definir `SEED_DEMO` em Production.
+5. GitHub → repo Secrets: `PROD_DIRECT_URL`, `STAGE_DIRECT_URL`.
 
 ## Segurança (resumo)
 
 - TLS obrigatório em produção.
 - `pgcrypto` para campos sensíveis; dados clínicos só dentro do PTS (FK `RESTRICT`).
 - Auditoria append-only na mesma transação; lock otimista (`version`) → conflito = 409.
-- Backup: `pg_dump` agendado + backup pós-deploy. Detalhes: `pts-context-docs/plano/15`.
+- Backup: backup automático / PITR do Supabase (substitui o `pg_dump` agendado do `plano/15`).
