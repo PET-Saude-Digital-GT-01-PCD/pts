@@ -10,12 +10,16 @@ cp .env.example .env
 
 | Variável | Descrição | Padrão dev |
 |---|---|---|
-| `DATABASE_URL` | connection string do PostgreSQL | `postgresql://pts:pts@localhost:5432/pts?schema=public` |
+| `DATABASE_URL` | connection string do PostgreSQL (pooler de transação em stage/prod — Supabase, porta 6543) | `postgresql://pts:pts@localhost:5432/pts?schema=public` |
+| `DIRECT_URL` | conexão direta ao Postgres, usada só por `prisma migrate`/`db:seed` (porta 5432; em stage/prod é a Session pooler/direct do Supabase) | igual a `DATABASE_URL` |
 | `AUTH_SECRET` | segredo de assinatura do JWT (Auth.js) — gerar com `openssl rand -base64 32` | — |
 | `AUTH_URL` | URL pública da aplicação (Auth.js) | `http://localhost:3000` |
-| `SEED_ADMIN_SENHA` | senha do usuário `admin@pts.local` no seed (dev) | `admin123` |
+| `SEED_ADMIN_SENHA` | senha do usuário `admin@pts.local` no seed | `admin123` (obrigatória e diferente do padrão quando `SEED_DEMO` não é `true`) |
+| `SEED_DEMO` | `true` cria usuários/pacientes/PTS de exemplo (dev/stage/CI); ausente/qualquer outro valor = só bootstrap (RBAC + 1 admin) — **não definir em produção** | `true` |
+| `SMTP_HOST`/`SMTP_PORT`/`SMTP_FROM` | notificação por e-mail à eSF (issue #64); em dev aponta pro MailHog do compose | `localhost` / `1025` / `pts@local.test` |
+| `NOTIFY_ESF_EMAIL` | e-mail que recebe notificação de PTS aberto; sem valor, envio é pulado silenciosamente | — |
 
-> Dentro do compose (`app`), `DATABASE_URL` aponta para o host `db` (`postgresql://pts:pts@db:5432/pts`). No host, aponta para `localhost`. O `.env` não é versionado (`.gitignore`); o `.env.example` é a fonte de verdade para novas variáveis. `AUTH_SECRET` é obrigatório em produção/CI (o build falha sem ele).
+> Dentro do compose (`app`), `DATABASE_URL`/`DIRECT_URL` apontam para o host `db`. No host, apontam para `localhost`. O `.env` não é versionado (`.gitignore`); o `.env.example` é a fonte de verdade para novas variáveis. `AUTH_SECRET` é obrigatório em produção/CI (o build falha sem ele). Setup completo de stage/prod (Supabase + Vercel): [`05-ci-cd-deploy.md`](05-ci-cd-deploy.md).
 
 ## Scripts
 
@@ -47,6 +51,7 @@ Regras:
 - Em dev, sempre `prisma migrate dev` (nunca auto-apply em produção).
 - Em produção/CI, `prisma migrate deploy` antes de subir o app.
 - Extensões `pgcrypto` (uuid) e `citext` (email/CPF case-insensitive) são criadas pela própria migration.
+- pnpm ≥10 bloqueia build scripts por padrão (`prisma generate` no `postinstall` não rodaria sozinho) — já liberado em `pnpm-workspace.yaml` (`allowBuilds`).
 
 ## Tailwind CSS + shadcn/ui
 

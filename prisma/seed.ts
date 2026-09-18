@@ -11,7 +11,12 @@ try {
 
 const prisma = new PrismaClient();
 
+// SEED_DEMO=true cria usuários/pacientes/PTS de exemplo (dev, stage, CI/e2e).
+// Ausente/qualquer outro valor => só bootstrap (RBAC + 1 admin) — usar em produção.
+const SEED_DEMO = process.env.SEED_DEMO === "true";
+
 // Senha padrão apenas para dev/piloto — sobrescrever com SEED_ADMIN_SENHA.
+// Sem SEED_DEMO (produção), a senha é obrigatória e não pode ser a default.
 const SENHA_ADMIN = process.env.SEED_ADMIN_SENHA ?? "admin123";
 
 const CER_PILOTO_ID = "00000000-0000-4000-8000-000000000001";
@@ -284,7 +289,14 @@ async function upsertFormularioCadastroUsuario(cerId: string) {
   }
 }
 
-async function main() {
+async function seedBootstrap() {
+  // Sem SEED_DEMO (produção): senha do admin obrigatória e != default.
+  if (!SEED_DEMO && (!process.env.SEED_ADMIN_SENHA || SENHA_ADMIN === "admin123")) {
+    throw new Error(
+      "SEED_ADMIN_SENHA obrigatória (e diferente de 'admin123') quando SEED_DEMO != true",
+    );
+  }
+
   const cer = await prisma.cer.upsert({
     where: { id: CER_PILOTO_ID },
     update: {},
@@ -313,10 +325,6 @@ async function main() {
     where: { cerId_nome: { cerId: cer.id, nome: "ADMIN" } },
   });
 
-  const papelFisio = await prisma.papel.findUniqueOrThrow({
-    where: { cerId_nome: { cerId: cer.id, nome: "FISIOTERAPEUTA" } },
-  });
-
   const senhaHash = await bcrypt.hash(SENHA_ADMIN, 10);
 
   await prisma.usuario.upsert({
@@ -331,6 +339,17 @@ async function main() {
       status: "ATIVO",
       cerId: cer.id,
     },
+  });
+
+  return cer;
+}
+
+async function seedDemo(cer: { id: string }) {
+  const papelAdmin = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "ADMIN" } },
+  });
+  const papelFisio = await prisma.papel.findUniqueOrThrow({
+    where: { cerId_nome: { cerId: cer.id, nome: "FISIOTERAPEUTA" } },
   });
 
   await prisma.usuario.upsert({
@@ -650,11 +669,20 @@ async function main() {
   });
 
   console.log(
-    `Seed ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base e usuários admin/pendente/bloqueado criados.`,
+    `Seed demo: PTS ativo ${PTS_ATIVO_ID} (Maria), PTS fechado ${PTS_FECHADO_ID} (João) e usuários de exemplo.`,
   );
+}
+
+async function main() {
+  const cer = await seedBootstrap();
   console.log(
-    `Seed exemplo painel (#16): PTS ativo ${PTS_ATIVO_ID} (Maria) e PTS fechado ${PTS_FECHADO_ID} (João).`,
+    `Seed bootstrap ok: CER, ${RECURSOS.length} recursos, ${PAPEIS_BASE.length} papéis base, admin@pts.local.`,
   );
+  if (SEED_DEMO) {
+    await seedDemo(cer);
+  } else {
+    console.log("SEED_DEMO != true: sem dados de exemplo (modo produção).");
+  }
 }
 
 main()

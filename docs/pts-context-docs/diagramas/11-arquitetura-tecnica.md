@@ -120,7 +120,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    TX[Transação da mutação] -->|INSERT outbound_queue| Q[(outbound_queue)]
+    TX[Transação da mutação] -->|INSERT outbound_event| Q[(outbound_event)]
     Q -->|poll SKIP LOCKED| W[Worker]
     W -->|retry backoff| R[Retry]
     W -->|entrega| EXT[e-SUS / notify]

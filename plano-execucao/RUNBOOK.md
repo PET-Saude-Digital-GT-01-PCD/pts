@@ -1,5 +1,7 @@
 # RUNBOOK — Protocolo comum das sessões autônomas
 
+> ⚠️ **Histórico**: artefato da execução noturna autônoma de 2026-08-26 (17 issues, sessões S1–S5). Não reflete o estado atual do projeto — dezenas de PRs vieram depois. Para status atual, ver `git log`/PRs recentes, não este arquivo.
+
 Vale para TODAS as sessões (S1–S5). Leia antes de começar e siga à risca. Você é um agente autônomo: **não pergunte, decida** conforme este runbook + o corpo da issue (`gh issue view <n>` é a fonte única de verdade).
 
 ## 0. Pré-voo (uma vez por sessão)
