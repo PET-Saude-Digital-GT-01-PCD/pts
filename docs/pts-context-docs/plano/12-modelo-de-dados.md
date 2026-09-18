@@ -296,7 +296,7 @@ Append-only, escrita na mesma transação da mutação (ADR 0005). Nunca update/
 | motivo | text null |
 | criadaEm | timestamptz |
 
-### `outbound_queue`
+### `outbound_event`
 Fila de escrita externa (marcador e-SUS, contrarreferência, notificações). Worker com `FOR UPDATE SKIP LOCKED` (ADR 0006).
 
 | Coluna | Tipo | Notas |
@@ -340,7 +340,7 @@ Tabela PPI configurável localmente (sem dependência de rede).
 | `triagem(ptsId)` | triagem | semáforo |
 | `discussao(ptsId, criadaEm)` | discussao | mural (timeline) |
 | `auditoria(entityType, entityId, criadaEm)` | auditoria | trilha |
-| `outbound_queue(status, nextRetryAt)` | outbound_queue | polling do worker |
+| `outbound_event(status, nextRetryAt)` | outbound_event | polling do worker |
 | `meta_status_historico(metaId, data)` | meta_status_historico | comparativo |
 
 ## 5. Simplificações deliberadas

@@ -7,7 +7,9 @@ Aceito
 Escritas externas (marcador e-SUS, contrarreferência, notificações) não podem executar inline no fluxo clínico nem travar por indisponibilidade da integração. Necessário enfileiramento com retry.
 
 ## Decisão
-- Tabela **`outbound_queue`** em PostgreSQL; worker com `SELECT ... FOR UPDATE SKIP LOCKED`.
+- Tabela **`outbound_event`** (nomeada `outbound_queue` neste registro
+  original; implementada como `outbound_event` — mesma decisão, nome
+  final diferente) em PostgreSQL; worker com `SELECT ... FOR UPDATE SKIP LOCKED`.
 - Retry com backoff exponencial (`attempts`, `lastError`, `nextRetryAt`); idempotência por hash do payload.
 - Sem Redis/RabbitMQ.
 
