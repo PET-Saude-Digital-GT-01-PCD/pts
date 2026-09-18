@@ -21,6 +21,7 @@ async function limparGuiasDoPaciente(cpf: string) {
   });
   await db.contrarreferencia.deleteMany({ where: { pacienteId: paciente.id } });
   await db.pts.deleteMany({ where: { pacienteId: paciente.id } });
+  await db.baseline.deleteMany({ where: { pacienteId: paciente.id } });
   await db.paciente.delete({ where: { id: paciente.id } });
 }
 
@@ -46,6 +47,7 @@ test.afterAll(async () => {
     await db.contrarreferencia.deleteMany({ where: { id: { in: guiaIds } } });
   }
   await db.pts.deleteMany({ where: { id: { in: ptsIds } } });
+  await db.baseline.deleteMany({ where: { pacienteId: { in: pacienteIds } } });
   await db.paciente.deleteMany({ where: { id: { in: pacienteIds } } });
   await db.$disconnect();
 });
@@ -86,6 +88,8 @@ test("NAO_ELEGIVEL na triagem oferece emissão de guia; resumo imprimível abre 
   });
 
   await page.goto(`/pacientes/${paciente.id}`);
+  await page.getByRole("button", { name: "Encaminhar para triagem" }).click();
+  await page.goto(`/triagem/${paciente.id}`);
   await page.getByLabel("CID-10").fill("H90");
   await page.getByLabel("Motivo do encaminhamento").fill("Perda auditiva");
   await page.getByRole("button", { name: "Concluir triagem" }).click();

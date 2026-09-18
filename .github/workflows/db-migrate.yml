@@ -1,0 +1,32 @@
+name: db-migrate
+
+# Aplica as migrations Prisma ao Supabase certo conforme a branch:
+#   develop -> pts-stage   (secret STAGE_DIRECT_URL)
+#   main    -> pts-production (secret PROD_DIRECT_URL)
+# Secrets são as connection strings "direct" (porta 5432).
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      DIRECT_URL: ${{ github.ref_name == 'main' && secrets.PROD_DIRECT_URL || secrets.STAGE_DIRECT_URL }}
+      DATABASE_URL: ${{ github.ref_name == 'main' && secrets.PROD_DIRECT_URL || secrets.STAGE_DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma migrate deploy
+        run: pnpm prisma migrate deploy

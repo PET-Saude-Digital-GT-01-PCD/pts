@@ -68,7 +68,7 @@ Falha em qualquer passo → rollback completo. Operações críticas: classifica
 ## 8. Fila outbound (integrações)
 
 - Escritas externas (marcador e-SUS, contrarreferência, notificações) **nunca** executam inline no fluxo clínico.
-- Enfileiramento: INSERT em `outbound_queue` na mesma transação da mutação que o gerou.
+- Enfileiramento: INSERT em `outbound_event` na mesma transação da mutação que o gerou.
 - Worker: poll com `SELECT ... FOR UPDATE SKIP LOCKED` por status `PENDING` e `nextRetryAt <= now()`.
 - Retry com backoff exponencial; `attempts` e `lastError` persistem.
 - Idempotência: `payloadJson` + hash no retry.

@@ -29,6 +29,8 @@ pnpm --version   # 10.x ou 11.x
 
 > O repositório declara `.nvmrc` (Node 22) e `packageManager` no `package.json`. O `nvm`/`corepack` respeitam automaticamente.
 
+> **Armadilha conhecida:** pnpm ≥10 bloqueia build scripts (`postinstall` etc.) por padrão. O repositório já libera os pacotes necessários em `pnpm-workspace.yaml` (`allowBuilds`) — se adicionar uma dependência nova com build script (ex.: outro binário nativo), pode precisar adicioná-la lá também.
+
 ## Opcional
 
 | Ferramenta | Uso |

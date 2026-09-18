@@ -9,6 +9,12 @@ export type Medicacao = {
 export type BaselinePaciente = {
   /** CPF ou CNS, só dígitos */
   identificador: string;
+  /** Dados demográficos (opcionais, usados no preenchimento do formulário) */
+  nome?: string;
+  dtnasc?: string;
+  sexo?: "MASCULINO" | "FEMININO" | "OUTRO";
+  endereco?: string;
+  
   diagnosticos: string[];
   alergias: string[];
   medicacoes: Medicacao[];

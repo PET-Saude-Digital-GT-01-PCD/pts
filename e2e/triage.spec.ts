@@ -78,6 +78,16 @@ async function criarPaciente(page: import("@playwright/test").Page, nome: string
   await expect(page.getByText(/Paciente cadastrado/)).toBeVisible({
     timeout: 15_000,
   });
+  const paciente = await db.paciente.findFirstOrThrow({
+    where: { cpf: CPF },
+    select: { id: true },
+  });
+  await page.goto(`/pacientes/${paciente.id}`);
+  await page.getByRole("button", { name: "Encaminhar para triagem" }).click();
+  await expect(page.getByText("Encaminhado para triagem")).toBeVisible({
+    timeout: 15_000,
+  });
+
   // sai da sessão recepção para entrar como triador
   await page.context().clearCookies();
   await login(page, "triador@pts.local", "triador123");
@@ -93,7 +103,7 @@ test("nascimento: triagem elegível cria PTS visível com semáforo; pontuacaoJs
     select: { id: true },
   });
 
-  await page.goto(`/pacientes/${paciente.id}`);
+  await page.goto(`/triagem/${paciente.id}`);
   await page.getByLabel("CID-10").fill("G40");
   await page.getByLabel("Motivo do encaminhamento").fill("Convulsão em investigação");
   await page.getByLabel("Mobilidade").fill("10");
@@ -121,7 +131,7 @@ test("não elegível não persiste nada e orienta retorno à APS", async ({ page
     select: { id: true },
   });
 
-  await page.goto(`/pacientes/${paciente.id}`);
+  await page.goto(`/triagem/${paciente.id}`);
   await page.getByLabel("CID-10").fill("H90");
   await page.getByLabel("Motivo do encaminhamento").fill("Perda auditiva");
   await page.getByRole("button", { name: "Concluir triagem" }).click();
@@ -142,7 +152,7 @@ test("revisão manual exige justificativa e nasce com REVISAO_MANUAL; ajuste app
     select: { id: true },
   });
 
-  await page.goto(`/pacientes/${paciente.id}`);
+  await page.goto(`/triagem/${paciente.id}`);
   await page.getByLabel("CID-10").fill("Z99");
   await page.getByLabel("Motivo do encaminhamento").fill("Dependência de cuidados");
   await page.getByLabel("Mobilidade").fill("10");
@@ -195,7 +205,7 @@ test("re-triagem com versão antiga retorna conflito 409", async ({ page }) => {
   });
 
   // primeira triagem nasce o caso
-  await page.goto(`/pacientes/${paciente.id}`);
+  await page.goto(`/triagem/${paciente.id}`);
   await page.getByLabel("CID-10").fill("M54");
   await page.getByLabel("Motivo do encaminhamento").fill("Dor crônica coluna");
   await page.getByRole("button", { name: "Concluir triagem" }).click();

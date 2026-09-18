@@ -4,9 +4,10 @@ Instruções operacionais para agentes que trabalham neste repositório. Instru�
 
 ## Estado atual
 
-- **Fase:** base de desenvolvimento pronta. Next.js 15 · TypeScript strict · Tailwind + shadcn/ui · PostgreSQL 16 · Prisma · Docker-first · Vitest · Playwright · GitHub Actions.
-- Contexto do produto (planejamento completo, ADRs 0001–0010): `pts-context-docs/`. Respeite ADRs; não reabra decisão registrada. RBAC configurável + admissão + multi-instância: `plano/17`.
-- Fluxo de engenharia oficial: **Superpowers** (`plano/16`). Fluxos do Matt Pocock não misturar.
+- **Fase:** MVP (Fase 1) + boa parte da Fase 2 do roadmap entregues (RBAC dinâmico, governança M6, portal cidadão) — ver `CHANGELOG.md`. Em polimento/refatoração de UI, indo para Fase 3 (multi-CER/offline/e-SUS real). Next.js 15 · TypeScript strict · Tailwind + shadcn/ui · PostgreSQL 16 · Prisma · Vitest · Playwright · GitHub Actions.
+- Contexto do produto (planejamento completo, ADRs 0001–0011): `docs/pts-context-docs/`. Respeite ADRs; não reabra decisão registrada. RBAC configurável + admissão + multi-instância: `plano/17`. Componentização de UI: `plano/18`.
+- **Deploy:** Vercel (app) + Supabase (banco) — ADR-0011, supera ADR-0007 (Docker-first/alvo plugável). `Dockerfile`/`docker-compose.yml` seguem valendo só para dev local. Detalhes: `docs/05-ci-cd-deploy.md`.
+- Fluxo de engenharia oficial: **Superpowers** (`plano/16`). Fluxos do Matt Pocock não misturar. `plano-execucao/` é log histórico de uma execução noturna autônoma pontual (26/08) — não é o fluxo de toda sessão, não confundir com status atual do projeto.
 
 ## Comandos
 

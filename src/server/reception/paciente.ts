@@ -29,6 +29,25 @@ const pacienteInputSchema = z.object({
   enderecoJson: z.record(z.unknown()).optional(),
   ubsId: z.string().uuid().optional(),
   municipioOrigem: z.string().trim().min(2, "Município é obrigatório.").max(120),
+  origem: z.enum(["importado", "digitado"]).optional(),
+  baseline: z
+    .object({
+      campos: z.object({
+        diagnosticos: z.array(z.string()),
+        alergias: z.array(z.string()),
+        medicacoes: z.array(
+          z.object({ nome: z.string(), dosagem: z.string().nullable() }),
+        ),
+        internacoes: z.array(z.string()),
+      }),
+      origens: z.object({
+        diagnosticos: z.enum(["importado", "digitado"]),
+        alergias: z.enum(["importado", "digitado"]),
+        medicacoes: z.enum(["importado", "digitado"]),
+        internacoes: z.enum(["importado", "digitado"]),
+      }),
+    })
+    .optional(),
 });
 
 export type ResultadoPaciente =
@@ -90,6 +109,18 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
           municipioOrigem: dados.municipioOrigem,
           provisorio,
           prazoRegularizacao,
+          origem: dados.origem,
+          baseline: dados.baseline
+            ? {
+                create: {
+                  diagnosticosJson: dados.baseline.campos.diagnosticos,
+                  alergiasJson: dados.baseline.campos.alergias,
+                  medicacoesJson: dados.baseline.campos.medicacoes,
+                  internacoesJson: dados.baseline.campos.internacoes,
+                  origemJson: dados.baseline.origens,
+                },
+              }
+            : undefined,
         },
       });
 
@@ -164,5 +195,157 @@ export async function buscarPacientePorDocumento(
       ...(doc.length === 11 ? { cpf: doc } : { cns: doc }),
     },
     select: { id: true, nome: true, cpf: true, cns: true },
+  });
+}
+
+// ===== Lista de pacientes do CER =====
+
+export type PacienteListado = {
+  id: string;
+  nome: string;
+  cpf: string | null;
+  cns: string | null;
+  dtnasc: Date;
+  sexo: string;
+  encaminhadoTriagem: boolean;
+  criadoEm: Date;
+  baseline: {
+    diagnosticosJson: unknown;
+    alergiasJson: unknown;
+    medicacoesJson: unknown;
+    internacoesJson: unknown;
+    origemJson: unknown;
+  } | null;
+  pts: { id: string; status: string }[];
+};
+
+export async function listarPacientesCer(): Promise<PacienteListado[]> {
+  const user = await requirePermissao("recepcao.paciente.ver");
+  if (!user.cerId) return [];
+
+  return db.paciente.findMany({
+    where: { cerId: user.cerId, ativo: true },
+    orderBy: { criadoEm: "desc" },
+    select: {
+      id: true,
+      nome: true,
+      cpf: true,
+      cns: true,
+      dtnasc: true,
+      sexo: true,
+      encaminhadoTriagem: true,
+      criadoEm: true,
+      baseline: {
+        select: {
+          diagnosticosJson: true,
+          alergiasJson: true,
+          medicacoesJson: true,
+          internacoesJson: true,
+          origemJson: true,
+        },
+      },
+      pts: {
+        where: { status: { not: "FECHADO" } },
+        select: { id: true, status: true },
+        take: 1,
+      },
+    },
+  });
+}
+
+// ===== Encaminhamento para triagem =====
+
+export type ResultadoEncaminhamento =
+  | { ok: true }
+  | { ok: false; erro: string };
+
+export async function encaminharParaTriagem(
+  pacienteId: string,
+): Promise<ResultadoEncaminhamento> {
+  const user = await requirePermissao("recepcao.paciente.cadastrar");
+
+  const paciente = await db.paciente.findUnique({
+    where: { id: pacienteId },
+    select: {
+      id: true,
+      nome: true,
+      encaminhadoTriagem: true,
+      pts: { where: { status: { not: "FECHADO" } }, select: { id: true }, take: 1 },
+    },
+  });
+
+  if (!paciente) return { ok: false, erro: "Paciente não encontrado." };
+  if (paciente.encaminhadoTriagem) return { ok: false, erro: "Paciente já encaminhado para triagem." };
+  if (paciente.pts.length > 0) return { ok: false, erro: "Paciente já possui um caso ativo." };
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.paciente.update({
+        where: { id: pacienteId },
+        data: { encaminhadoTriagem: true },
+      });
+      await tx.auditoria.create({
+        data: {
+          actorId: user.id,
+          action: "recepcao.encaminhar_triagem",
+          entityType: "paciente",
+          entityId: pacienteId,
+          afterJson: { encaminhadoTriagem: true },
+        },
+      });
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, erro: "Erro ao encaminhar paciente." };
+  }
+}
+
+// ===== Fila de triagem (para TRIADOR) =====
+
+export type PacienteFilaTriagem = {
+  id: string;
+  nome: string;
+  cpf: string | null;
+  cns: string | null;
+  dtnasc: Date;
+  sexo: string;
+  baseline: {
+    diagnosticosJson: unknown;
+    alergiasJson: unknown;
+    medicacoesJson: unknown;
+    internacoesJson: unknown;
+    origemJson: unknown;
+  } | null;
+};
+
+export async function pacientesEncaminhadosTriagem(): Promise<PacienteFilaTriagem[]> {
+  const user = await requirePermissao("triage.triagem.escrever");
+  if (!user.cerId) return [];
+
+  return db.paciente.findMany({
+    where: {
+      cerId: user.cerId,
+      ativo: true,
+      encaminhadoTriagem: true,
+      pts: { none: { status: { not: "FECHADO" } } },
+    },
+    orderBy: { criadoEm: "asc" },
+    select: {
+      id: true,
+      nome: true,
+      cpf: true,
+      cns: true,
+      dtnasc: true,
+      sexo: true,
+      baseline: {
+        select: {
+          diagnosticosJson: true,
+          alergiasJson: true,
+          medicacoesJson: true,
+          internacoesJson: true,
+          origemJson: true,
+        },
+      },
+    },
   });
 }

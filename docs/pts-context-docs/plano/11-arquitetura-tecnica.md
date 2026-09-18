@@ -96,7 +96,7 @@ Prioridade de construção (Fase 1): `care-plan` + `iam` + `reception` + `triage
 | Integração | Direção | Uso | Contingência |
 |---|---|---|---|
 | **e-SUS PEC (API FHIR)** | Leitura | Linha de base (M1), elegibilidade (M2) | Mock em dev; degradação p/ cadastro provisório com flag `origem=digitado` |
-| **e-SUS PEC (escrita)** | Escrita | Marcador PTS, guia de contrarreferência | `outbound_queue` + reenvio + confirmação |
+| **e-SUS PEC (escrita)** | Escrita | Marcador PTS, guia de contrarreferência | `outbound_event` + reenvio + confirmação |
 | **Gov.br** | OIDC | Consentimento/autenticação | Provider opcional; tablet/credencial como fallback |
 | **PPI (tabela)** | Leitura local | Validação territorial (M1) | Tabela configurável; sem dependência de rede |
 | **SMS/e-mail** | Notificação | Avisos à eSF e usuário | Fila + MailHog em dev |

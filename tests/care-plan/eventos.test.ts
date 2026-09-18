@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, vi, beforeAll, beforeEach, afterAll } from "vitest";
 import { randomUUID } from "node:crypto";
 
 const sessao = vi.hoisted(() => ({
@@ -21,6 +21,10 @@ vi.mock("@/server/iam/session", () => ({
   recursosDoUsuario: async () => sessao.chaves,
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 import { db } from "@/lib/db";
 import { registrarEvento, temFaltaRecente } from "@/server/care-plan/eventos";
 
@@ -37,6 +41,10 @@ beforeAll(async () => {
   });
   adminId = admin.id;
   sessao.actorId = adminId;
+  sessao.chaves = ["care-plan.pts.revisar"];
+});
+
+beforeEach(() => {
   sessao.chaves = ["care-plan.pts.revisar"];
 });
 
@@ -78,6 +86,7 @@ describe("care-plan/eventos — registrarEvento", () => {
       data,
       observacao: "Sessão de fisioterapia.",
     });
+    if (!r.ok) console.log(r.erro);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
 

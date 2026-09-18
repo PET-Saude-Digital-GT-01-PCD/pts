@@ -42,21 +42,22 @@ Regras:
 - Um commit = uma mudança lógica. Commits pequenos e frequentes.
 - Não commitar `.env`, segredos, `.next/`, `node_modules/`.
 
-## Branches — trunk-based + feature branches
+## Branches — `develop` como tronco de integração + feature branches
 
 | Branch | Origem | Uso |
 |---|---|---|
-| `main` | — | sempre deployável; proteção de CI obrigatória |
-| `feature/<nome>` | `main` | trabalho de uma feature/ticket |
-| `fix/<nome>` | `main` | correção |
+| `main` | `develop` | produção (Vercel Production, Supabase `pts-production`); recebe merge de `develop` quando um lote está pronto para deploy |
+| `develop` | — | tronco de integração; sempre buildável; proteção de CI obrigatória; deploy automático em stage (Vercel Preview, Supabase `pts-stage`) |
+| `feature/<nome>`, `refactor/<nome>`, `fix/<nome>`, `docs/<nome>` | `develop` | trabalho de uma feature/ticket/correção/doc |
 
 Fluxo:
 
-1. Criar branch a partir de `main` atualizada: `git checkout -b feature/<nome>`.
+1. Criar branch a partir de `develop` atualizada: `git checkout -b feature/<nome>`.
 2. Commits convencionais incrementais ao longo do trabalho.
-3. Abrir Pull Request com título no formato conventional commit.
+3. Abrir Pull Request para `develop` com título no formato conventional commit.
 4. CI (`ci.yml`) precisa passar: typecheck, lint, testes, build, e2e.
 5. Merge (squash) → branch apagada.
+6. Periodicamente, `develop` é mergeada em `main` para ir a produção.
 
 > Rituais e fluxo de engenharia (Superpowers) em `pts-context-docs/plano/16`.
 
@@ -75,7 +76,7 @@ pnpm version minor          # bumps package.json + cria tag
 git push --tags
 ```
 
-A tag vira a referência do build da imagem no CI (futuro `deploy-prod.yml`).
+A tag marca a release; o deploy de produção em si é automático via Vercel a cada merge em `main` (não depende da tag) — ver [`05-ci-cd-deploy.md`](05-ci-cd-deploy.md).
 
 ## Checklist antes do commit
 
