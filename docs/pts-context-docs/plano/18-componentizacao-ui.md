@@ -66,14 +66,28 @@ por padrão): `button`, `card`, `dropdown-menu`, `input`, `label`, `alert`,
 - ADR-0010: tema claro/escuro fixo, branding só via `org_config`
   (nome/logo/parceiros) — sem customização de cor por organização.
 
-## 7. Próximos passos (não implementados agora, ver histórico de PRs)
+## 7. Feito (ver histórico de PRs)
 
-- `novo-paciente-form.tsx` e `soap-form.tsx` (os dois maiores arquivos do
-  projeto): quebrar em subcomponentes por seção, mesmo padrão satélite.
-  Avaliar `react-hook-form` só nesse ponto (zod já é dependência do projeto)
-  antes de propor para os outros ~18 formulários manuais.
-- Trocar divs/cards de listagem por `Table` nas telas mais lidas
-  (`dashboard/usuarios`, `dashboard/papeis`, `governanca/auditoria`).
-- Trocar navegação-para-confirmar por `AlertDialog` em ações destrutivas.
+- `novo-paciente-form.tsx` (590→241 linhas) e `soap-form.tsx` (350→148
+  linhas): quebrados em subcomponentes por seção, padrão satélite.
+- `editar-papel-form.tsx`: `confirm()` nativo (bloqueante, sem estilo,
+  inacessível) trocado por `AlertDialog` na exclusão de papel.
+- `dashboard/usuarios`: lista de usuários ativos trocada de divs por `Table`
+  — colunas escalares (nome/e-mail/status/papel), fit natural.
+
+**Decisão registrada**: `dashboard/papeis` e `governanca/auditoria` **não**
+foram convertidos para `Table`. `papeis` é uma lista de linhas-link inteiras
+(cada item navega para o detalhe) — forçar `Table` exigiria contornar a
+semântica de linha clicável sem ganho real. `auditoria` tem conteúdo rico e
+de tamanho variável por evento (motivo, resumo antes/depois opcionais) — não
+é dado tabular, uma lista de cards continua sendo a estrutura certa. Retrofit
+só faz sentido onde os dados já são colunas escalares; forçar `Table` nos
+outros dois seria complexidade sem benefício (ver regra 1 da ladder: não
+adicionar abstração sem necessidade real).
+
+## 8. Próximos passos (não implementados agora)
+
+- Avaliar `react-hook-form` nos 2 formulários grandes (zod já é dependência
+  do projeto) antes de propor para os outros ~18 formulários manuais.
 - `server/governance/`: agrupar/renomear `auditoria.ts` + `auditoria-resumo.ts`
   oportunisticamente, sem PR dedicado.
