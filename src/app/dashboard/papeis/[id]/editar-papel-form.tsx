@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   atualizarPapel,
   deletarPapel,
 } from "@/server/iam/papeis";
@@ -58,9 +69,6 @@ export function EditarPapelForm({
 
   async function excluir() {
     setErro(null);
-    if (!confirm("Excluir este papel? Papéis em uso não podem ser excluídos.")) {
-      return;
-    }
     const result = await deletarPapel(papelId);
     if (!result.ok) {
       setErro(result.erro ?? "Erro ao excluir.");
@@ -117,9 +125,27 @@ export function EditarPapelForm({
       ) : null}
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
-        <Button type="button" variant="destructive" onClick={excluir}>
-          Excluir
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button type="button" variant="destructive">
+              Excluir
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir este papel?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Papéis em uso não podem ser excluídos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={excluir}>
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </form>
   );

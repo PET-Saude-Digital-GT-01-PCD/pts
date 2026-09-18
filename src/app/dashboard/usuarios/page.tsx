@@ -1,6 +1,14 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { recursosDoUsuario, requirePermissao } from "@/server/iam/session";
 import { listarPendentes } from "@/server/iam/admissao";
@@ -57,28 +65,35 @@ export default async function UsuariosPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Usuários ativos</h2>
-        <div className="divide-y rounded-md border">
-          {usuarios.map((u) => (
-            <div
-              key={u.id}
-              data-email={u.email}
-              className="flex items-center justify-between gap-4 px-4 py-3"
-            >
-              <div>
-                <p className="font-medium">{u.nome}</p>
-                <p className="text-xs text-muted-foreground">
-                  {u.email} · {u.status}
-                </p>
-              </div>
-              {podeAtribuirPapel ? (
-                <AtribuirPapelForm usuario={u} papeis={papeis} />
-              ) : (
-                <span className="text-sm text-muted-foreground">
-                  {papeis.find((p) => p.id === u.papelId)?.nome ?? "—"}
-                </span>
-              )}
-            </div>
-          ))}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>E-mail</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Papel</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {usuarios.map((u) => (
+                <TableRow key={u.id} data-email={u.email}>
+                  <TableCell className="font-medium">{u.nome}</TableCell>
+                  <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                  <TableCell className="text-muted-foreground">{u.status}</TableCell>
+                  <TableCell className="whitespace-normal">
+                    {podeAtribuirPapel ? (
+                      <AtribuirPapelForm usuario={u} papeis={papeis} />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {papeis.find((p) => p.id === u.papelId)?.nome ?? "—"}
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </section>
     </main>
