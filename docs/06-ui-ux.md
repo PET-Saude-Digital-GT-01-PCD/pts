@@ -78,6 +78,12 @@ cópias divergentes de `rounded-md border px-3 text-sm`.
 3. O menu lateral usa `aria-label="Menu principal"`. Com "Navegação principal",
    o `getByLabel("Ação")` do e2e de auditoria casava também com o `<nav>`, já
    que "Navegação" contém "ação" e o seletor faz busca por substring.
+4. `loading.tsx` em tela com server action que chama `revalidatePath`
+   (`/dashboard/usuarios`, `/dashboard/papeis`) deixa a lista desatualizada
+   depois da mutação: a action grava, mas a UI não re-renderiza (bug do Next,
+   vercel/next.js#66426 e #87529; `e2e/admissao.spec.ts` e `e2e/papeis.spec.ts`
+   quebram). Por isso o esqueleto `AdminSkeleton` só está em
+   `/governanca/auditoria`, que é somente leitura.
 
 ## 6. Verificação
 
