@@ -30,9 +30,11 @@ de forma consistente, via token, no lugar de cores soltas do Tailwind.
 | `empty-state.tsx` *(novo)* | estado vazio padrão: ícone, título, descrição e ação. |
 | `form-field.tsx` *(novo)* | liga label, dica e erro ao controle por `aria-describedby`/`aria-invalid`, com `role="alert"` no erro. |
 
-`lib/utils.ts` ganhou `campoNativoClasses` e `areaNativaClasses`: os `<select>` e
-`<textarea>` nativos espalhados pelo app agora usam a mesma string em vez de dez
-cópias divergentes de `rounded-md border px-3 text-sm`.
+`lib/utils.ts` ganhou `campoNativoClasses`: os `<select>` nativos espalhados pelo
+app agora usam a mesma string em vez de dez cópias divergentes de
+`rounded-md border px-3 text-sm`. Textareas usam o primitivo `Textarea`. O
+`<select>` continua nativo de propósito: picker do sistema no mobile e
+`selectOption` direto nos e2e.
 
 ## 3. PTS (`src/app/casos/[ptsId]`)
 
