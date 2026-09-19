@@ -4,6 +4,7 @@ import { diasAteRegularizacao } from "@/server/reception/ppi";
 import { buscarPosicaoNaFila } from "@/server/triage/fila-espera";
 import { db } from "@/lib/db";
 import { EncaminharTriagemBtn } from "./encaminhar-btn";
+import { Badge } from "@/components/ui/badge";
 
 export default async function PacientePage({
   params,
@@ -125,8 +126,8 @@ export default async function PacientePage({
           {paciente.municipioOrigem && (
             <Linha rotulo="Município de Origem" valor={paciente.municipioOrigem} />
           )}
-          <Linha 
-            rotulo="Endereço" 
+          <Linha
+            rotulo="Endereço"
             valor={paciente.enderecoJson ? (paciente.enderecoJson as Record<string, string>).logradouro || (paciente.enderecoJson as Record<string, string>).endereco || (paciente.enderecoJson as Record<string, string>).rua || String(paciente.enderecoJson) : "—"} 
           />
         </dl>
@@ -135,7 +136,7 @@ export default async function PacientePage({
         {paciente.baseline && (
           <section className="space-y-3">
             <h2 className="text-lg font-medium">Linha de base</h2>
-            <div className="grid gap-3 rounded-md border p-4 text-sm">
+            <div className="grid gap-3 rounded-lg border border-border p-4 text-sm">
               <CampoBaseline
                 rotulo="Diagnósticos"
                 valores={diagnosticos}
@@ -166,7 +167,7 @@ export default async function PacientePage({
             <h2 className="text-lg font-medium">Cuidadores</h2>
             <div className="grid gap-3">
               {paciente.cuidadores.map((c, i) => (
-                <div key={i} className="rounded-md border p-4 text-sm space-y-2">
+                <div key={i} className="space-y-2 rounded-lg border border-border p-4 text-sm">
                   <div className="font-semibold">{c.nome}</div>
                   <div className="text-muted-foreground">Parentesco: {c.parentesco}</div>
                   {c.idade !== null && <div className="text-muted-foreground">Idade: {c.idade}</div>}
@@ -187,7 +188,7 @@ export default async function PacientePage({
             <h2 className="text-lg font-medium">Consentimentos LGPD</h2>
             <div className="grid gap-3">
               {paciente.consentimentos.map((c, i) => (
-                <div key={i} className={`rounded-md border p-4 text-sm space-y-1 ${c.revogadoEm ? "opacity-60" : ""}`}>
+                <div key={i} className={`space-y-1 rounded-lg border border-border p-4 text-sm ${c.revogadoEm ? "opacity-60" : ""}`}>
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Versão: {c.termoVersao}</span>
                     <span className="text-xs text-muted-foreground">{c.data.toLocaleDateString("pt-BR")}</span>
@@ -255,15 +256,9 @@ function CampoBaseline({
       <div className="flex items-center gap-2">
         <span className="font-medium">{rotulo}</span>
         {origem && (
-          <span
-            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-              origem === "importado"
-                ? "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
+          <Badge variant={origem === "importado" ? "importado" : "digitado"}>
             {origem === "importado" ? "e-SUS" : "Digitado"}
-          </span>
+          </Badge>
         )}
       </div>
       {valores.length > 0 ? (

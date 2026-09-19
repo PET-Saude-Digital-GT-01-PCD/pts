@@ -18,7 +18,7 @@ export async function AbaRevisoes({
       {podeEscrever && <RevisaoForm ptsId={ptsId} />}
 
       <div>
-        <h3 className="mb-2 text-md font-medium">Marcos registrados</h3>
+        <h3 className="mb-2 text-base font-medium">Marcos registrados</h3>
         {revisoes.length === 0 ? (
           <EmptyState
             icon={History}
@@ -42,7 +42,7 @@ export async function AbaRevisoes({
       </div>
 
       <div>
-        <h3 className="mb-2 text-md font-medium">Comparativo entre marcos</h3>
+        <h3 className="mb-2 text-base font-medium">Comparativo entre marcos</h3>
         <ComparativoView ptsId={ptsId} revisoes={revisoes} />
       </div>
     </div>

@@ -14,6 +14,7 @@ import { SoapForm } from "./soap-form";
 import { ChecklistCifForm } from "./checklist-cif-form";
 import { FileText } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
 
 type ItemGrade = {
   servico: string;
@@ -105,7 +106,7 @@ export async function AbaAvaliacoes({
       {podeEscrever &&
         escopos.map((esp) => (
           <section key={esp} aria-label={`Nova avaliação ${esp}`} className="space-y-4">
-            <h3 className="text-md font-medium">
+            <h3 className="text-base font-medium">
               Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
             </h3>
             <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
@@ -114,20 +115,20 @@ export async function AbaAvaliacoes({
 
       {podeEscrever && (
         <section aria-label="Nova avaliação SOAP" className="space-y-4">
-          <h3 className="text-md font-medium">Nova avaliação SOAP</h3>
+          <h3 className="text-base font-medium">Nova avaliação SOAP</h3>
           <SoapForm ptsId={ptsId} />
         </section>
       )}
 
       <section aria-label="Avaliações registradas" className="space-y-3" data-testid="lista-soap">
-        <h3 className="text-md font-medium">Avaliações registradas</h3>
+        <h3 className="text-base font-medium">Avaliações registradas</h3>
         {avaliacoesEspecialidade.length > 0 && (
           <ul className="space-y-3" data-testid="lista-especialidade">
             {avaliacoesEspecialidade.map((a) => {
               const dados = a.dadosJson as Record<string, unknown>;
               const escores = (a.escoresJson as { cif?: string[] } | null) ?? {};
               return (
-                <li key={a.id} className="rounded-lg border p-4 text-sm">
+                <li key={a.id} className="rounded-lg border border-border p-4 text-sm">
                   <p className="mb-1 text-xs text-muted-foreground">
                     {a.especialidade} ·{" "}
                     {a.criadaEm.toLocaleDateString("pt-BR")} · {a.avaliadorNome} ·
@@ -135,12 +136,9 @@ export async function AbaAvaliacoes({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {(escores.cif ?? []).map((codigo) => (
-                      <span
-                        key={codigo}
-                        className="rounded-full border border-sky-500/40 bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-                      >
+                      <Badge key={codigo} variant="outline">
                         CIF {codigo}
-                      </span>
+                      </Badge>
                     ))}
                     {(escores.cif ?? []).length === 0 && (
                       <span className="text-muted-foreground text-xs">
@@ -173,7 +171,7 @@ export async function AbaAvaliacoes({
               const grade = itensGrade(a.dadosJson);
               const escores = (a.escoresJson ?? null) as EscoresSoap | null;
               return (
-                <li key={a.id} className="rounded-lg border p-4 text-sm">
+                <li key={a.id} className="rounded-lg border border-border p-4 text-sm">
                   <p className="mb-1 text-xs text-muted-foreground">
                     {a.criadaEm.toLocaleDateString("pt-BR")} · {a.avaliadorNome} · versão{" "}
                     {a.versao}
