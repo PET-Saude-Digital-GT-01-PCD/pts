@@ -27,6 +27,7 @@ import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 import type { OrgConfigView } from "@/server/iam/org-config-schema";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Dialog,
   DialogContent,
@@ -134,13 +135,16 @@ function ConteudoSidebar({
         </ul>
       </nav>
 
-      <div className="border-t border-border p-4">
-        <div className="mb-3 min-w-0">
-          <p className="truncate text-sm font-medium">{user.nome}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {CATEGORIA_LABEL[user.categoria ?? ""] ?? user.categoria} ·{" "}
-            {user.nomePapel}
-          </p>
+      <div className="space-y-3 border-t border-border p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{user.nome}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {CATEGORIA_LABEL[user.categoria ?? ""] ?? user.categoria} ·{" "}
+              {user.nomePapel}
+            </p>
+          </div>
+          <ThemeToggle />
         </div>
         <Button
           type="button"
@@ -198,6 +202,9 @@ export function Sidebar({
         >
           <Logo size="sm" nome={orgConfig?.nomeExibido} logoUrl={orgConfig?.logoUrl} />
         </Link>
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </div>
 
       <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-card text-card-foreground lg:flex">

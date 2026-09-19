@@ -53,5 +53,5 @@ test("/metas exige care-plan.meta.ler → admin é redirecionado", async ({
 }) => {
   await login(page, "admin@pts.local", "admin123");
   await page.goto(`/metas?ptsId=${PTS_ATIVO_ID}`);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 });
