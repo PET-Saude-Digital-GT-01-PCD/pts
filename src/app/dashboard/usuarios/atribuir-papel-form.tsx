@@ -26,12 +26,15 @@ export function AtribuirPapelForm({
   const [papelId, setPapelId] = useState(usuario.papelId);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const [pending, setPending] = useState(false);
 
   async function salvar() {
     if (papelId === usuario.papelId) return;
     setErro(null);
     setOk(false);
+    setPending(true);
     const result = await atribuirPapelUsuario(usuario.id, papelId);
+    setPending(false);
     if (!result.ok) {
       setErro(result.erro ?? "Erro ao atribuir papel.");
       return;
@@ -46,6 +49,7 @@ export function AtribuirPapelForm({
         aria-label={`Papel de ${usuario.nome}`}
         className={cn(campoNativoClasses, "w-auto min-w-44")}
         value={papelId}
+        disabled={pending}
         onChange={(e) => {
           setPapelId(e.target.value);
           setOk(false);
@@ -64,8 +68,9 @@ export function AtribuirPapelForm({
         size="sm"
         onClick={salvar}
         disabled={papelId === usuario.papelId}
+        loading={pending}
       >
-        Salvar
+        {pending ? "Salvando…" : "Salvar"}
       </Button>
       {erro ? <span className="text-xs text-destructive">{erro}</span> : null}
       {ok ? (
