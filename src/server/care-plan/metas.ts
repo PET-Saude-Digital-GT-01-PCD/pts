@@ -1,6 +1,7 @@
 "use server";
 
 import { Prisma, StatusMeta } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
@@ -130,6 +131,7 @@ export async function criarMeta(input: unknown): Promise<Resultado> {
       });
     });
 
+    revalidatePath(`/casos/${dados.ptsId}`);
     return { ok: true };
   } catch (e) {
     return {
@@ -216,6 +218,7 @@ export async function mudarStatusMeta(
       });
     });
 
+    revalidatePath(`/casos/${metaAtual.ptsId}`);
     return { ok: true };
   } catch (e) {
     if (e instanceof ConflitoVersao) {

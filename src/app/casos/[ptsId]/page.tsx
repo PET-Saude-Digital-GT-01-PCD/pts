@@ -28,8 +28,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function PainelCasoPage({
   params,
@@ -159,8 +157,12 @@ export default async function PainelCasoPage({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <section className="space-y-4">
           <AbasNav ativa={abaAtiva} ptsId={pts.id} />
+          {/* Sem Suspense por aba: o conteúdo streamado convive por instantes
+              com a cópia já montada, duplicando ids, controles e landmarks no
+              DOM. ponytail: as queries da aba são curtas; se alguma passar a
+              pesar, volta o boundary com um id estável por aba. */}
           <div role="tabpanel">
-            <Suspense key={abaAtiva} fallback={<AbaCarregando />}>
+            <>
               {abaAtiva === "avaliacoes" ? (
                 <AbaAvaliacoes ptsId={pts.id} podeEscrever={naoFechado} />
               ) : abaAtiva === "triagem" ? (
@@ -172,7 +174,7 @@ export default async function PainelCasoPage({
               ) : abaAtiva === "revisoes" ? (
                 <AbaRevisoes ptsId={pts.id} podeEscrever={podePtsRevisar} />
               ) : null}
-            </Suspense>
+            </>
           </div>
         </section>
 
@@ -192,19 +194,5 @@ export default async function PainelCasoPage({
         </section>
       </div>
     </main>
-  );
-}
-
-/** Esqueleto da aba enquanto o conteúdo carrega (Suspense por aba). */
-function AbaCarregando() {
-  return (
-    <div className="space-y-3" aria-busy="true">
-      <span className="sr-only" role="status">
-        Carregando…
-      </span>
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Skeleton key={i} className="h-24 w-full" />
-      ))}
-    </div>
   );
 }

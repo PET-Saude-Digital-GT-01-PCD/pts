@@ -42,5 +42,5 @@ test("gestor filtra a trilha de auditoria e encontra o evento gerado (#71)", asy
 test("sem governanca.auditoria.ver não acessa a trilha", async ({ page }) => {
   await login(page, "fisio@pts.local", "fisio123");
   await page.goto("/governanca/auditoria");
-  await page.waitForURL((u) => u.pathname === "/", { timeout: 15000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 15000 });
 });

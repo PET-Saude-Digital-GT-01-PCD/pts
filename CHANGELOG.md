@@ -15,6 +15,16 @@ commit desde o início do projeto.
   ao encerramento, com contagem por etapa, quem atua, permissões RBAC exigidas
   e transições vindas da máquina de status.
 
+### Corrigido
+- Painel do caso: o `Suspense` por aba fazia o conteúdo streamado conviver por
+  instantes com a cópia já montada, duplicando `id`s, controles de formulário e
+  landmarks no DOM — removido o boundary por aba.
+- Nova meta, mudança de status de meta e comentário no mural passam a
+  `revalidatePath` da página do caso; antes o item só aparecia após recarregar.
+- E2E realinhados às refatorações de UI: rótulo "Descrição acessível", link
+  "Abrir portal do cidadão" e negativa de permissão caindo em `/dashboard`
+  (sessão ativa não volta mais para a landing).
+
 ### Alterado
 - Reestruturação das telas de admin (visão geral, usuários, papéis, equipes,
   identidade visual, indicadores e auditoria) sobre uma moldura comum
