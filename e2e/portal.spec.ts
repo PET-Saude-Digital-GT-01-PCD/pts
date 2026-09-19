@@ -11,7 +11,7 @@ test("equipe visualiza o portal do cidadão a partir do caso", async ({ page }) 
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
 
   await page.goto(`/casos/${PTS_ATIVO_ID}`);
-  await page.getByRole("link", { name: "Ver como portal do cidadão" }).click();
+  await page.getByRole("link", { name: "Abrir portal do cidadão" }).click();
   await expect(page).toHaveURL(`/portal/${PTS_ATIVO_ID}`);
 
   await expect(page.getByRole("heading", { name: "Maria Exemplo" })).toBeVisible();

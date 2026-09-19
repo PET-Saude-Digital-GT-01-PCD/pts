@@ -10,6 +10,7 @@ const NAV_CONFIG = [
   { requires: "recepcao.paciente.cadastrar", label: "Novo paciente", href: "/recepcao/novo", icon: "UserPlus" },
   { requires: "triage.triagem.escrever", label: "Triagem", href: "/triagem", icon: "ClipboardList" },
   { requires: "care-plan.meta.escrever", label: "Metas", href: "/metas", icon: "Target" },
+  { requires: "governanca.dashboard.ver", label: "Fluxo do cuidado", href: "/dashboard/fluxo", icon: "Workflow" },
   { requires: "admin.usuarios.ver", label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
   { requires: "admin.papeis.gerenciar", label: "Papéis", href: "/dashboard/papeis", icon: "ShieldCheck" },
   { requires: "admin.config.org.editar", label: "Identidade visual", href: "/dashboard/config-org", icon: "Settings" },

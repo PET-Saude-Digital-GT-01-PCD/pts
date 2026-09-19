@@ -24,7 +24,11 @@ test("guardrail: papel base GESTOR não aceita recurso clínico no save", async 
   await checkboxPorChave(page, "clinical.soap.ler").check();
   await page.getByRole("button", { name: "Criar papel" }).click();
 
-  await expect(page.getByText(/recurso.*clínic/i)).toBeVisible();
+  // o erro do guardrail vem no <p role="alert"> do formulário — ancorar no
+  // papel evita casar com os textos de apoio da tela, que citam a mesma regra
+  await expect(page.locator("form").getByRole("alert")).toContainText(
+    /recurso.*clínic/i,
+  );
 });
 
 test("admin cria papel CLINICO e ele aparece na lista", async ({ page }) => {

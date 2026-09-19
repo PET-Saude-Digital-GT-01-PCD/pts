@@ -27,6 +27,12 @@ async function restaurarPapelFisio(page: import("@playwright/test").Page) {
   await page.context().clearCookies();
 }
 
+// O conteúdo da aba chega por streaming (Suspense por aba): a cópia servida
+// convive por instantes com a já montada. Ancorar no tabpanel mantém o seletor
+// único durante essa janela.
+const abaMetasDe = (page: import("@playwright/test").Page) =>
+  page.getByRole("tabpanel").getByTestId("aba-metas");
+
 async function login(page: import("@playwright/test").Page) {
   await restaurarPapelFisio(page);
   await page.goto("/login");
@@ -46,7 +52,7 @@ test("cria meta com dupla linguagem na aba Metas (#6)", async ({ page }) => {
 
   await page.getByLabel("Descrição técnica").fill(descTecnica);
   await page
-    .getByLabel("Descrição acessível (para o paciente)")
+    .getByLabel("Descrição acessível")
     .fill("Conseguir caminhar até a padaria sozinho");
   const futuro = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -54,8 +60,7 @@ test("cria meta com dupla linguagem na aba Metas (#6)", async ({ page }) => {
   await page.getByLabel("Prazo").fill(futuro);
 
   await page.getByRole("button", { name: "Salvar meta" }).click();
-  const abaMetas = page.getByTestId("aba-metas");
-  const itemNovo = abaMetas.locator("li", { hasText: descTecnica });
+  const itemNovo = abaMetasDe(page).locator("li", { hasText: descTecnica });
   await expect(itemNovo).toBeVisible();
   await expect(itemNovo.getByText("Nova")).toBeVisible();
 });
@@ -66,9 +71,9 @@ test("meta vencida do seed aparece destacada com dupla linguagem", async ({
   await login(page);
   await page.goto(`/casos/${PTS_ATIVO_ID}?aba=metas`);
 
-  const item = page
-    .getByTestId("aba-metas")
-    .locator("li", { hasText: "Amplitude de movimento de ombro" });
+  const item = abaMetasDe(page).locator("li", {
+    hasText: "Amplitude de movimento de ombro",
+  });
   await expect(item).toBeVisible();
   await expect(item.getByText("prazo vencido")).toBeVisible();
   await expect(
@@ -87,7 +92,7 @@ test("transição de status NOVA → EM_ANDAMENTO registra mudança", async ({
   await page.getByRole("button", { name: "Nova meta" }).click();
   await page.getByLabel("Descrição técnica").fill(descTecnica);
   await page
-    .getByLabel("Descrição acessível (para o paciente)")
+    .getByLabel("Descrição acessível")
     .fill("Conseguir subir a escada de casa sem ajuda");
   const futuro = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -95,9 +100,7 @@ test("transição de status NOVA → EM_ANDAMENTO registra mudança", async ({
   await page.getByLabel("Prazo").fill(futuro);
   await page.getByRole("button", { name: "Salvar meta" }).click();
 
-  const item = page
-    .getByTestId("aba-metas")
-    .locator("li", { hasText: descTecnica });
+  const item = abaMetasDe(page).locator("li", { hasText: descTecnica });
   await expect(item).toBeVisible();
   await item.getByLabel("Novo status").selectOption("EM_ANDAMENTO");
   await item.getByLabel("Motivo da mudança de status").fill("pactuada");
@@ -112,12 +115,13 @@ test("comenta no mural e comentário aparece na timeline (#6)", async ({
   await login(page);
   await page.goto(`/casos/${PTS_ATIVO_ID}?aba=mural`);
 
+  const painel = page.getByRole("tabpanel");
   const texto = `Comentário e2e ${Date.now()}: concordar com ajuste da meta.`;
-  await page
+  await painel
     .getByTestId("form-mural")
     .getByPlaceholder(/Comente no mural/)
     .fill(texto);
-  await page.getByRole("button", { name: "Comentar" }).click();
+  await painel.getByRole("button", { name: "Comentar" }).click();
 
-  await expect(page.locator("ol li", { hasText: texto })).toBeVisible();
+  await expect(painel.locator("ol li", { hasText: texto })).toBeVisible();
 });
