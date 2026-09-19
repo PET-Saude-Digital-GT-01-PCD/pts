@@ -16,7 +16,7 @@
 | Banco | PostgreSQL 16 (Docker; `pgcrypto`, `citext`) | Criptografia em repouso; CPF/CNS case-insensitive |
 | Testes | Vitest (unit) + Playwright (e2e) | Um framework unit + um e2e, nada mais |
 | CI/CD | GitHub Actions | `ci.yml`, `deploy-staging.yml`, `deploy-prod.yml` |
-| Deploy | Docker-first: imagem portável + compose | Alvo (VPS/plataforma) decidido na Fase 2; imagem não muda |
+| Deploy | Vercel (app) + Supabase (banco) — ADR-0011 | Supera o Docker-first (ADR-0007); `Dockerfile`/compose seguem só para dev local |
 | Fila outbound | Tabela PG + `FOR UPDATE SKIP LOCKED` | Sem Redis; volume de piloto não justifica infra nova |
 
 Não é isto: **não** é monorepo (um app só), **não** é CQRS/event-sourcing/Redis (simplificações marcadas `ponytail:` onde aplicável), **não** substitui infraestrutura do SUS (e-SUS é periférico).
@@ -85,11 +85,11 @@ Autorização: checagem de papel + permissão de recurso (`iam`, RBAC data-drive
 | `reception` | paciente, cuidador, consentimento, baseline, PPI | Núcleo do fluxo de entrada |
 | `triage` | semáforo, elegibilidade, contrarreferência | Núcleo; regras determinísticas |
 | `clinical` | SOAP, avaliações por especialidade | Estável; payloads JSONB evoluem |
-| `governance` | indicadores, auditoria (leitura) | Evolutivo (Fase 2) |
+| `governance` | indicadores, auditoria (leitura) | Entregue na Fase 2 (#71, #72); evolui com o piloto |
 | `iam` | usuários, papéis, permissões, admissão, acesso por caso | Estável; RBAC data-driven (ADR-0009) |
 | `integrations` | e-SUS (FHIR), notify, fila outbound | **Evolutivo — mock primeiro** |
 
-Prioridade de construção (Fase 1): `care-plan` + `iam` + `reception` + `triage` + `clinical` (fisio/TO). `governance` completo e `integrations` reais na Fase 2.
+Prioridade de construção (Fase 1): `care-plan` + `iam` + `reception` + `triage` + `clinical` (fisio/TO). `governance` entregue na Fase 2; `integrations` reais (e-SUS) seguem pendentes — mock ativo.
 
 ## 5. Integrações externas
 
