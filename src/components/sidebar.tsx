@@ -20,6 +20,7 @@ import {
   Activity,
   Brain,
   Settings,
+  Workflow,
   Menu,
 } from "lucide-react";
 
@@ -63,6 +64,7 @@ const ICONS: Record<string, React.ElementType> = {
   Activity,
   Brain,
   Settings,
+  Workflow,
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -98,7 +100,7 @@ function ConteudoSidebar({
         <Link
           href="/dashboard"
           onClick={aoNavegar}
-          className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Logo size="sm" nome={orgConfig?.nomeExibido} logoUrl={orgConfig?.logoUrl} />
         </Link>
@@ -120,7 +122,7 @@ function ConteudoSidebar({
                   onClick={aoNavegar}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                    "flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                     active
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"

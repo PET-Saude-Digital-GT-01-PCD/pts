@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { atribuirPapelUsuario } from "@/server/iam/papeis";
+import { campoNativoClasses, cn } from "@/lib/utils";
 
 export type UsuarioLinha = {
   id: string;
@@ -42,7 +43,8 @@ export function AtribuirPapelForm({
   return (
     <div className="flex items-center gap-2">
       <select
-        className="rounded-md border bg-background px-2 py-1 text-sm"
+        aria-label={`Papel de ${usuario.nome}`}
+        className={cn(campoNativoClasses, "w-auto min-w-44")}
         value={papelId}
         onChange={(e) => {
           setPapelId(e.target.value);

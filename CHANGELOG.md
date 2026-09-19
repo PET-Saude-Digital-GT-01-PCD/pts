@@ -10,6 +10,11 @@ commit desde o início do projeto.
 
 ## [Não lançado]
 
+### Adicionado
+- Tela "Fluxo do cuidado" (`/dashboard/fluxo`): trilha interativa da recepção
+  ao encerramento, com contagem por etapa, quem atua, permissões RBAC exigidas
+  e transições vindas da máquina de status.
+
 ### Corrigido
 - Painel do caso: o `Suspense` por aba fazia o conteúdo streamado conviver por
   instantes com a cópia já montada, duplicando `id`s, controles de formulário e
@@ -21,6 +26,14 @@ commit desde o início do projeto.
   (sessão ativa não volta mais para a landing).
 
 ### Alterado
+- Reestruturação das telas de admin (visão geral, usuários, papéis, equipes,
+  identidade visual, indicadores e auditoria) sobre uma moldura comum
+  (`AdminShell`) com abas da área filtradas por RBAC, cartões de indicador e
+  painéis de conteúdo.
+- Design tokens mais arredondados e suaves: `--radius` de 0.625rem para
+  0.875rem, novos raios `2xl`/`3xl`, superfícies (`--surface`,
+  `--surface-raised`, `--surface-sunken`) e sombras (`--shadow-soft`,
+  `--shadow-raised`). Paleta de marca mantida.
 - Migração do alvo de deploy: Docker-first/alvo plugável (ADR-0007) →
   Vercel + Supabase (ADR-0011).
 - Componentização de UI: extração de lógica de página/formulários grandes em

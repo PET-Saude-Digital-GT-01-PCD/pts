@@ -34,7 +34,12 @@
   --brand-accent: oklch(0.63 0.195 36.2);
   --brand-deep: oklch(0.325 0.134 260.8);
   --brand-light: oklch(0.69 0.125 236.3);
-  --radius: 0.625rem;
+  /* Superfícies da área administrativa: fundo levemente tingido de primary
+     para o cartão branco ganhar profundidade sem depender de sombra pesada. */
+  --surface: oklch(0.976 0.008 237.8);
+  --surface-raised: oklch(1 0 0);
+  --surface-sunken: oklch(0.955 0.012 237.8);
+  --radius: 0.875rem;
 }
 
 .dark {
@@ -66,6 +71,9 @@
   --chart-3: oklch(0.7 0.17 40);
   --chart-4: oklch(0.78 0.14 155);
   --chart-5: oklch(0.55 0.16 270);
+  --surface: oklch(0.212 0.019 225.5);
+  --surface-raised: oklch(0.252 0.023 226.7);
+  --surface-sunken: oklch(0.198 0.018 225);
 }
 
 @theme inline {
@@ -100,11 +108,20 @@
   --color-brand-accent: var(--brand-accent);
   --color-brand-deep: var(--brand-deep);
   --color-brand-light: var(--brand-light);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
   --radius-xs: calc(var(--radius) - 4px);
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-3xl: calc(var(--radius) + 20px);
+  --shadow-soft: 0 1px 2px oklch(0.16 0.015 240 / 4%), 0 10px 24px -14px
+    oklch(0.16 0.015 240 / 22%);
+  --shadow-raised: 0 2px 4px oklch(0.16 0.015 240 / 5%), 0 18px 40px -22px
+    oklch(0.16 0.015 240 / 30%);
 }
 
 body {

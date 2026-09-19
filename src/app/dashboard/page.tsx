@@ -1,7 +1,19 @@
 import Link from "next/link";
 
-import { ShieldAlert, TriangleAlert } from "lucide-react";
+import {
+  Activity,
+  ClipboardList,
+  FileText,
+  Layers,
+  ShieldAlert,
+  ShieldCheck,
+  TriangleAlert,
+  Users,
+  Workflow,
+} from "lucide-react";
 
+import { AdminPanel, AdminShell } from "@/components/admin/admin-shell";
+import { StatCard } from "@/components/admin/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,6 +34,59 @@ const STATUS_LABEL: Record<string, string> = {
   FECHADO: "Fechado",
 };
 
+const ORDEM_STATUS = [
+  "EM_AVALIACAO",
+  "PACTACAO",
+  "SEGUIMENTO",
+  "REAVALIACAO",
+  "FECHADO",
+];
+
+const ATALHOS = [
+  {
+    href: "/dashboard/fluxo",
+    titulo: "Fluxo do cuidado",
+    descricao: "Trilha interativa da recepção ao encerramento.",
+    icon: Workflow,
+    requer: "governanca.dashboard.ver",
+  },
+  {
+    href: "/dashboard/usuarios",
+    titulo: "Usuários",
+    descricao: "Admissões pendentes, papéis e simulação de perfil.",
+    icon: Users,
+    requer: "admin.usuarios.ver",
+  },
+  {
+    href: "/dashboard/papeis",
+    titulo: "Papéis e permissões",
+    descricao: "Matriz de recursos por papel, com guardrails.",
+    icon: ShieldCheck,
+    requer: "admin.papeis.gerenciar",
+  },
+  {
+    href: "/dashboard/casos",
+    titulo: "Equipes dos casos",
+    descricao: "Vincular profissionais sem abrir conteúdo clínico.",
+    icon: Layers,
+    requer: "care-plan.equipe.gerenciar",
+  },
+  {
+    href: "/governanca",
+    titulo: "Indicadores",
+    descricao: "North Star e indicadores de saúde do piloto.",
+    icon: Activity,
+    requer: "governanca.dashboard.ver",
+  },
+  {
+    href: "/governanca/auditoria",
+    titulo: "Auditoria",
+    descricao: "Trilha append-only das decisões e ajustes.",
+    icon: FileText,
+    requer: "governanca.auditoria.ver",
+  },
+];
+
 function paraSemaforo(s: string): SemaforoStatus {
   return s.toLowerCase() as SemaforoStatus;
 }
@@ -30,9 +95,9 @@ function CardCasoView({ caso }: { caso: CardCaso }) {
   return (
     <Link
       href={`/casos/${caso.ptsId}`}
-      className="group block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group block h-full rounded-2xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <Card className="h-full transition-colors group-hover:border-primary">
+      <Card className="h-full rounded-2xl transition-colors group-hover:ring-primary/40">
         <CardHeader className="gap-2">
           <CardTitle asChild>
             <h2 className="text-base leading-snug">{caso.pacienteNome}</h2>
@@ -107,54 +172,138 @@ export default async function DashboardPage() {
 
   if (visao.visao === "GESTAO") {
     const { agregados } = visao;
+    const atalhos = ATALHOS.filter((a) => recursos.includes(a.requer));
+    const ativos = ORDEM_STATUS.filter((s) => s !== "FECHADO")
+      .map((s) => agregados.porStatus[s] ?? 0)
+      .reduce((a, b) => a + b, 0);
+    const atencao =
+      (agregados.porSemaforo.VERMELHO ?? 0) + (agregados.porSemaforo.AMARELO ?? 0);
+
     return (
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-8">
-        <header>
-          <h1 className="text-2xl font-semibold">Visão geral</h1>
-        </header>
+      <AdminShell
+        titulo="Visão geral"
+        descricao="Como está o CER agora: volume de PTS, distribuição por etapa e por semáforo."
+        largura="larga"
+      >
         {agregados.total === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-            Nenhum caso aberto no CER ainda.
-          </div>
+          <EmptyState
+            icon={Workflow}
+            titulo="Nenhum caso aberto no CER ainda"
+            descricao="Assim que a recepção cadastrar o primeiro paciente e a triagem classificar o caso, os números aparecem aqui."
+          />
         ) : (
-          <section aria-label="Agregados" className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Total de PTS</CardTitle>
-              </CardHeader>
-              <CardContent className="text-3xl font-semibold">
-                {agregados.total}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Por status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                {Object.entries(agregados.porStatus).map(([status, n]) => (
-                  <p key={status} className="flex justify-between">
-                    <span>{STATUS_LABEL[status] ?? status}</span>
-                    <span className="font-medium">{n}</span>
-                  </p>
-                ))}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Por semáforo</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                {Object.entries(agregados.porSemaforo).map(([s, n]) => (
-                  <p key={s} className="flex items-center justify-between">
-                    <Semaforo status={paraSemaforo(s)} />
-                    <span className="font-medium">{n}</span>
-                  </p>
-                ))}
-              </CardContent>
-            </Card>
-          </section>
+          <>
+            <section
+              aria-label="Agregados"
+              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              <StatCard
+                rotulo="Total de PTS"
+                valor={agregados.total}
+                pista="Todos os casos do CER, abertos e encerrados"
+                icon={Layers}
+                tom="primario"
+              />
+              <StatCard
+                rotulo="Em andamento"
+                valor={ativos}
+                pista="Da avaliação à reavaliação"
+                icon={Workflow}
+                tom="neutro"
+              />
+              <StatCard
+                rotulo="Semáforo em atenção"
+                valor={atencao}
+                pista="Casos classificados como amarelo ou vermelho"
+                icon={ClipboardList}
+                tom={atencao > 0 ? "alerta" : "sucesso"}
+              />
+            </section>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <AdminPanel
+                titulo="Por etapa"
+                descricao="Distribuição dos PTS na máquina de status."
+                acoes={
+                  <Link
+                    href="/dashboard/fluxo"
+                    className="rounded-full px-2 py-1 text-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    Ver fluxo
+                  </Link>
+                }
+              >
+                <ul className="space-y-2.5">
+                  {ORDEM_STATUS.map((status) => {
+                    const n = agregados.porStatus[status] ?? 0;
+                    const pct =
+                      agregados.total === 0 ? 0 : (n / agregados.total) * 100;
+                    return (
+                      <li key={status} className="space-y-1">
+                        <p className="flex items-baseline justify-between text-sm">
+                          <span>{STATUS_LABEL[status] ?? status}</span>
+                          <span className="font-medium tabular-nums">{n}</span>
+                        </p>
+                        <span
+                          className="block h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken"
+                          aria-hidden
+                        >
+                          <span
+                            className="block h-full rounded-full bg-primary"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </AdminPanel>
+
+              <AdminPanel
+                titulo="Por semáforo"
+                descricao="Classificação de prioridade vigente nas reuniões."
+              >
+                <ul className="space-y-2">
+                  {Object.entries(agregados.porSemaforo).map(([s, n]) => (
+                    <li
+                      key={s}
+                      className="flex items-center justify-between rounded-2xl bg-surface-sunken px-3 py-2"
+                    >
+                      <Semaforo status={paraSemaforo(s)} />
+                      <span className="font-medium tabular-nums">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </AdminPanel>
+            </div>
+          </>
         )}
-      </main>
+
+        {atalhos.length > 0 ? (
+          <AdminPanel titulo="Administração">
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {atalhos.map((a) => (
+                <li key={a.href}>
+                  <Link
+                    href={a.href}
+                    className="flex h-full items-start gap-3 rounded-2xl bg-surface-sunken p-4 transition-colors outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <a.icon className="size-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium">{a.titulo}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {a.descricao}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </AdminPanel>
+        ) : null}
+      </AdminShell>
     );
   }
 
@@ -174,7 +323,7 @@ export default async function DashboardPage() {
         <section
           aria-label="Cadastros provisórios pendentes de regularização"
           data-testid="alertas-ppi-dashboard"
-          className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-4"
+          className="space-y-2 rounded-2xl border border-warning/40 bg-warning/10 p-4"
         >
           <h2 className="text-sm font-medium text-warning">
             {alertasPpi.length}{" "}
@@ -203,7 +352,7 @@ export default async function DashboardPage() {
         <p
           role="status"
           data-testid="fila-amarela-resumo"
-          className="text-warning w-fit rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm font-medium"
+          className="text-warning w-fit rounded-full border border-warning/40 bg-warning/10 px-3 py-2 text-sm font-medium"
         >
           Fila de espera (Amarelo): {visao.filaAmarela.total} paciente(s) · próxima
           estimativa {visao.filaAmarela.proximaEstimativaDias} dia(s)
