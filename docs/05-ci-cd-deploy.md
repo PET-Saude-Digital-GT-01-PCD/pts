@@ -104,3 +104,16 @@ Banco migrado sem seed: não há CER, papéis nem admin. Rodar `db-migrate` com
 - `pgcrypto` para campos sensíveis; dados clínicos só dentro do PTS (FK `RESTRICT`).
 - Auditoria append-only na mesma transação; lock otimista (`version`) → conflito = 409.
 - Backup: backup automático / PITR do Supabase (substitui o `pg_dump` agendado do `plano/15`).
+
+## Dependências transitivas com alerta (triagem 2026-09-19, #120)
+
+Bumps de rotina vêm pelo Dependabot (`.github/dependabot.yml`, semanal, para `develop`). Correção fora do range que o pai pede fica em `overrides` no `pnpm-workspace.yaml`, sempre na mesma major. Cada linha sai quando o pai passar a pedir a versão corrigida.
+
+| Pacote | Vem de | Decisão |
+|---|---|---|
+| `sharp` (2 high) | `next` (otimização de imagem) | override `^0.35.4`, dentro do range que o `next@15.5.25` aceita |
+| `postcss` (2 high, 2 moderate) | `next` pina `8.4.31` | override `^8.5.23` (mesma major; build verificado) |
+| `fast-uri` (4 high), `hono` (3 moderate), `qs` (2 moderate) | CLI `shadcn` → `@modelcontextprotocol/sdk` | `shadcn` movido para `devDependencies` (é só CLI, o app não importa) + overrides na mesma major |
+| `js-yaml` (1 high) | `eslint` (dev) | override `^4.3.2` |
+| `vitest`/`@vitest/mocker` (3 moderate) | dependência direta (dev) | bump `^3` → `^4.1.11` |
+| `deepmerge-ts` (1 high) | `prisma` → `@prisma/config` | **risco aceito**: a correção é major (8.x) e nem o `@prisma/config` mais recente a usa. Só afeta merge de objeto recursivo no carregamento de config do Prisma, que não recebe entrada de usuário. Reavaliar no próximo bump do Prisma. |
