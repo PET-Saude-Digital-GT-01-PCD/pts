@@ -28,6 +28,18 @@ describe("Button loading", () => {
   });
 });
 
+describe("Button asChild", () => {
+  it("passa um único filho para o Slot (sem fragmento)", () => {
+    const html = renderToStaticMarkup(
+      <Button asChild>
+        <a href="/x">Ir</a>
+      </Button>
+    );
+    expect(html).toContain("<a");
+    expect(html).toContain("Ir");
+  });
+});
+
 describe("EmptyState", () => {
   it("renderiza título, descrição e ação", () => {
     const html = renderToStaticMarkup(
