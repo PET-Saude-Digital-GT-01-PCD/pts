@@ -162,25 +162,45 @@ export async function listarPendentes(): Promise<UsuarioPendente[]> {
   });
 }
 
-export async function aprovarUsuario(usuarioId: string): Promise<Resultado> {
-  const admin = await requirePermissao("admin.usuarios.aprovar");
+// papelId opcional (#99): sem ele o aprovado fica com AUTOCADASTRO (zero
+// recursos) até alguém atribuir o papel num 2º passo — esquecido, parecia
+// "login quebrado". Escolher o papel aqui exige a mesma permissão de
+// atribuirPapelUsuario e grava tudo numa transação só.
+export async function aprovarUsuario(
+  usuarioId: string,
+  papelId?: string,
+): Promise<Resultado> {
+  const admin = papelId
+    ? await requirePermissao("admin.usuarios.aprovar", "admin.papeis.gerenciar")
+    : await requirePermissao("admin.usuarios.aprovar");
 
   const usuario = await db.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario) return { ok: false, erro: "Usuário não encontrado." };
   if (usuario.status !== "PENDENTE") {
     return { ok: false, erro: "Usuário não está pendente de aprovação." };
   }
+  if (papelId) {
+    const papel = await db.papel.findUnique({ where: { id: papelId } });
+    if (!papel) return { ok: false, erro: "Papel não encontrado." };
+    if (papel.cerId !== usuario.cerId) {
+      return { ok: false, erro: "Papel não pertence ao mesmo CER do usuário." };
+    }
+  }
+  const papelFinal = papelId ?? usuario.papelId;
 
   await db.$transaction(async (tx) => {
-    await tx.usuario.update({ where: { id: usuarioId }, data: { status: "ATIVO" } });
+    await tx.usuario.update({
+      where: { id: usuarioId },
+      data: { status: "ATIVO", papelId: papelFinal },
+    });
     await tx.auditoria.create({
       data: {
         actorId: admin.id,
         action: "usuario.aprovar",
         entityType: "usuario",
         entityId: usuarioId,
-        beforeJson: { status: usuario.status },
-        afterJson: { status: "ATIVO" },
+        beforeJson: { status: usuario.status, papelId: usuario.papelId },
+        afterJson: { status: "ATIVO", papelId: papelFinal },
       },
     });
   });

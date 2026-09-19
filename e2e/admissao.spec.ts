@@ -48,18 +48,18 @@ test("auto-cadastro → PENDENTE bloqueia login → admin aprova → login funci
   await page.goto("/dashboard/usuarios");
   const linha = page.getByTestId("pendente-linha").filter({ hasText: email });
   await expect(linha).toBeVisible();
+  // #99: o papel profissional é escolhido na própria aprovação — já vem
+  // sugerido pela categoria do cadastro. Antes o aprovado ficava com
+  // AUTOCADASTRO (zero recursos) até um 2º passo que era esquecido.
+  const papel = linha.getByLabel(/Papel de .* ao aprovar/);
+  await expect(papel.locator("option:checked")).toHaveText("FISIOTERAPEUTA");
   await linha.getByRole("button", { name: "Aprovar" }).click();
   await expect(linha).not.toBeVisible();
 
-  // aprovado nasce com o papel AUTOCADASTRO (sem recursos, por segurança);
-  // admin atribui o papel profissional real via o fluxo já existente
   const linhaAtiva = page.locator('[data-email="' + email + '"]');
-  await expect(linhaAtiva).toBeVisible();
-  await linhaAtiva.locator("select").selectOption({ label: "FISIOTERAPEUTA" });
-  await linhaAtiva.getByRole("button", { name: "Salvar" }).click();
-  await expect(linhaAtiva.getByText("salvo")).toBeVisible();
+  await expect(linhaAtiva.locator("select option:checked")).toHaveText("FISIOTERAPEUTA");
 
-  // agora loga e tem acesso normal ao dashboard clínico
+  // loga direto com acesso normal ao dashboard clínico, sem 2º passo
   await page.context().clearCookies();
   await tentarLogin(page, email, senha);
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
