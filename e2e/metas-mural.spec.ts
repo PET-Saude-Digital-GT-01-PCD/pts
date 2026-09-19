@@ -5,7 +5,7 @@ const PTS_ATIVO_ID = "00000000-0000-4000-8000-000000000010";
 // O spec de papéis pode ter deixado o fisio como MEDICO (troca persiste no
 // banco dev); restaura FISIOTERAPEUTA para termos meta.escrever/mural.escrever.
 async function restaurarPapelFisio(page: import("@playwright/test").Page) {
-  await page.goto("/login");
+  await abrirLogin(page);
   await page.getByLabel("E-mail").fill("admin@pts.local");
   await page.getByLabel("Senha").fill("admin123");
   await page.waitForLoadState("networkidle");
@@ -24,7 +24,24 @@ async function restaurarPapelFisio(page: import("@playwright/test").Page) {
     await linha.getByRole("button", { name: "Salvar" }).click();
     await expect(linha.getByText("salvo")).toBeVisible();
   }
-  await page.context().clearCookies();
+}
+
+// /login redireciona quem tem sessão para /dashboard, então o formulário só
+// aparece com os cookies limpos. clearCookies pode perder um Set-Cookie ainda
+// em voo da server action anterior (aparece sob CI lenta): confere que o campo
+// veio e, se veio o dashboard, limpa e tenta de novo.
+async function abrirLogin(page: import("@playwright/test").Page) {
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    await page.context().clearCookies();
+    await page.goto("/login");
+    try {
+      await page.getByLabel("E-mail").waitFor({ timeout: 5_000 });
+      return;
+    } catch {
+      // sessão sobreviveu ao clearCookies — recomeça
+    }
+  }
+  await expect(page.getByLabel("E-mail")).toBeVisible();
 }
 
 // O conteúdo da aba chega por streaming (Suspense por aba): a cópia servida
@@ -35,7 +52,7 @@ const abaMetasDe = (page: import("@playwright/test").Page) =>
 
 async function login(page: import("@playwright/test").Page) {
   await restaurarPapelFisio(page);
-  await page.goto("/login");
+  await abrirLogin(page);
   await page.getByLabel("E-mail").fill("fisio@pts.local");
   await page.getByLabel("Senha").fill("fisio123");
   await page.waitForLoadState("networkidle");

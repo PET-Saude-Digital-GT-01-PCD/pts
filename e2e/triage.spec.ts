@@ -40,7 +40,14 @@ async function limpar(cpf: string) {
     await db.ajusteClassificacao.deleteMany({ where: { triagemId: { in: triagens.map((t) => t.id) } } });
     await db.triagem.deleteMany({ where: { id: { in: triagens.map((t) => t.id) } } });
     await db.pts.deleteMany({ where: { pacienteId: p.id } });
-    await db.paciente.delete({ where: { id: p.id } }).catch(() => undefined);
+    // As FKs do paciente são RESTRICT. Sem apagar os dependentes o delete
+    // falha, o paciente sobrevive à limpeza e o próximo cadastro do mesmo CPF
+    // bate no unique de `cpf` — o toast nunca aparece e o teste cai longe daqui.
+    await db.contrarreferencia.deleteMany({ where: { pacienteId: p.id } });
+    await db.baseline.deleteMany({ where: { pacienteId: p.id } });
+    await db.consentimento.deleteMany({ where: { pacienteId: p.id } });
+    await db.cuidador.deleteMany({ where: { pacienteId: p.id } });
+    await db.paciente.delete({ where: { id: p.id } });
   }
 }
 
