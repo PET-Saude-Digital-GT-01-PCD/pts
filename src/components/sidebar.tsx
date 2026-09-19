@@ -94,7 +94,7 @@ export function Sidebar({
       </div>
 
       {/* Navigation */}
-      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto px-3 py-4">
+      <nav aria-label="Menu principal" className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {itens.map((item) => {
             const Icon = resolveIcon(item.icon);

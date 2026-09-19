@@ -22,6 +22,8 @@ import { EventoForm } from "./evento-form";
 import { AbaRevisoes } from "./aba-revisoes";
 import { CalendarClock } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function PainelCasoPage({
   params,
@@ -182,6 +184,7 @@ export default async function PainelCasoPage({
       <section className="space-y-4">
         <AbasNav ativa={abaAtiva} ptsId={pts.id} />
         <div role="tabpanel">
+          <Suspense key={abaAtiva} fallback={<AbaCarregando />}>
           {abaAtiva === "avaliacoes" ? (
             <AbaAvaliacoes ptsId={pts.id} podeEscrever={naoFechado} />
           ) : abaAtiva === "triagem" ? (
@@ -193,8 +196,23 @@ export default async function PainelCasoPage({
           ) : abaAtiva === "revisoes" ? (
             <AbaRevisoes ptsId={pts.id} podeEscrever={podePtsRevisar} />
           ) : null}
+          </Suspense>
         </div>
       </section>
     </main>
+  );
+}
+
+/** Esqueleto da aba enquanto o conteúdo carrega (Suspense por aba). */
+function AbaCarregando() {
+  return (
+    <div className="space-y-3" aria-busy="true">
+      <span className="sr-only" role="status">
+        Carregando…
+      </span>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Skeleton key={i} className="h-24 w-full" />
+      ))}
+    </div>
   );
 }
