@@ -1,13 +1,21 @@
 name: db-migrate
 
 # Aplica as migrations Prisma ao Supabase certo conforme a branch:
-#   develop -> pts-stage   (secret STAGE_DIRECT_URL)
+#   develop -> pts-stage      (secret STAGE_DIRECT_URL)
 #   main    -> pts-production (secret PROD_DIRECT_URL)
 # Secrets são as connection strings "direct" (porta 5432).
+# Também roda sob demanda (Actions > db-migrate > Run workflow), com opção de
+# seed de bootstrap — necessário na primeira subida de um banco vazio.
 
 on:
   push:
     branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Rodar o seed de bootstrap (RBAC + admin) após o migrate"
+        type: boolean
+        default: false
 
 jobs:
   migrate:
@@ -17,6 +25,15 @@ jobs:
       DATABASE_URL: ${{ github.ref_name == 'main' && secrets.PROD_DIRECT_URL || secrets.STAGE_DIRECT_URL }}
     steps:
       - uses: actions/checkout@v4
+
+      # Sem isto o Prisma falha com P1012 ("DIRECT_URL resolveu para string
+      # vazia"), que não diz que o que falta é um secret do repositório.
+      - name: Conferir secret do banco
+        run: |
+          if [ -z "$DIRECT_URL" ]; then
+            echo "::error::Secret ausente. Defina ${{ github.ref_name == 'main' && 'PROD_DIRECT_URL' || 'STAGE_DIRECT_URL' }} em Settings > Secrets and variables > Actions, com a connection string 'direct' do Supabase (porta 5432). Sem ela as migrations nunca chegam ao banco e o app quebra em runtime."
+            exit 1
+          fi
 
       - uses: pnpm/action-setup@v4
 
@@ -30,3 +47,16 @@ jobs:
 
       - name: Prisma migrate deploy
         run: pnpm prisma migrate deploy
+
+      # Banco recém-migrado não tem CER, papéis nem admin — o app sobe mas
+      # ninguém consegue entrar. O seed é idempotente (upserts).
+      - name: Seed de bootstrap
+        if: inputs.seed
+        env:
+          SEED_ADMIN_SENHA: ${{ secrets.SEED_ADMIN_SENHA }}
+        run: |
+          if [ -z "$SEED_ADMIN_SENHA" ]; then
+            echo "::error::Secret SEED_ADMIN_SENHA ausente. Defina-o (senha forte, != admin123) antes de rodar o seed."
+            exit 1
+          fi
+          pnpm db:seed
