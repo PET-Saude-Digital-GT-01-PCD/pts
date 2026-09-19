@@ -16,17 +16,22 @@ export function ehAba(valor: string | undefined): valor is AbaKey {
 
 export function AbasNav({ ativa, ptsId }: { ativa: AbaKey; ptsId: string }) {
   return (
-    <div role="tablist" className="flex gap-1 border-b">
+    <div
+      role="tablist"
+      aria-label="Seções do caso"
+      className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+    >
       {(Object.keys(TITULOS) as AbaKey[]).map((aba) => (
         <Link
           key={aba}
           role="tab"
           aria-selected={aba === ativa}
           href={`/casos/${ptsId}?aba=${aba}`}
-          className={`px-4 py-2 text-sm font-medium rounded-t-md ${
+          aria-current={aba === ativa ? "page" : undefined}
+          className={`shrink-0 rounded-t-md border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${
             aba === ativa
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground"
+              ? "border-primary bg-muted text-foreground"
+              : "border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
         >
           {TITULOS[aba]}
@@ -40,7 +45,7 @@ export function AbaVazia({ titulo }: { titulo: string }) {
   return (
     <div
       data-testid="aba-vazia"
-      className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground"
+      className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground"
     >
       {titulo}: conteúdo em breve.
     </div>

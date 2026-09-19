@@ -1,5 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
+import { AdminShell } from "@/components/admin/admin-shell";
+import { Button } from "@/components/ui/button";
 import { buscarEquipeCaso } from "@/server/care-plan/equipe";
 import { EquipeForm } from "./equipe-form";
 
@@ -13,14 +17,20 @@ export default async function EquipeCasoPage({
   if (!detalhe) notFound();
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
-      <div>
-        <h1 className="text-2xl font-semibold">{detalhe.pacienteNome}</h1>
-        <p className="text-sm text-muted-foreground">
-          Referência do caso: {detalhe.refProfissionalNome ?? "—"}
-        </p>
-      </div>
+    <AdminShell
+      titulo={detalhe.pacienteNome}
+      descricao={`Referência do caso: ${detalhe.refProfissionalNome ?? "—"}`}
+      largura="estreita"
+      acoes={
+        <Button asChild variant="outline" size="sm">
+          <Link href="/dashboard/casos">
+            <ArrowLeft aria-hidden />
+            Voltar aos casos
+          </Link>
+        </Button>
+      }
+    >
       <EquipeForm detalhe={detalhe} />
-    </main>
+    </AdminShell>
   );
 }

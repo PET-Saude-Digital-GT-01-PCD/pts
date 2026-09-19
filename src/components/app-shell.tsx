@@ -1,7 +1,8 @@
-import { getCurrentUser, recursosDoUsuario } from "@/server/iam/session";
+import { getSessaoComRecursos } from "@/server/iam/session";
 import { buscarOrgConfigView } from "@/server/iam/org-config";
 import { Sidebar } from "@/components/sidebar";
 import { SiteHeader } from "@/components/ui/site-header";
+import { ImpersonacaoBanner } from "@/components/impersonacao-banner";
 
 const NAV_CONFIG = [
   { requires: null, label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
@@ -9,6 +10,7 @@ const NAV_CONFIG = [
   { requires: "recepcao.paciente.cadastrar", label: "Novo paciente", href: "/recepcao/novo", icon: "UserPlus" },
   { requires: "triage.triagem.escrever", label: "Triagem", href: "/triagem", icon: "ClipboardList" },
   { requires: "care-plan.meta.escrever", label: "Metas", href: "/metas", icon: "Target" },
+  { requires: "governanca.dashboard.ver", label: "Fluxo do cuidado", href: "/dashboard/fluxo", icon: "Workflow" },
   { requires: "admin.usuarios.ver", label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
   { requires: "admin.papeis.gerenciar", label: "Papéis", href: "/dashboard/papeis", icon: "ShieldCheck" },
   { requires: "admin.config.org.editar", label: "Identidade visual", href: "/dashboard/config-org", icon: "Settings" },
@@ -18,7 +20,10 @@ const NAV_CONFIG = [
 ] as const;
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const [user, orgConfig] = await Promise.all([getCurrentUser(), buscarOrgConfigView()]);
+  const [{ user, recursos }, orgConfig] = await Promise.all([
+    getSessaoComRecursos(),
+    buscarOrgConfigView(),
+  ]);
 
   if (!user) {
     return (
@@ -28,8 +33,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </>
     );
   }
-
-  const recursos = await recursosDoUsuario(user.papelId);
 
   const itens = NAV_CONFIG.filter((item) => {
     if (!item.requires) return true;
@@ -41,7 +44,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   }));
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden lg:flex-row">
       <Sidebar
         itens={itens}
         user={{
@@ -52,7 +55,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         }}
         orgConfig={orgConfig}
       />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex-1 overflow-y-auto">
+        <ImpersonacaoBanner />
+        {children}
+      </div>
     </div>
   );
 }

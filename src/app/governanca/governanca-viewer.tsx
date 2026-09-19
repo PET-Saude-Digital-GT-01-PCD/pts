@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_CLASSE: Record<string, string> = {
-  OK: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  OK: "border-success/40 bg-success/10 text-success",
   ATENCAO: "border-destructive/40 bg-destructive/10 text-destructive",
   SEM_DADO: "border-border bg-muted text-muted-foreground",
 };
@@ -68,7 +68,7 @@ export function GovernancaViewer({
   return (
     <div className="flex flex-col gap-6">
       <form
-        className="flex flex-wrap items-end gap-3 rounded-lg border p-4"
+        className="flex flex-wrap items-end gap-3 rounded-2xl bg-surface-raised p-4 shadow-soft ring-1 ring-foreground/5"
         onSubmit={aplicarFiltro}
       >
         <div className="grid gap-1">
@@ -84,7 +84,7 @@ export function GovernancaViewer({
           <Label htmlFor="ate">Até</Label>
           <Input id="ate" type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
         </div>
-        <Button type="submit" variant="outline" disabled={carregando}>
+        <Button type="submit" variant="outline" loading={carregando}>
           {carregando ? "Atualizando…" : "Aplicar período"}
         </Button>
         <Button type="button" onClick={exportar} disabled={carregando}>
@@ -101,7 +101,7 @@ export function GovernancaViewer({
             <div
               key={ind.id}
               data-testid={`indicador-${ind.id}`}
-              className="rounded-lg border p-4"
+              className="rounded-2xl bg-surface-raised p-4 shadow-soft ring-1 ring-foreground/5"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-sm font-medium">{ind.titulo}</h3>

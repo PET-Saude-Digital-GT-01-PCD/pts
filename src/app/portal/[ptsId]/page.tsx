@@ -1,16 +1,16 @@
 import { buscarPortalCidadao } from "@/server/care-plan/portal";
 
 const CLASSE_SITUACAO: Record<string, string> = {
-  concluida: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700",
+  concluida: "border-success/40 bg-success/10 text-success",
   atual: "border-primary bg-primary/10 text-primary font-semibold",
   a_fazer: "border-border bg-muted text-muted-foreground",
 };
 
 const CLASSE_STATUS_META: Record<string, string> = {
-  CONCLUIDA: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700",
+  CONCLUIDA: "border-success/40 bg-success/10 text-success",
   EM_ANDAMENTO: "border-primary/40 bg-primary/10 text-primary",
   NOVA: "border-border bg-muted text-muted-foreground",
-  NAO_ALCANCADA: "border-amber-500/40 bg-amber-500/10 text-amber-700",
+  NAO_ALCANCADA: "border-warning/40 bg-warning/10 text-warning",
 };
 
 export default async function PortalCidadaoPage({

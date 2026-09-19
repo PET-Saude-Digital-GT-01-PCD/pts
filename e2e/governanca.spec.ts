@@ -71,5 +71,5 @@ test("usuário sem permissão de governança é redirecionado", async ({ page })
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
 
   await page.goto("/governanca");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 });

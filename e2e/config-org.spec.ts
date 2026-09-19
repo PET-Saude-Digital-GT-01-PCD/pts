@@ -40,7 +40,9 @@ test("admin edita nome/logo/parceiros e vê refletido no preview, header, rodap�
     page.locator("form").getByText("CER Piloto Recife", { exact: true }),
   ).toBeVisible();
 
-  // header/rodapé/título refletem o valor persistido
+  // header/rodapé/título refletem o valor persistido. A landing só existe pra
+  // visitante: com sessão ativa, "/" redireciona pro dashboard.
+  await page.context().clearCookies();
   await page.goto("/");
   await expect(page).toHaveTitle("CER Piloto Recife");
   await expect(
@@ -60,7 +62,7 @@ test("não-admin não acessa /dashboard/config-org", async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
 
   await page.goto("/dashboard/config-org");
-  await page.waitForURL((u) => u.pathname === "/", { timeout: 15000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 15000 });
 });
 
 test("sem configuração, header/título usam o padrão PTS Digital", async ({ page }) => {

@@ -10,6 +10,7 @@ import { emitirContrarreferencia } from "@/server/triage/contrarreferencia";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { campoNativoClasses, areaNativaClasses } from "@/lib/utils";
 
 const ROTULOS_STATUS: Record<StatusPts, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -157,7 +158,7 @@ export function TransicaoStatusForm({
         >
           <select
             name="para"
-            className="border-input bg-background rounded-md border px-2 py-1.5 text-sm"
+            className={campoNativoClasses}
             defaultValue={destinosAvancar[0]}
             aria-label="Novo status"
           >
@@ -173,7 +174,7 @@ export function TransicaoStatusForm({
             className="w-56"
             aria-label="Justificativa da transição"
           />
-          <Button type="submit" size="sm" disabled={pending}>
+          <Button type="submit" size="sm" loading={pending}>
             {pending ? "…" : "Confirmar"}
           </Button>
         </form>
@@ -191,7 +192,7 @@ export function TransicaoStatusForm({
               <select
                 id="tipoEncerramento"
                 name="tipoEncerramento"
-                className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+                className={campoNativoClasses}
                 value={tipoEncerramento}
                 onChange={(e) =>
                   setTipoEncerramento(e.target.value as TipoEncerramento)
@@ -228,20 +229,20 @@ export function TransicaoStatusForm({
                   name="planoCuidados"
                   rows={3}
                   maxLength={2000}
-                  className="border-input bg-background rounded-md border px-3 py-2 text-sm"
+                  className={areaNativaClasses}
                 />
               </div>
             </div>
           )}
 
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" loading={pending}>
             {pending ? "Encerrando…" : "Confirmar encerramento"}
           </Button>
         </form>
       )}
 
       {guiaEmitida && (
-        <p className="text-sm text-emerald-600" data-testid="guia-emitida-encerramento">
+        <p className="text-sm font-medium text-success" data-testid="guia-emitida-encerramento">
           Guia de contrarreferência emitida.{" "}
           <a
             href={`/contrarreferencia/${guiaEmitida}`}

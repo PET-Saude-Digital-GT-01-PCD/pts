@@ -23,7 +23,7 @@ export default async function TriagemPage() {
   const pacientes = await pacientesEncaminhadosTriagem();
 
   return (
-    <main className="flex flex-col gap-6 p-8">
+    <main className="flex flex-col gap-6 p-4 sm:p-8">
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Triagem
@@ -54,7 +54,7 @@ export default async function TriagemPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base">{p.nome}</CardTitle>
-                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-xs shrink-0">
+                      <Badge variant="warning" className="shrink-0 text-xs">
                         Aguardando
                       </Badge>
                     </div>

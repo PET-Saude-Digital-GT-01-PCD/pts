@@ -1,6 +1,7 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
@@ -90,6 +91,7 @@ export async function comentarMural(input: unknown): Promise<Resultado> {
       });
     });
 
+    revalidatePath(`/casos/${ptsId}`);
     return { ok: true };
   } catch (e) {
     if (

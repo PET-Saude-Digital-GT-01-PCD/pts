@@ -78,7 +78,7 @@ export function LoginForm() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" loading={pending}>
             {pending ? "Entrando…" : "Entrar"}
           </Button>
           <Link className="text-center text-sm underline" href="/cadastro">

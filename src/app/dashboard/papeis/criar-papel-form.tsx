@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { criarPapel } from "@/server/iam/papeis";
+import { campoNativoClasses } from "@/lib/utils";
 import { RecursoMatriz, type RecursoOpcao } from "./recurso-matriz";
 
 const BASES = ["CLINICO", "GESTOR", "ADMIN"] as const;
@@ -38,28 +39,30 @@ export function CriarPapelForm({ recursos }: { recursos: RecursoOpcao[] }) {
 
   return (
     <form className="grid gap-4" onSubmit={onSubmit}>
-      <div className="grid gap-2">
-        <Label htmlFor="nome">Nome do papel</Label>
-        <Input id="nome" name="nome" required maxLength={60} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="nome">Nome do papel</Label>
+          <Input id="nome" name="nome" required maxLength={60} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="base">Base</Label>
+          <select
+            id="base"
+            className={campoNativoClasses}
+            value={base}
+            onChange={(e) => setBase(e.target.value)}
+          >
+            {BASES.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="descricao">Descrição</Label>
         <Input id="descricao" name="descricao" maxLength={255} />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="base">Base</Label>
-        <select
-          id="base"
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-          value={base}
-          onChange={(e) => setBase(e.target.value)}
-        >
-          {BASES.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </select>
       </div>
       <RecursoMatriz
         recursos={recursos}
@@ -72,11 +75,13 @@ export function CriarPapelForm({ recursos }: { recursos: RecursoOpcao[] }) {
         </p>
       ) : null}
       {ok ? (
-        <p role="status" className="text-sm text-emerald-600">
+        <p role="status" className="text-sm font-medium text-success">
           Papel criado.
         </p>
       ) : null}
-      <Button type="submit">Criar papel</Button>
+      <Button type="submit" className="justify-self-start">
+        Criar papel
+      </Button>
     </form>
   );
 }

@@ -1,4 +1,7 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
+
+import { auth } from "@/lib/auth";
 
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
@@ -17,6 +20,10 @@ const colaboradores = [
 ];
 
 export default async function Home() {
+  // Quem já tem sessão não deve cair na página de entrada.
+  const session = await auth();
+  if (session?.user?.papelId) redirect("/dashboard");
+
   const orgConfig = await buscarOrgConfigView();
 
   return (

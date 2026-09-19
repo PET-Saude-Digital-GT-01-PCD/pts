@@ -1,4 +1,5 @@
 import { Label } from "@/components/ui/label";
+import { campoNativoClasses } from "@/lib/utils";
 import {
   GRUPOS_ASHWORTH,
   calcularAshworth,
@@ -49,7 +50,7 @@ export function FieldsetEscalasClinicas({
                 id={`ashworth-${grupo}`}
                 value={ashworth[grupo] ?? ""}
                 onChange={(e) => onAtualizarAshworth(grupo, e.target.value)}
-                className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+                className={campoNativoClasses}
               >
                 <option value="">Não avaliado</option>
                 {[0, 1, 2, 3, 4].map((n) => (
@@ -77,7 +78,7 @@ export function FieldsetEscalasClinicas({
               id="glasgow-ocular"
               value={glasgow.ocular ?? ""}
               onChange={(e) => onAtualizarGlasgow("ocular", e.target.value)}
-              className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+              className={campoNativoClasses}
             >
               <option value="">—</option>
               {[1, 2, 3, 4].map((n) => (
@@ -93,7 +94,7 @@ export function FieldsetEscalasClinicas({
               id="glasgow-verbal"
               value={glasgow.verbal ?? ""}
               onChange={(e) => onAtualizarGlasgow("verbal", e.target.value)}
-              className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+              className={campoNativoClasses}
             >
               <option value="">—</option>
               {[1, 2, 3, 4, 5].map((n) => (
@@ -109,7 +110,7 @@ export function FieldsetEscalasClinicas({
               id="glasgow-motor"
               value={glasgow.motor ?? ""}
               onChange={(e) => onAtualizarGlasgow("motor", e.target.value)}
-              className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+              className={campoNativoClasses}
             >
               <option value="">—</option>
               {[1, 2, 3, 4, 5, 6].map((n) => (

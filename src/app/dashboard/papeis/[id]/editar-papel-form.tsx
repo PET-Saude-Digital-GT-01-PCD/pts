@@ -22,6 +22,7 @@ import {
   deletarPapel,
 } from "@/server/iam/papeis";
 import { RecursoMatriz, type RecursoOpcao } from "../recurso-matriz";
+import { campoNativoClasses } from "@/lib/utils";
 
 const BASES = ["CLINICO", "GESTOR", "ADMIN"] as const;
 
@@ -80,9 +81,26 @@ export function EditarPapelForm({
 
   return (
     <form className="grid gap-4" onSubmit={salvar}>
-      <div className="grid gap-2">
-        <Label htmlFor="nome">Nome do papel</Label>
-        <Input id="nome" name="nome" defaultValue={nome} required maxLength={60} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="nome">Nome do papel</Label>
+          <Input id="nome" name="nome" defaultValue={nome} required maxLength={60} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="base">Base</Label>
+          <select
+            id="base"
+            className={campoNativoClasses}
+            value={baseAtual}
+            onChange={(e) => setBaseAtual(e.target.value)}
+          >
+            {BASES.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="descricao">Descrição</Label>
@@ -92,21 +110,6 @@ export function EditarPapelForm({
           defaultValue={descricao ?? ""}
           maxLength={255}
         />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="base">Base</Label>
-        <select
-          id="base"
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-          value={baseAtual}
-          onChange={(e) => setBaseAtual(e.target.value)}
-        >
-          {BASES.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </select>
       </div>
       <RecursoMatriz
         recursos={todas}
@@ -119,12 +122,12 @@ export function EditarPapelForm({
         </p>
       ) : null}
       {ok ? (
-        <p role="status" className="text-sm text-emerald-600">
+        <p role="status" className="text-sm font-medium text-success">
           Alterações salvas.
         </p>
       ) : null}
-      <div className="flex gap-2">
-        <Button type="submit">Salvar</Button>
+      <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+        <Button type="submit">Salvar alterações</Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button type="button" variant="destructive">

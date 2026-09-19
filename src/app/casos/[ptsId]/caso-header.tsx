@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { StatusPts } from "@prisma/client";
+import { Alert } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Semaforo, type SemaforoStatus } from "@/components/ui/semaforo";
 import { TransicaoStatusForm } from "./transicao-status-form";
 import { SemaforoReuniaoForm } from "./semaforo-reuniao-form";
@@ -40,64 +44,82 @@ export function CasoHeader({
   sugestaoSemaforo: "VERDE" | "AMARELO" | "VERMELHO";
 }) {
   return (
-    <header className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold">{pts.paciente.nome}</h1>
-        <span
-          data-testid="status-pts"
-          className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
-        >
-          {LABEL_STATUS[pts.status] ?? pts.status}
-        </span>
-        <span data-testid="semaforo-reuniao-badge">
-          <Semaforo status={pts.semaforoReuniao.toLowerCase() as SemaforoStatus} />
-        </span>
+    <header className="space-y-4">
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Projeto Terapêutico Singular
+              </p>
+              <h1 className="text-xl font-semibold sm:text-2xl">
+                {pts.paciente.nome}
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" data-testid="status-pts">
+                {LABEL_STATUS[pts.status] ?? pts.status}
+              </Badge>
+              <span data-testid="semaforo-reuniao-badge">
+                <Semaforo
+                  status={pts.semaforoReuniao.toLowerCase() as SemaforoStatus}
+                />
+              </span>
+            </div>
+          </div>
+
+          <dl className="grid gap-3 border-t border-border pt-4 text-sm sm:grid-cols-3">
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">
+                Profissional de referência
+              </dt>
+              <dd className="font-medium">
+                {pts.refProfissional?.nome ?? "Não definido"}
+              </dd>
+            </div>
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">Equipe / CER</dt>
+              <dd className="font-medium">{pts.cer.nome}</dd>
+            </div>
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">Visão do cidadão</dt>
+              <dd>
+                <Button variant="link" size="sm" className="h-auto px-0" asChild>
+                  <Link href={`/portal/${pts.id}`}>Abrir portal do cidadão</Link>
+                </Button>
+              </dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-2">
         {faltaRecente && (
-          <p
-            data-testid="alerta-falta"
-            role="alert"
-            className="w-full rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive"
-          >
+          <Alert variant="destructive" data-testid="alerta-falta">
             Falta registrada nos últimos 30 dias — comunicar o profissional de
             referência.
-          </p>
+          </Alert>
         )}
         {pts.status === "FECHADO" && (
-          <p
-            data-testid="banner-fechado"
-            role="alert"
-            className="w-full rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
-          >
+          <Alert variant="warning" data-testid="banner-fechado">
             PTS fechado — visualização somente leitura.
             {pts.motivoEncerramento ? ` Motivo: ${pts.motivoEncerramento}` : ""}
-          </p>
+          </Alert>
         )}
         {pts.status === "REAVALIACAO" && podePtsRevisar && (
-          <p
-            data-testid="banner-sugestao-revisao"
-            role="status"
-            className="w-full rounded-lg border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
-          >
+          <Alert variant="warning" data-testid="banner-sugestao-revisao">
             PTS em reavaliação — considere{" "}
-            <a href={`/casos/${pts.id}?aba=revisoes`} className="underline">
+            <Link
+              href={`/casos/${pts.id}?aba=revisoes`}
+              className="rounded-sm underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
               registrar uma revisão
-            </a>{" "}
+            </Link>{" "}
             marcando este momento.
-          </p>
+          </Alert>
         )}
       </div>
-      <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-        <div>
-          <dt className="inline">Ref. profissional: </dt>
-          <dd className="inline text-foreground">
-            {pts.refProfissional?.nome ?? "—"}
-          </dd>
-        </div>
-        <div>
-          <dt className="inline">Equipe/CER: </dt>
-          <dd className="inline text-foreground">{pts.cer.nome}</dd>
-        </div>
-      </dl>
+
       <TransicaoStatusForm
         ptsId={pts.id}
         status={pts.status}
@@ -113,12 +135,6 @@ export function CasoHeader({
           sugestao={sugestaoSemaforo}
         />
       )}
-      <Link
-        href={`/portal/${pts.id}`}
-        className="inline-block text-sm text-primary underline underline-offset-2"
-      >
-        Ver como portal do cidadão
-      </Link>
     </header>
   );
 }

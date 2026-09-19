@@ -37,28 +37,30 @@ export function RevisaoForm({ ptsId }: { ptsId: string }) {
   }
 
   return (
-    <form className="grid gap-3 rounded-lg border p-4" onSubmit={onSubmit}>
+    <form className="grid gap-3 rounded-lg border border-border p-4" onSubmit={onSubmit}>
       <div className="grid gap-2">
         <Label htmlFor="motivo-revisao">Motivo da revisão</Label>
         <Input
           id="motivo-revisao"
           name="motivo"
           required
+          aria-invalid={erro ? true : undefined}
+          aria-describedby={erro ? "motivo-revisao-erro" : undefined}
           maxLength={500}
           placeholder="ex.: reunião de reavaliação trimestral"
         />
       </div>
       {erro ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p id="motivo-revisao-erro" role="alert" className="text-sm font-medium text-destructive">
           {erro}
         </p>
       ) : null}
       {ok !== null ? (
-        <p role="status" data-testid="revisao-ok" className="text-sm text-emerald-600">
+        <p role="status" data-testid="revisao-ok" className="text-sm font-medium text-success">
           Revisão #{ok} registrada.
         </p>
       ) : null}
-      <Button type="submit" disabled={salvando} className="justify-self-start">
+      <Button type="submit" loading={salvando} className="w-full sm:w-auto sm:justify-self-start">
         {salvando ? "Registrando…" : "Registrar revisão"}
       </Button>
     </form>

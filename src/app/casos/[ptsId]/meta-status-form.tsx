@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { mudarStatusMeta } from "@/server/care-plan/metas";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { campoNativoClasses, cn } from "@/lib/utils";
 
 const ROTULOS: Record<string, string> = {
   NOVA: "Nova",
@@ -60,10 +63,10 @@ export function MetaStatusForm({
   }
 
   return (
-    <form action={avancar} className="flex flex-wrap items-center gap-2" data-testid={`meta-status-${metaId}`}>
+    <form action={avancar} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" data-testid={`meta-status-${metaId}`}>
       <select
         name="para"
-        className="rounded-md border p-1.5 text-sm"
+        className={cn(campoNativoClasses, "w-full sm:w-auto")}
         defaultValue={destinos[0]}
         aria-label="Novo status"
       >
@@ -73,20 +76,20 @@ export function MetaStatusForm({
           </option>
         ))}
       </select>
-      <input
+      <Input
         name="motivo"
         placeholder="Motivo (opcional)"
-        className="w-44 rounded-md border p-1.5 text-sm"
+        className="w-full sm:w-44"
         aria-label="Motivo da mudança de status"
       />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md border px-2 py-1 text-sm font-medium disabled:opacity-50"
-      >
-        {pending ? "…" : "Mudar status"}
-      </button>
-      {mensagem && <span className="text-sm text-destructive">{mensagem}</span>}
+      <Button type="submit" variant="outline" size="sm" loading={pending}>
+        Mudar status
+      </Button>
+      {mensagem && (
+        <span role="alert" className="text-sm font-medium text-destructive">
+          {mensagem}
+        </span>
+      )}
     </form>
   );
 }

@@ -66,7 +66,7 @@ export function EventoForm({ ptsId }: { ptsId: string }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="grid gap-3 rounded-md border p-3"
+      className="grid gap-3 rounded-lg border border-border p-4"
       data-testid="form-evento"
     >
       <div className="grid gap-4 sm:grid-cols-3">
@@ -75,7 +75,7 @@ export function EventoForm({ ptsId }: { ptsId: string }) {
           <select
             id="tipo-evento"
             name="tipo"
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+            className="flex h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:h-8 md:text-sm dark:bg-input/30"
             defaultValue="SESSAO"
           >
             {Object.entries(ROTULOS_TIPO).map(([valor, rotulo]) => (
@@ -99,8 +99,8 @@ export function EventoForm({ ptsId }: { ptsId: string }) {
           {erro}
         </p>
       )}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        <Button type="submit" size="sm" loading={pending}>
           {pending ? "Salvando…" : "Salvar evento"}
         </Button>
         <Button

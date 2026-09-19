@@ -21,7 +21,7 @@ test("médico registra avaliação SOAP e ela aparece na lista", async ({ page }
 
   await page.getByLabel("Subjetivo").fill("Paciente relata dor lombar há 3 semanas.");
   await page.getByLabel("Objetivo").fill("ADM lombar reduzida; força MMII 5/5.");
-  await page.getByLabel("Avaliacao", { exact: false }).fill("Lombalgia mecânica em investigação.");
+  await page.getByLabel("Avaliação clínica").fill("Lombalgia mecânica em investigação.");
 
   // grade de serviços dinâmica
   await page.getByLabel("Serviço", { exact: true }).first().fill("Fisioterapia motora");
@@ -56,7 +56,7 @@ test("painel de divergência mostra contraste ALTA sem bloquear salvar", async (
 
   await page.getByLabel("Subjetivo").fill("Família relata boa evolução.");
   await page.getByLabel("Objetivo").fill("Exame físico com limitação importante.");
-  await page.getByLabel("Avaliacao", { exact: false }).fill("Divergência clara entre relato e medida.");
+  await page.getByLabel("Avaliação clínica").fill("Divergência clara entre relato e medida.");
 
   // relato otimista × medida pessimista → contradição (ALTA)
   await page.getByLabel("Mobilidade relatada pela família (0–100)").fill("90");
@@ -84,7 +84,7 @@ test("escalas Ashworth e Glasgow calculam total ao vivo e persistem em escoresJs
     .getByLabel("Objetivo")
     .fill("Espasticidade em MMSS; rebaixamento leve do nível de consciência.");
   await page
-    .getByLabel("Avaliacao", { exact: false })
+    .getByLabel("Avaliação clínica")
     .fill("Espasticidade e rebaixamento em investigação.");
 
   // Ashworth: só 2 grupos avaliados → total 6, média 3.0

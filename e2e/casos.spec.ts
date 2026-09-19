@@ -23,7 +23,7 @@ test("usuário com care-plan.meta.ler vê o painel do caso", async ({ page }) =>
 
   await expect(page.getByRole("heading", { name: "Maria Exemplo" })).toBeVisible();
   await expect(page.getByTestId("status-pts")).toHaveText("Em avaliação");
-  await expect(page.getByText("Equipe/CER:")).toBeVisible();
+  await expect(page.getByText("Equipe / CER")).toBeVisible();
 
   // abas navegam
   await page.waitForLoadState("networkidle");
@@ -60,7 +60,7 @@ test("PTS fechado exibe banner somente leitura", async ({ page }) => {
 test("sem permissão de leitura → redirect para /", async ({ page }) => {
   await login(page, "admin@pts.local", "admin123");
   await page.goto(`/casos/${PTS_ATIVO_ID}`);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 });
 
 test("PTS inexistente → 404", async ({ page }) => {

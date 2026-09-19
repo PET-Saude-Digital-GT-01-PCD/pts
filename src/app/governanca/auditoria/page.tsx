@@ -1,3 +1,4 @@
+import { AdminShell } from "@/components/admin/admin-shell";
 import { requirePermissao } from "@/server/iam/session";
 import { listarTiposEntidade } from "@/server/governance/auditoria";
 import { AuditoriaViewer } from "./auditoria-viewer";
@@ -7,15 +8,12 @@ export default async function AuditoriaPage() {
   const tiposEntidade = await listarTiposEntidade();
 
   return (
-    <main className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Trilha de auditoria</h1>
-        <p className="text-sm text-muted-foreground">
-          Histórico append-only das decisões e ajustes. Metadados apenas —
-          sem abrir o conteúdo clínico completo.
-        </p>
-      </div>
+    <AdminShell
+      titulo="Trilha de auditoria"
+      descricao="Histórico append-only das decisões e ajustes. Metadados apenas — sem abrir o conteúdo clínico completo."
+      largura="larga"
+    >
       <AuditoriaViewer tiposEntidade={tiposEntidade} />
-    </main>
+    </AdminShell>
   );
 }
