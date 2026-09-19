@@ -36,8 +36,12 @@ cópias divergentes de `rounded-md border px-3 text-sm`.
 
 ## 3. PTS (`src/app/casos/[ptsId]`)
 
-- `loading.tsx` e `error.tsx` novos: o caso passou a ter esqueleto de
-  carregamento e tela de erro com botão de nova tentativa, em vez de tela branca.
+- `error.tsx` e `not-found.tsx` novos: o caso ganhou tela de erro com botão de
+  nova tentativa e tela de caso inexistente, em vez de tela branca.
+- Carregamento progressivo por aba: cada aba é renderizada dentro de um
+  `Suspense` com esqueleto. **Não use `loading.tsx` neste segmento** — ele liga
+  o streaming da rota inteira, e aí o `notFound()` do PTS inexistente responde
+  200 em vez de 404 (`e2e/casos.spec.ts:66` cobre isso).
 - `caso-header.tsx`: hierarquia refeita. Nome, status e semáforo numa linha;
   alertas (falta recente, PTS fechado, sugestão de revisão) empilhados abaixo
   como `Alert`. Título menor no mobile.
@@ -65,18 +69,24 @@ cópias divergentes de `rounded-md border px-3 text-sm`.
 - `sidebar.tsx`: `<nav>` rotulado, `aria-current` no item ativo, foco visível,
   e o botão sair passou a usar `Button`.
 
-## 5. Cuidado registrado
+## 5. Cuidados registrados
 
-`Button` com `asChild` precisa entregar **um único filho** ao `Slot` do Radix.
-O spinner do `loading` só é renderizado quando `asChild` é falso; há teste
-cobrindo isso em `tests/ui/primitivos.test.tsx`.
+1. `Button` com `asChild` precisa entregar **um único filho** ao `Slot` do
+   Radix. O spinner do `loading` só é renderizado quando `asChild` é falso; há
+   teste cobrindo isso em `tests/ui/primitivos.test.tsx`.
+2. `loading.tsx` no segmento do caso quebra o status 404 (ver seção 3).
+3. O menu lateral usa `aria-label="Menu principal"`. Com "Navegação principal",
+   o `getByLabel("Ação")` do e2e de auditoria casava também com o `<nav>`, já
+   que "Navegação" contém "ação" e o seletor faz busca por substring.
 
 ## 6. Verificação
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build`: limpos.
 - `pnpm test`: 408 testes passando (com o banco de dev de pé), incluindo 17 de UI.
-- `pnpm e2e`: 32 passam e 51 falham — **o mesmo resultado da branch sem estas
-  mudanças**. As falhas são de ambiente (exceção no servidor do build
-  standalone), não desta refatoração, e continuam em aberto.
+- `pnpm e2e`: comparado em série (`--workers=1`, como no CI) contra `develop`,
+  com banco semeado antes de cada rodada. As falhas restantes são as mesmas nas
+  duas branches; elas vêm de estado compartilhado do seed entre specs e já
+  existiam. Atenção: `pnpm e2e` **não** faz build, e `reuseExistingServer` está
+  ligado, então rode `pnpm build` antes ou você testa o bundle anterior.
 - Manual sugerido no review: 375px e 1280px, tema claro e escuro, navegação só
   por teclado e um formulário com erro num leitor de tela.
