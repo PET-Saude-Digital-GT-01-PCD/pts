@@ -90,7 +90,7 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
   return (
     <div className="flex flex-col gap-6">
       <form
-        className="grid gap-3 rounded-lg border p-4 sm:grid-cols-3"
+        className="grid gap-3 rounded-2xl bg-surface-raised p-4 shadow-soft ring-1 ring-foreground/5 sm:grid-cols-3"
         onSubmit={onSubmit}
       >
         <div className="grid gap-1">
@@ -166,7 +166,10 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
       {eventos.length === 0 && !carregando ? (
         <p className="text-sm text-muted-foreground">Nenhum evento encontrado.</p>
       ) : (
-        <ul className="divide-y rounded-md border" data-testid="lista-auditoria">
+        <ul
+        className="divide-y divide-border overflow-hidden rounded-2xl bg-surface-raised shadow-soft ring-1 ring-foreground/5"
+        data-testid="lista-auditoria"
+      >
           {eventos.map((ev) => (
             <li key={ev.id} className="p-4 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">

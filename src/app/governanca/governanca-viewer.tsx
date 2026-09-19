@@ -68,7 +68,7 @@ export function GovernancaViewer({
   return (
     <div className="flex flex-col gap-6">
       <form
-        className="flex flex-wrap items-end gap-3 rounded-lg border p-4"
+        className="flex flex-wrap items-end gap-3 rounded-2xl bg-surface-raised p-4 shadow-soft ring-1 ring-foreground/5"
         onSubmit={aplicarFiltro}
       >
         <div className="grid gap-1">
@@ -101,7 +101,7 @@ export function GovernancaViewer({
             <div
               key={ind.id}
               data-testid={`indicador-${ind.id}`}
-              className="rounded-lg border p-4"
+              className="rounded-2xl bg-surface-raised p-4 shadow-soft ring-1 ring-foreground/5"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-sm font-medium">{ind.titulo}</h3>
