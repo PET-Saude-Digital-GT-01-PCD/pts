@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { requirePermissao } from "@/server/iam/session";
+import { assertPtsMutavel } from "@/server/care-plan/acesso";
 
 // Gestor vincula profissionais ao caso (#69). Gestor NÃO acessa conteúdo
 // clínico via aqui — só lê metadado de equipe (nome, categoria, papel no
@@ -142,6 +143,7 @@ export async function adicionarMembroEquipe(input: unknown): Promise<Resultado> 
 
   try {
     await db.$transaction(async (tx) => {
+      await assertPtsMutavel(ptsId, tx);
       const membro = await tx.equipePts.create({
         data: { ptsId, usuarioId, papelNoCaso },
       });
@@ -162,6 +164,9 @@ export async function adicionarMembroEquipe(input: unknown): Promise<Resultado> 
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { ok: false, erro: "Este profissional já está na equipe do caso." };
     }
+    if (e instanceof Error && e.message.startsWith("PTS fechado")) {
+      return { ok: false, erro: e.message };
+    }
     return { ok: false, erro: "Erro ao adicionar à equipe." };
   }
 }
@@ -177,9 +182,14 @@ export async function removerMembroEquipe(input: unknown): Promise<Resultado> {
   if (!parsed.success) return { ok: false, erro: "Dados inválidos." };
   const { ptsId, usuarioId } = parsed.data;
 
-  const membro = await db.equipePts.findUnique({
-    where: { usuarioId_ptsId: { usuarioId, ptsId } },
-  });
+  const [pts, membro] = await Promise.all([
+    db.pts.findUnique({ where: { id: ptsId }, select: { cerId: true, status: true } }),
+    db.equipePts.findUnique({ where: { usuarioId_ptsId: { usuarioId, ptsId } } }),
+  ]);
+  if (!pts || pts.cerId !== user.cerId) return { ok: false, erro: "Caso não encontrado." };
+  if (pts.status === "FECHADO") {
+    return { ok: false, erro: "PTS fechado é somente leitura; não aceita novas alterações." };
+  }
   if (!membro) return { ok: false, erro: "Vínculo não encontrado." };
 
   await db.$transaction(async (tx) => {
