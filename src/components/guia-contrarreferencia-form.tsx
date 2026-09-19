@@ -6,7 +6,7 @@ import { emitirContrarreferencia } from "@/server/triage/contrarreferencia";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { areaNativaClasses } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 export function GuiaContrarreferenciaForm({
   pacienteId,
@@ -93,14 +93,13 @@ export function GuiaContrarreferenciaForm({
     >
       <div className="grid gap-2">
         <Label htmlFor="motivo-guia">Motivo / justificativa</Label>
-        <textarea
+        <Textarea
           id="motivo-guia"
           name="motivo"
           rows={2}
           required
           maxLength={1000}
           defaultValue={motivoInicial}
-          className={areaNativaClasses}
         />
       </div>
       <div className="grid gap-2">
@@ -109,13 +108,12 @@ export function GuiaContrarreferenciaForm({
       </div>
       <div className="grid gap-2">
         <Label htmlFor="planoCuidados">Plano de cuidados à APS (opcional)</Label>
-        <textarea
+        <Textarea
           id="planoCuidados"
           name="planoCuidados"
           rows={3}
           maxLength={2000}
           defaultValue={motivoInicial ? `Resumo: ${motivoInicial}` : undefined}
-          className={areaNativaClasses}
         />
       </div>
       {erro && (

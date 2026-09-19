@@ -29,6 +29,10 @@ async function exigirVisaoGovernanca(): Promise<SessaoUsuario> {
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
+// Agregados limitados ao CER do usuário (mesmo princípio do #57 no dashboard
+// do gestor). cerId null → sem filtro, como no dashboard.
+type EscopoCer = string | undefined;
+
 const CADENCIA_REVISAO_DIAS = 90; // ponytail: sem SLA formal de cadência ainda; ajustar quando o piloto definir
 
 /**
@@ -37,9 +41,9 @@ const CADENCIA_REVISAO_DIAS = 90; // ponytail: sem SLA formal de cadência ainda
  * CADENCIA_REVISAO_DIAS) E ≥1 meta cadastrada (toda Meta já nasce com
  * critérios SMART, ver meta-schema.ts). Fonte: pts, pts_revisao, meta.
  */
-async function calcularNorthStar(agora: Date): Promise<IndicadorGovernanca> {
+async function calcularNorthStar(agora: Date, cerId: EscopoCer): Promise<IndicadorGovernanca> {
   const ptsAtivos = await db.pts.findMany({
-    where: { status: { not: "FECHADO" } },
+    where: { cerId, status: { not: "FECHADO" } },
     select: {
       aberturaEm: true,
       revisoes: { select: { data: true }, orderBy: { data: "desc" }, take: 1 },
@@ -79,9 +83,9 @@ async function calcularNorthStar(agora: Date): Promise<IndicadorGovernanca> {
 }
 
 /** Cobertura de baseline: % de pacientes com PTS ativo que têm baseline importada. Fonte: paciente, baseline, pts. */
-async function calcularCoberturaBaseline(): Promise<IndicadorGovernanca> {
+async function calcularCoberturaBaseline(cerId: EscopoCer): Promise<IndicadorGovernanca> {
   const pacientesComPtsAtivo = await db.paciente.findMany({
-    where: { pts: { some: { status: { not: "FECHADO" } } } },
+    where: { cerId, pts: { some: { status: { not: "FECHADO" } } } },
     select: { baseline: { select: { id: true } } },
   });
 
@@ -112,9 +116,9 @@ async function calcularCoberturaBaseline(): Promise<IndicadorGovernanca> {
 }
 
 /** Metas por PTS (≥80%): % de PTS ativos com ≥1 meta cadastrada. Fonte: pts, meta. */
-async function calcularMetasPorPts(): Promise<IndicadorGovernanca> {
+async function calcularMetasPorPts(cerId: EscopoCer): Promise<IndicadorGovernanca> {
   const ptsAtivos = await db.pts.findMany({
-    where: { status: { not: "FECHADO" } },
+    where: { cerId, status: { not: "FECHADO" } },
     select: { _count: { select: { metas: true } } },
   });
 
@@ -145,10 +149,14 @@ async function calcularMetasPorPts(): Promise<IndicadorGovernanca> {
 }
 
 /** Adesão (≥70%): % de eventos de cuidado no período que são SESSAO (não FALTA). Fonte: evento_cuidado. */
-async function calcularAdesao(periodo: PeriodoRelatorio): Promise<IndicadorGovernanca> {
+async function calcularAdesao(periodo: PeriodoRelatorio, cerId: EscopoCer): Promise<IndicadorGovernanca> {
   const eventos = await db.eventoCuidado.groupBy({
     by: ["tipo"],
-    where: { data: { gte: periodo.desde, lte: periodo.ate }, tipo: { in: ["SESSAO", "FALTA"] } },
+    where: {
+      pts: { cerId },
+      data: { gte: periodo.desde, lte: periodo.ate },
+      tipo: { in: ["SESSAO", "FALTA"] },
+    },
     _count: { _all: true },
   });
 
@@ -171,9 +179,10 @@ async function calcularAdesao(periodo: PeriodoRelatorio): Promise<IndicadorGover
 /** Tempo até 1ª avaliação multiprofissional: média de dias entre abertura do PTS e a 1ª avaliação, para PTS abertos no período. Fonte: pts, avaliacao. */
 async function calcularTempoPrimeiraAvaliacao(
   periodo: PeriodoRelatorio,
+  cerId: EscopoCer,
 ): Promise<IndicadorGovernanca> {
   const ptsDoPeriodo = await db.pts.findMany({
-    where: { aberturaEm: { gte: periodo.desde, lte: periodo.ate } },
+    where: { cerId, aberturaEm: { gte: periodo.desde, lte: periodo.ate } },
     select: {
       aberturaEm: true,
       avaliacoes: { select: { criadaEm: true }, orderBy: { criadaEm: "asc" }, take: 1 },
@@ -214,9 +223,10 @@ async function calcularTempoPrimeiraAvaliacao(
 /** Taxa de divergência manual (>30% = alerta): % de triagens no período com ao menos 1 ajuste manual de classificação. Fonte: triagem, ajuste_classificacao. */
 async function calcularDivergenciaManual(
   periodo: PeriodoRelatorio,
+  cerId: EscopoCer,
 ): Promise<IndicadorGovernanca> {
   const triagens = await db.triagem.findMany({
-    where: { criadaEm: { gte: periodo.desde, lte: periodo.ate } },
+    where: { pts: { cerId }, criadaEm: { gte: periodo.desde, lte: periodo.ate } },
     select: { _count: { select: { ajustes: true } } },
   });
 
@@ -291,7 +301,8 @@ export type PainelIndicadores = {
 export async function buscarIndicadores(
   periodoInput?: { desde?: Date; ate?: Date },
 ): Promise<PainelIndicadores> {
-  await exigirVisaoGovernanca();
+  const user = await exigirVisaoGovernanca();
+  const cerId = user.cerId ?? undefined;
 
   const agora = new Date();
   const padrao = periodoPadrao(agora);
@@ -302,12 +313,12 @@ export async function buscarIndicadores(
 
   const [northStar, coberturaBaseline, metasPorPts, adesao, tempoPrimeiraAvaliacao, divergenciaManual] =
     await Promise.all([
-      calcularNorthStar(agora),
-      calcularCoberturaBaseline(),
-      calcularMetasPorPts(),
-      calcularAdesao(periodo),
-      calcularTempoPrimeiraAvaliacao(periodo),
-      calcularDivergenciaManual(periodo),
+      calcularNorthStar(agora, cerId),
+      calcularCoberturaBaseline(cerId),
+      calcularMetasPorPts(cerId),
+      calcularAdesao(periodo, cerId),
+      calcularTempoPrimeiraAvaliacao(periodo, cerId),
+      calcularDivergenciaManual(periodo, cerId),
     ]);
 
   return {

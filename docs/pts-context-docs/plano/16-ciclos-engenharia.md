@@ -71,6 +71,7 @@ Regras determinísticas têm **TDD obrigatório** (AGENTS.md):
 7. Telas núcleo 1–9 (plano/14).
 
 **Fase 2:** governança (dashboards), contrarreferência real, portal cidadão, comparativo de versões, RLS, encerramento completo.
+Status (2026-09-19): entregues governança (#71, #72), comparativo de versões (#70), encerramento completo (#59) e contrarreferência com guia (#62); portal cidadão parcial (#73); RLS e escrita real da contrarreferência no e-SUS pendentes. Ver `plano/07` §3.
 
 **Fase 3:** multi-CER, offline PWA, e-SUS real (se A5 validado), pacote de replicação.
 

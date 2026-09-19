@@ -27,6 +27,20 @@ async function pacienteDoCER(pacienteId: string, cerId: string | null) {
   return paciente.cerId === cerId ? paciente : "fora-do-cer" as const;
 }
 
+// Append-only: a linha original nunca recebe revogadoEm — a revogação é uma
+// linha nova do mesmo termo. Vigente = mais registros que revogações para o
+// par (paciente, termo). Contagem em vez de "última linha por data" porque
+// registro e revogação podem cair no mesmo milissegundo.
+// ponytail: checagem fora de lock — dois cliques simultâneos ainda passam;
+// índice parcial/advisory lock se virar problema real.
+async function termoVigente(pacienteId: string, termoVersao: string) {
+  const [registros, revogacoes] = await Promise.all([
+    db.consentimento.count({ where: { pacienteId, termoVersao, revogadoEm: null } }),
+    db.consentimento.count({ where: { pacienteId, termoVersao, revogadoEm: { not: null } } }),
+  ]);
+  return registros > revogacoes;
+}
+
 export async function registrarConsentimento(
   input: unknown,
 ): Promise<ResultadoConsentimento> {
@@ -41,6 +55,9 @@ export async function registrarConsentimento(
   if (paciente === null) return { ok: false, erro: "Paciente não encontrado." };
   if (paciente === "fora-do-cer") {
     return { ok: false, erro: "Paciente fora do CER do usuário." };
+  }
+  if (await termoVigente(paciente.id, dados.termoVersao)) {
+    return { ok: false, erro: "Já existe consentimento vigente para este termo." };
   }
 
   return db.$transaction(async (tx) => {
@@ -103,6 +120,9 @@ export async function revogarConsentimento(
   const paciente = await pacienteDoCER(anterior.pacienteId, user.cerId);
   if (paciente === null || paciente === "fora-do-cer") {
     return { ok: false, erro: "Paciente fora do CER do usuário." };
+  }
+  if (!(await termoVigente(anterior.pacienteId, anterior.termoVersao))) {
+    return { ok: false, erro: "Consentimento já revogado." };
   }
 
   return db.$transaction(async (tx) => {

@@ -16,7 +16,7 @@ Instruções operacionais para agentes que trabalham neste repositório. Instru�
 - Migrações: `pnpm db:migrate` (dev, cria migration) / `pnpm db:deploy` (aplica) / `pnpm db:seed` (seed dev)
 - Typecheck: `pnpm typecheck` · Lint: `pnpm lint`
 - Testes: `pnpm test` (Vitest) · `pnpm e2e` (Playwright, sobe build local)
-- CI: GitHub Actions — `ci.yml` (PR + main)
+- CI: GitHub Actions — `ci.yml` (PR + main). `pnpm audit` bloqueia só crítico em dep de runtime; high+ só reporta (bump via Dependabot)
 
 ## Estrutura
 

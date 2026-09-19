@@ -44,6 +44,8 @@ Build dos módulos 1, 2, 3 e 5 (núcleo) + módulo 4 (Fisio/TO essencial) confor
 - **Ambiente controlado:** começar por um turno/categoria, expandir após validação.
 - **Coleta de linha de base pré-piloto:** medir tempos e fluxos antes da implantação (necessário para comparativo do doc 09).
 
+**Status (2026-09-19):** software da Fase 1 entregue (épico #26 fechado; ver `CHANGELOG.md` 0.1.0) — M1–M5 + Fisio/TO, ciclo de vida do PTS (#59), eventos (#60), semáforo de reunião (#61), contrarreferência (#62), fila outbound (#63), notificação à eSF (#64), PPI (#65), escalas SOAP (#66), fila amarela (#67). Pendente: o piloto em CER real e o go/no-go (§8), que dependem de campo, não de código.
+
 ### Fase 2 — Expansão do Núcleo e Governança *(8–12 semanas)*
 
 - Módulo 6 completo (dashboards de gestão, auditoria, sincronização de agendas).
@@ -52,6 +54,18 @@ Build dos módulos 1, 2, 3 e 5 (núcleo) + módulo 4 (Fisio/TO essencial) confor
 - Ajustes de usabilidade com base no uso real do piloto.
 
 **Resultado:** ciclo de vida completo do PTS operado digitalmente no CER-piloto.
+
+**Status (2026-09-19):**
+
+| Item | Situação |
+|---|---|
+| M6 — auditoria (viewer) e indicadores de produção/qualidade | Entregue (#71, #72) |
+| Reavaliação + versionamento com comparativo (UC-11) | Entregue (#70) |
+| Portal do cidadão | Parcial (#73): percurso e metas acessíveis entregues; auth própria, consentimento e pré-chegada pendentes de decisão de arquitetura |
+| Contrarreferência à APS | Guia + plano de cuidados entregues (#62); escrita real no e-SUS pendente (integração segue em mock, ADR-0008) |
+| Sincronização de agendas (M6) | Pendente |
+| M4 ampliado (Psicologia e demais especialidades) | Pendente |
+| Ajustes de usabilidade pós-piloto | Pendente (depende do piloto) |
 
 ### Fase 3 — Escalonamento *(contínuo, condicionado)*
 
@@ -63,12 +77,12 @@ Build dos módulos 1, 2, 3 e 5 (núcleo) + módulo 4 (Fisio/TO essencial) confor
 
 Pré-requisito para a org configurar a instância sem equipe técnica (blocos em `plano/17`):
 
-| Bloco | Entrega | Fase-alvo |
-|---|---|---|
-| A — RBAC dinâmico | Catálogo `papel`/`recurso` + matriz editável pelo admin; `requirePermissao` | Fase 1 (núcleo iam) |
-| B — Admissão | Auto-cadastro com campos por org (`formulario_config`) → aprovação do admin | Fase 1/2 |
-| C — Branding | `org_config`: nome, logo, parceiros; header/rodapé dinâmicos | Fase 2 |
-| D — Equipe do caso | `equipe_pts` + enforcement de vinculação ao caso | Fase 2 |
+| Bloco | Entrega | Fase-alvo | Status |
+|---|---|---|---|
+| A — RBAC dinâmico | Catálogo `papel`/`recurso` + matriz editável pelo admin; `requirePermissao` | Fase 1 (núcleo iam) | Entregue (#9) |
+| B — Admissão | Auto-cadastro com campos por org (`formulario_config`) → aprovação do admin | Fase 1/2 | Entregue (#15) |
+| C — Branding | `org_config`: nome, logo, parceiros; header/rodapé dinâmicos | Fase 2 | Entregue (#68) |
+| D — Equipe do caso | `equipe_pts` + enforcement de vinculação ao caso | Fase 2 | Entregue (#69) |
 
 Deploy-per-org (ADR-0010): a app é distribuída e cada organização sobe a própria instância; configuração de acesso e identidade é feita por UI, sem alterar código.
 

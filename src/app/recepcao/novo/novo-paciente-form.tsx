@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { criarPaciente } from "@/server/reception/paciente";
@@ -164,13 +165,9 @@ export function NovoPacienteForm({
       <div className="w-full max-w-lg space-y-6">
         <p className="text-sm text-muted-foreground">
           Paciente cadastrado. Complete as seções abaixo ou{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => router.push(`/pacientes/${pacienteId}`)}
-          >
-            siga para o paciente
-          </button>
+          <Button asChild variant="link" className="h-auto p-0 underline">
+            <Link href={`/pacientes/${pacienteId}`}>siga para o paciente</Link>
+          </Button>
           .
         </p>
         {provisorio && prazoRegularizacao ? (

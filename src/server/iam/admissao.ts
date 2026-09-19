@@ -6,6 +6,7 @@ import { Prisma, type CategoriaProfissional } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { requirePermissao } from "@/server/iam/session";
+import { buscarCerUnico } from "@/server/shared/tenant";
 import { hashSenha } from "@/server/iam/password";
 import {
   validarCamposDinamicos,
@@ -13,13 +14,6 @@ import {
 } from "@/server/iam/formulario-config";
 
 type Resultado = { ok: true } | { ok: false; erro: string };
-
-// ponytail: deploy-per-org (ADR-0010) — um único CER por instância. Rota
-// pública /cadastro não tem sessão para resolver o CER, então usa o único
-// registrado. Multi-instância real precisará de outro mecanismo de resolução.
-async function buscarCerUnico() {
-  return db.cer.findFirst({ select: { id: true, papelAutocadastroId: true } });
-}
 
 export type FormularioCadastro = {
   disponivel: boolean;
