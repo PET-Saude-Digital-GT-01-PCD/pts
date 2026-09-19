@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { aprovarUsuario, rejeitarUsuario } from "@/server/iam/admissao";
 import type { UsuarioPendente } from "@/server/iam/admissao";
-import { campoNativoClasses } from "@/lib/utils";
 
 export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
   const router = useRouter();
@@ -83,9 +83,8 @@ export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
       </div>
       {mostrarRejeicao ? (
         <div className="flex items-center gap-2">
-          <input
+          <Input
             aria-label={`Motivo da rejeição de ${usuario.nome}`}
-            className={campoNativoClasses}
             placeholder="Motivo (obrigatório)"
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
