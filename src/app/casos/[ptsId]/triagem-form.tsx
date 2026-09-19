@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { areaNativaClasses } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 const FUNCIONAL_LABELS = [
   "Mobilidade",
@@ -186,12 +186,11 @@ export function TriagemForm({
               Justificativa clínica (obrigatória se a elegibilidade exigir
               decisão)
             </Label>
-            <textarea
+            <Textarea
               id="justificativa"
               name="justificativa"
               rows={3}
               maxLength={500}
-              className={areaNativaClasses}
             />
           </div>
 

@@ -105,6 +105,14 @@ Banco migrado sem seed: não há CER, papéis nem admin. Rodar `db-migrate` com
 - Auditoria append-only na mesma transação; lock otimista (`version`) → conflito = 409.
 - Backup: backup automático / PITR do Supabase (substitui o `pg_dump` agendado do `plano/15`).
 
+## Dependências fixadas em pré-release
+
+| Pacote | Versão | Por quê | Reavaliar quando |
+|---|---|---|---|
+| `next-auth` | `5.0.0-beta.32` (exata, sem `^`) | Em 2026-09-19 a v5 não tem GA: `beta.32` (jul/2026) é o último release da linha 5.x e a tag `latest` ainda é `4.24.x`. Voltar para a v4 perde o que o repo usa da v5 (`auth()` no App Router, `authConfig` compartilhado com o middleware, callbacks `jwt`/`session` com `trigger: "update"` na simulação de perfil). | Sair `5.0.0` estável. Aí: bump, ler as notas de breaking change de sessão/JWT e rodar `pnpm typecheck && pnpm lint && pnpm test && pnpm e2e`. |
+
+Conferir com `npm view next-auth dist-tags`. Bump entre betas vem pelo Dependabot, e cada um precisa passar na suíte e2e de login/admissão antes do merge.
+
 ## Dependências transitivas com alerta (triagem 2026-09-19, #120)
 
 Bumps de rotina vêm pelo Dependabot (`.github/dependabot.yml`, semanal, para `develop`). Correção fora do range que o pai pede fica em `overrides` no `pnpm-workspace.yaml`, sempre na mesma major. Cada linha sai quando o pai passar a pedir a versão corrigida.

@@ -58,11 +58,16 @@ async function limparPaciente(cpf: string) {
   }
 }
 
-test.beforeEach(async () => {
+async function limparTodos() {
   for (const cpf of [CPF_BUSCA, CPF_NOVO, CPF_CUIDADOR, CPF_MOCK_COMPLETO]) {
     await limparPaciente(cpf);
   }
-});
+}
+
+test.beforeEach(limparTodos);
+// CPF_MOCK_COMPLETO é o mesmo CPF fixo de tests/reception/paciente.test.ts:
+// sem limpar no fim, o paciente residual quebra o beforeAll do unitário.
+test.afterAll(limparTodos);
 
 async function loginRecepcao(page: import("@playwright/test").Page) {
   await page.goto("/login");

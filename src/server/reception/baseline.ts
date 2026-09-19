@@ -53,6 +53,18 @@ export async function buscarBaseline(
   }
 }
 
+// Server action exportada vira endpoint chamável direto: confere o CER do
+// paciente mesmo sem caller na UI (dado clínico nunca cruza CER).
+async function garantirPacienteDoCer(pacienteId: string, cerId: string | null) {
+  const paciente = await db.paciente.findUnique({
+    where: { id: pacienteId },
+    select: { cerId: true },
+  });
+  if (!paciente || paciente.cerId !== cerId) {
+    throw new Error("Paciente fora do CER do usuário.");
+  }
+}
+
 const SALVAR_SCHEMA = z.object({
   pacienteId: z.string().uuid(),
   campos: z.object({
@@ -75,6 +87,7 @@ const SALVAR_SCHEMA = z.object({
 export async function salvarBaseline(input: z.infer<typeof SALVAR_SCHEMA>) {
   const usuario = await requirePermissao("recepcao.paciente.cadastrar");
   const { pacienteId, campos, origens } = SALVAR_SCHEMA.parse(input);
+  await garantirPacienteDoCer(pacienteId, usuario.cerId);
 
   const dados = {
     diagnosticosJson: campos.diagnosticos,
@@ -117,6 +130,7 @@ export async function importarBaseline(
 ): Promise<ResultadoBuscaBaseline> {
   const usuario = await requirePermissao("recepcao.paciente.cadastrar");
   const { pacienteId, identificador } = IMPORTAR_SCHEMA.parse(input);
+  await garantirPacienteDoCer(pacienteId, usuario.cerId);
 
   const anterior = await db.baseline.findUnique({ where: { pacienteId } });
 

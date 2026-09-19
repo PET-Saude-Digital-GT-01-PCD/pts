@@ -49,8 +49,15 @@ beforeEach(() => {
 });
 
 afterAll(async () => {
+  // Escopo pelas entidades deste arquivo: os arquivos de teste rodam em
+  // paralelo e um filtro só por actorId apagava a auditoria de outro teste
+  // ainda em execução (soap × avaliacao-especialidade).
+  const criados = await db.eventoCuidado.findMany({
+    where: { ptsId: { in: ptsIds } },
+    select: { id: true },
+  });
   await db.auditoria.deleteMany({
-    where: { entityType: "evento_cuidado", actorId: adminId },
+    where: { entityType: "evento_cuidado", entityId: { in: criados.map((c) => c.id) } },
   });
   await db.eventoCuidado.deleteMany({ where: { ptsId: { in: ptsIds } } });
   await db.pts.deleteMany({ where: { id: { in: ptsIds } } });

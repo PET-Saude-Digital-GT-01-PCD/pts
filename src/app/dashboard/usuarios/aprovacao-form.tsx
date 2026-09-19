@@ -4,12 +4,24 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { aprovarUsuario, rejeitarUsuario } from "@/server/iam/admissao";
 import type { UsuarioPendente } from "@/server/iam/admissao";
-import { campoNativoClasses } from "@/lib/utils";
+import { campoNativoClasses, cn } from "@/lib/utils";
 
-export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
+export function AprovacaoForm({
+  usuario,
+  papeis,
+}: {
+  usuario: UsuarioPendente;
+  /** Só vem quando o ator pode atribuir papel (admin.papeis.gerenciar). */
+  papeis?: { id: string; nome: string }[];
+}) {
   const router = useRouter();
+  // sugere o papel com o mesmo nome da categoria informada no cadastro
+  const [papelId, setPapelId] = useState(
+    papeis?.find((p) => p.nome === usuario.categoria)?.id ?? "",
+  );
   const [mostrarRejeicao, setMostrarRejeicao] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -18,7 +30,7 @@ export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
   async function aprovar() {
     setErro(null);
     setPending(true);
-    const resultado = await aprovarUsuario(usuario.id);
+    const resultado = await aprovarUsuario(usuario.id, papelId || undefined);
     setPending(false);
     if (!resultado.ok) {
       setErro(resultado.erro);
@@ -66,6 +78,22 @@ export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
           ) : null}
         </div>
         <div className="flex items-center gap-2">
+          {papeis ? (
+            <select
+              aria-label={`Papel de ${usuario.nome} ao aprovar`}
+              className={cn(campoNativoClasses, "w-auto min-w-40")}
+              value={papelId}
+              onChange={(e) => setPapelId(e.target.value)}
+              disabled={pending}
+            >
+              <option value="">Sem papel (AUTOCADASTRO)</option>
+              {papeis.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+          ) : null}
           <Button type="button" size="sm" onClick={aprovar} disabled={pending}>
             Aprovar
           </Button>
@@ -83,9 +111,8 @@ export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
       </div>
       {mostrarRejeicao ? (
         <div className="flex items-center gap-2">
-          <input
+          <Input
             aria-label={`Motivo da rejeição de ${usuario.nome}`}
-            className={campoNativoClasses}
             placeholder="Motivo (obrigatório)"
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}

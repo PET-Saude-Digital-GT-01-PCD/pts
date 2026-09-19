@@ -1,10 +1,11 @@
 "use server";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { StatusMeta } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { exigirUmaDasOuRedirect } from "@/server/care-plan/acesso";
+import { avaliarVinculoCaso } from "@/server/shared/acesso-caso";
 import {
   montarPercurso,
   LABEL_STATUS_META_ACESSIVEL,
@@ -35,7 +36,7 @@ export type PortalCidadaoView = {
 export async function buscarPortalCidadao(
   ptsId: string,
 ): Promise<PortalCidadaoView> {
-  await exigirUmaDasOuRedirect([
+  const usuario = await exigirUmaDasOuRedirect([
     "care-plan.meta.ler",
     "clinical.soap.ler",
     "triage.triagem.ver",
@@ -45,6 +46,8 @@ export async function buscarPortalCidadao(
     where: { id: ptsId },
     select: {
       status: true,
+      refProfissionalId: true,
+      equipePts: { select: { usuarioId: true } },
       paciente: { select: { nome: true } },
       metas: {
         orderBy: [{ status: "asc" }, { prazo: "asc" }],
@@ -54,6 +57,11 @@ export async function buscarPortalCidadao(
   });
 
   if (!pts) notFound();
+  // Mesmo gate da página do caso (#69): além da permissão, exige ser a
+  // referência ou membro da equipe — senão qualquer clínico lia o caso.
+  if (!avaliarVinculoCaso(usuario.id, pts, pts.equipePts.map((m) => m.usuarioId))) {
+    redirect("/");
+  }
 
   return {
     pacienteNome: pts.paciente.nome,

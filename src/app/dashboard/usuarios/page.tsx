@@ -102,13 +102,21 @@ export default async function UsuariosPage() {
       {podeAprovar && pendentes.length > 0 ? (
         <AdminPanel
           titulo={`Pendentes de aprovação (${pendentes.length})`}
-          descricao="Aprovar dá o papel AUTOCADASTRO, sem recursos: atribua o papel profissional logo em seguida."
+          descricao={
+            podeAtribuirPapel
+              ? "Escolha o papel profissional antes de aprovar. Sem papel, o usuário entra com AUTOCADASTRO, sem acesso a nada."
+              : "Aprovar dá o papel AUTOCADASTRO, sem recursos: peça a quem gerencia papéis para atribuir o papel profissional."
+          }
           data-testid="fila-pendentes"
           className="ring-warning/30"
         >
           <div className="divide-y divide-border overflow-hidden rounded-2xl bg-surface-sunken">
             {pendentes.map((p) => (
-              <AprovacaoForm key={p.id} usuario={p} />
+              <AprovacaoForm
+                key={p.id}
+                usuario={p}
+                papeis={podeAtribuirPapel ? papeis.filter((x) => x.nome !== "AUTOCADASTRO") : undefined}
+              />
             ))}
           </div>
         </AdminPanel>
