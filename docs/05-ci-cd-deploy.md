@@ -112,3 +112,16 @@ Banco migrado sem seed: não há CER, papéis nem admin. Rodar `db-migrate` com
 | `next-auth` | `5.0.0-beta.32` (exata, sem `^`) | Em 2026-09-19 a v5 não tem GA: `beta.32` (jul/2026) é o último release da linha 5.x e a tag `latest` ainda é `4.24.x`. Voltar para a v4 perde o que o repo usa da v5 (`auth()` no App Router, `authConfig` compartilhado com o middleware, callbacks `jwt`/`session` com `trigger: "update"` na simulação de perfil). | Sair `5.0.0` estável. Aí: bump, ler as notas de breaking change de sessão/JWT e rodar `pnpm typecheck && pnpm lint && pnpm test && pnpm e2e`. |
 
 Conferir com `npm view next-auth dist-tags`. Bump entre betas vem pelo Dependabot, e cada um precisa passar na suíte e2e de login/admissão antes do merge.
+
+## Dependências transitivas com alerta (triagem 2026-09-19, #120)
+
+Bumps de rotina vêm pelo Dependabot (`.github/dependabot.yml`, semanal, para `develop`). Correção fora do range que o pai pede fica em `overrides` no `pnpm-workspace.yaml`, sempre na mesma major. Cada linha sai quando o pai passar a pedir a versão corrigida.
+
+| Pacote | Vem de | Decisão |
+|---|---|---|
+| `sharp` (2 high) | `next` (otimização de imagem) | override `^0.35.4`, dentro do range que o `next@15.5.25` aceita |
+| `postcss` (2 high, 2 moderate) | `next` pina `8.4.31` | override `^8.5.23` (mesma major; build verificado) |
+| `fast-uri` (4 high), `hono` (3 moderate), `qs` (2 moderate) | CLI `shadcn` → `@modelcontextprotocol/sdk` | `shadcn` movido para `devDependencies` (é só CLI, o app não importa) + overrides na mesma major |
+| `js-yaml` (1 high) | `eslint` (dev) | override `^4.3.2` |
+| `vitest`/`@vitest/mocker` (3 moderate) | dependência direta (dev) | bump `^3` → `^4.1.11` |
+| `deepmerge-ts` (1 high) | `prisma` → `@prisma/config` | **risco aceito**: a correção é major (8.x) e nem o `@prisma/config` mais recente a usa. Só afeta merge de objeto recursivo no carregamento de config do Prisma, que não recebe entrada de usuário. Reavaliar no próximo bump do Prisma. |
