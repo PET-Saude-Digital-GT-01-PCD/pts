@@ -41,7 +41,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   }));
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden lg:flex-row">
       <Sidebar
         itens={itens}
         user={{
@@ -52,7 +52,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         }}
         orgConfig={orgConfig}
       />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex-1 overflow-y-auto">{children}</div>
     </div>
   );
 }

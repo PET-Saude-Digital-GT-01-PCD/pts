@@ -15,6 +15,13 @@ import { ChecklistCifForm } from "./checklist-cif-form";
 import { FileText } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 type ItemGrade = {
   servico: string;
@@ -105,18 +112,40 @@ export async function AbaAvaliacoes({
     <div className="space-y-8">
       {podeEscrever &&
         escopos.map((esp) => (
-          <section key={esp} aria-label={`Nova avaliação ${esp}`} className="space-y-4">
-            <h3 className="text-base font-medium">
-              Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
-            </h3>
-            <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
+          <section key={esp} aria-label={`Nova avaliação ${esp}`}>
+            <Card>
+              <CardHeader className="gap-1">
+                <CardTitle asChild className="text-base">
+                  <h3>
+                    Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
+                  </h3>
+                </CardTitle>
+                <CardDescription>
+                  Marque os itens observados; os códigos CIF saem daqui.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
+              </CardContent>
+            </Card>
           </section>
         ))}
 
       {podeEscrever && (
-        <section aria-label="Nova avaliação SOAP" className="space-y-4">
-          <h3 className="text-base font-medium">Nova avaliação SOAP</h3>
-          <SoapForm ptsId={ptsId} />
+        <section aria-label="Nova avaliação SOAP">
+          <Card>
+            <CardHeader className="gap-1">
+              <CardTitle asChild className="text-base">
+                <h3>Nova avaliação SOAP</h3>
+              </CardTitle>
+              <CardDescription>
+                Subjetivo, objetivo e avaliação do atendimento de hoje.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SoapForm ptsId={ptsId} />
+            </CardContent>
+          </Card>
         </section>
       )}
 

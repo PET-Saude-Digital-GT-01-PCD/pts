@@ -18,16 +18,27 @@ function BadgeConflito({ metaId, conflitos }: {
 }) {
   const meus = conflitos.filter((c) => c.metaAId === metaId || c.metaBId === metaId);
   if (meus.length === 0) return null;
+
+  // Agrupa por tipo: N conflitos do mesmo tipo viravam N selos idênticos e
+  // afogavam a descrição da meta.
+  const porTipo = new Map<string, ConflitoMeta[]>();
+  for (const c of meus) {
+    porTipo.set(c.tipo, [...(porTipo.get(c.tipo) ?? []), c]);
+  }
+
   return (
     <>
-      {meus.map((c, i) => (
+      {[...porTipo.entries()].map(([tipo, lista]) => (
         <Badge
-          key={`${c.tipo}-${c.metaAId}-${c.metaBId}-${i}`}
+          key={tipo}
           variant="destructive"
           data-testid={`conflito-${metaId}`}
-          title={c.detalhe}
+          title={lista.map((c) => c.detalhe).join("\n")}
         >
-          <span aria-hidden>⚠</span> conflito de {c.tipo.toLowerCase()}
+          <span aria-hidden>⚠</span>
+          {lista.length > 1
+            ? `${lista.length} conflitos de ${tipo.toLowerCase()}`
+            : `conflito de ${tipo.toLowerCase()}`}
         </Badge>
       ))}
     </>
