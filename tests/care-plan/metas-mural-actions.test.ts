@@ -8,6 +8,10 @@ const sessao = vi.hoisted(() => ({
   cerId: "",
 }));
 
+// revalidatePath só existe dentro do request do Next; aqui o DB é real e a
+// revalidação não é o que está sob teste.
+vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+
 vi.mock("@/server/iam/session", () => ({
   requireAuth: async () => ({
     id: sessao.actorId,
