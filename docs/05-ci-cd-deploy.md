@@ -25,6 +25,15 @@ checkout → pnpm install (cache) → typecheck → lint → vitest
 
 O deploy da aplicação em si é da Vercel (Git integration), não de workflow.
 
+Também roda sob demanda: **Actions → db-migrate → Run workflow**, na branch do
+ambiente. O input `seed` roda o seed de bootstrap (RBAC + admin) depois do
+migrate — necessário na primeira subida de um banco vazio, e exige o secret
+`SEED_ADMIN_SENHA`. O seed é idempotente, então repetir não quebra nada.
+
+Sem o secret da branch o job falha logo no primeiro passo dizendo qual secret
+falta. **Enquanto ele falha, as migrations não chegam ao Supabase** e o app na
+Vercel sobe com um banco vazio — ver Troubleshooting.
+
 ## Secrets
 
 - Secrets de ambiente ficam em GitHub Actions (`Settings → Secrets`), nunca no repo.
@@ -61,6 +70,33 @@ O deploy da aplicação em si é da Vercel (Git integration), não de workflow.
    (`openssl rand -base64 33`), `AUTH_URL` — em `Production` (pts-production) e
    `Preview` (pts-stage). **Não** definir `SEED_DEMO` em Production.
 5. GitHub → repo Secrets: `PROD_DIRECT_URL`, `STAGE_DIRECT_URL`.
+
+## Troubleshooting
+
+### "Application error: a server-side exception has occurred"
+
+Erro genérico do Next: alguma rota lançou no servidor. Na prática, no deploy
+Vercel + Supabase são sempre um destes três, e o healthcheck distingue:
+
+```
+curl -s https://<app>.vercel.app/api/health
+```
+
+| Resposta | Causa | Correção |
+|---|---|---|
+| `{"status":"ok","db":"up"}` | banco ok | o erro é outro; ver Vercel → Logs |
+| `causa: "DATABASE_URL não definida..."` | env var faltando na Vercel | Vercel → Settings → Environment Variables, e **redeploy** (env var nova não vale para deploy já feito) |
+| `causa: "schema não aplicado..."` | migrations nunca aplicadas | rodar `db-migrate` (ver acima) |
+| `causa: "banco inalcançável..."` | endereço errado | usar o **pooler** do Supabase, não a direct connection: as funções da Vercel não saem por IPv6 |
+| `causa: "credenciais recusadas"` | senha errada na connection string | recopiar do Supabase |
+
+O healthcheck consulta uma tabela real de propósito: `SELECT 1` passa num banco
+vazio, que é justamente o caso em que toda página quebra.
+
+### Login não aceita ninguém, mas o app abre
+
+Banco migrado sem seed: não há CER, papéis nem admin. Rodar `db-migrate` com
+`seed: true`.
 
 ## Segurança (resumo)
 
