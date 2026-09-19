@@ -13,7 +13,7 @@ export default async function EquipeCasoPage({
   if (!detalhe) notFound();
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
+    <main className="mx-auto flex max-w-2xl flex-col gap-6 p-4 sm:p-8">
       <div>
         <h1 className="text-2xl font-semibold">{detalhe.pacienteNome}</h1>
         <p className="text-sm text-muted-foreground">

@@ -135,12 +135,12 @@ export function SoapForm({ ptsId }: { ptsId: string }) {
         </p>
       ) : null}
       {ok ? (
-        <p role="status" data-testid="soap-ok" className="text-sm text-emerald-600">
+        <p role="status" data-testid="soap-ok" className="text-sm font-medium text-success">
           Avaliação registrada.
         </p>
       ) : null}
 
-      <Button type="submit" disabled={salvando} className="justify-self-start">
+      <Button type="submit" loading={salvando} className="justify-self-start">
         Salvar avaliação SOAP
       </Button>
     </form>

@@ -139,12 +139,12 @@ export function ConfigOrgForm({ orgConfig }: { orgConfig: OrgConfigView }) {
             </p>
           ) : null}
           {ok ? (
-            <p role="status" data-testid="config-org-ok" className="text-sm text-emerald-600">
+            <p role="status" data-testid="config-org-ok" className="text-sm font-medium text-success">
               Configurações salvas.
             </p>
           ) : null}
 
-          <Button type="submit" disabled={salvando} className="justify-self-start">
+          <Button type="submit" loading={salvando} className="justify-self-start">
             {salvando ? "Salvando…" : "Salvar"}
           </Button>
         </form>

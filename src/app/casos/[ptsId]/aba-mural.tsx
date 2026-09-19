@@ -1,5 +1,7 @@
 import { listarMural } from "@/server/care-plan/mural";
 import { MuralForm } from "./mural-form";
+import { MessagesSquare } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export async function AbaMural({
   ptsId,
@@ -15,9 +17,11 @@ export async function AbaMural({
       {podeEscrever && <MuralForm ptsId={ptsId} />}
 
       {comentarios.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          Mural vazio — combine ajustes assíncronos com a equipe aqui.
-        </p>
+        <EmptyState
+          icon={MessagesSquare}
+          titulo="Mural vazio"
+          descricao="Use o mural para combinar ajustes com a equipe entre as reuniões."
+        />
       ) : (
         <ol className="space-y-3">
           {comentarios.map((c) => (

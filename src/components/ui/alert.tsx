@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const Alert = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    variant?: "default" | "destructive" | "warning"
+    variant?: "default" | "destructive" | "warning" | "success"
   }
 >(({ className, variant = "default", ...props }, ref) => (
   <div
@@ -19,7 +19,9 @@ const Alert = React.forwardRef<
       variant === "destructive" &&
         "border-destructive/40 bg-destructive/10 text-destructive dark:border-destructive/60 dark:bg-destructive/20",
       variant === "warning" &&
-        "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+        "border-warning/40 bg-warning/10 text-warning",
+      variant === "success" &&
+        "border-success/40 bg-success/10 text-success",
       className
     )}
     {...props}

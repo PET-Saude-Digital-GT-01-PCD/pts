@@ -79,7 +79,7 @@ export default async function DashboardPage() {
   if (visao.visao === "GESTAO") {
     const { agregados } = visao;
     return (
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
+      <main className="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-8">
         <header>
           <h1 className="text-2xl font-semibold">Visão geral</h1>
         </header>
@@ -135,7 +135,7 @@ export default async function DashboardPage() {
       : [];
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-8">
       <header>
         <h1 className="text-2xl font-semibold">
           {visao.visao === "RECEPCAO_TRIAGEM" ? "Fila do dia" : "Meus casos"}

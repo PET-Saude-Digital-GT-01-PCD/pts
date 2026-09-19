@@ -1,3 +1,7 @@
+import { Target } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { MetaDoPainel } from "@/server/care-plan/metas";
 import type { ConflitoMeta } from "@/server/care-plan/conflitos";
 
@@ -17,14 +21,14 @@ function BadgeConflito({ metaId, conflitos }: {
   return (
     <>
       {meus.map((c, i) => (
-        <span
+        <Badge
           key={`${c.tipo}-${c.metaAId}-${c.metaBId}-${i}`}
+          variant="destructive"
           data-testid={`conflito-${metaId}`}
           title={c.detalhe}
-          className="rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive"
         >
-          ⚠ conflito de {c.tipo.toLowerCase()}
-        </span>
+          <span aria-hidden>⚠</span> conflito de {c.tipo.toLowerCase()}
+        </Badge>
       ))}
     </>
   );
@@ -46,9 +50,11 @@ export function MetasCruzadas({
 }) {
   if (metas.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-        Nenhuma meta pactuada ainda para este caso.
-      </p>
+      <EmptyState
+        icon={Target}
+        titulo="Nenhuma meta pactuada"
+        descricao="As metas SMART deste caso aparecem aqui depois da pactuação com a equipe e a família."
+      />
     );
   }
 
@@ -85,14 +91,14 @@ export function MetasCruzadas({
               return (
                 <li
                   key={meta.id}
-                  className={`rounded-lg border p-4 ${
+                  className={`rounded-lg border border-border p-4 transition-colors hover:bg-muted/40 ${
                     vencida ? "border-warning/50 bg-warning/5" : ""
                   }`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                    <Badge variant="secondary">
                       {ROTULOS_STATUS[meta.status] ?? meta.status}
-                    </span>
+                    </Badge>
                     <span className="text-muted-foreground">{meta.donoNome}</span>
                     <time
                       dateTime={meta.prazo.toISOString()}
@@ -103,9 +109,7 @@ export function MetasCruzadas({
                       prazo {meta.prazo.toLocaleDateString("pt-BR")}
                     </time>
                     {vencida && (
-                      <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
-                        prazo vencido
-                      </span>
+                      <Badge variant="warning">prazo vencido</Badge>
                     )}
                     <BadgeConflito metaId={meta.id} conflitos={conflitos} />
                   </div>

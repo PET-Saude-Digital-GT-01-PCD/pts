@@ -5,6 +5,8 @@ import { classificacaoVigente } from "@/server/triage/classificacao-vigente";
 import { listarContrarreferenciasPts } from "@/server/triage/contrarreferencia";
 import { AjusteForm } from "./ajuste-form";
 import { TriagemForm } from "./triagem-form";
+import { ClipboardList } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type TriagemResumo = {
   id: string;
@@ -62,9 +64,11 @@ export async function AbaTriagem({
           <AjusteForm triagemId={maisRecente.id} vigente={vigente} />
         </section>
       ) : (
-        <p className="text-muted-foreground text-sm">
-          Nenhuma triagem registrada neste caso ainda.
-        </p>
+        <EmptyState
+          icon={ClipboardList}
+          titulo="Nenhuma triagem registrada"
+          descricao="A classificação do semáforo e a elegibilidade aparecem aqui após a primeira triagem."
+        />
       )}
 
       {triagens.length > 1 ? (

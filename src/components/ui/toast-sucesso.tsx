@@ -36,10 +36,14 @@ export function ToastSucesso({
   if (!visivel) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-lg dark:border-emerald-700 dark:bg-emerald-950/90">
-        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-x-4 bottom-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 motion-reduce:animate-none sm:inset-x-auto sm:right-6 sm:bottom-6"
+    >
+      <div className="flex items-center gap-3 rounded-lg border border-success/40 bg-success/10 px-4 py-3 shadow-lg backdrop-blur-sm">
+        <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden />
+        <p className="text-sm font-medium text-success">
           {mensagem}
         </p>
         <button
@@ -48,9 +52,10 @@ export function ToastSucesso({
             setVisivel(false);
             onFechar();
           }}
-          className="ml-2 rounded-md p-0.5 text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900"
+          aria-label="Fechar aviso"
+          className="ml-auto rounded-md p-1 text-success transition-colors outline-none hover:bg-success/15 focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" aria-hidden />
         </button>
       </div>
     </div>

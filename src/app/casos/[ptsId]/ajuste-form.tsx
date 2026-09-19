@@ -8,6 +8,7 @@ import type { Semaforo } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { campoNativoClasses } from "@/lib/utils";
 
 export function AjusteForm({
   triagemId,
@@ -67,7 +68,7 @@ export function AjusteForm({
           <select
             id="para"
             name="para"
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+            className={campoNativoClasses}
             defaultValue={vigente}
           >
             <option value="VERDE">Verde</option>
@@ -85,7 +86,7 @@ export function AjusteForm({
           {erro}
         </p>
       ) : null}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" loading={pending}>
         {pending ? "Salvando…" : "Confirmar ajuste"}
       </Button>
     </form>

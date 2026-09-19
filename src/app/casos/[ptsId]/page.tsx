@@ -20,6 +20,8 @@ import { AbaMural } from "./aba-mural";
 import { CasoHeader } from "./caso-header";
 import { EventoForm } from "./evento-form";
 import { AbaRevisoes } from "./aba-revisoes";
+import { CalendarClock } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function PainelCasoPage({
   params,
@@ -135,7 +137,7 @@ export default async function PainelCasoPage({
   );
 
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-6 p-8">
+    <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-8">
       <CasoHeader
         pts={pts}
         faltaRecente={faltaRecente}
@@ -152,14 +154,19 @@ export default async function PainelCasoPage({
           <EventoForm ptsId={pts.id} />
         )}
         {timeline.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nenhum evento registrado ainda.
-          </p>
+          <EmptyState
+            icon={CalendarClock}
+            titulo="Nenhum evento registrado"
+            descricao="Sessões, faltas e cancelamentos aparecem nesta linha do tempo."
+          />
         ) : (
           <ol className="space-y-2">
             {timeline.map((item, i) => (
-              <li key={`${item.tipo}-${i}`} className="flex gap-3 text-sm">
-                <time className="w-36 shrink-0 tabular-nums text-muted-foreground">
+              <li
+                key={`${item.tipo}-${i}`}
+                className="flex flex-col gap-0.5 text-sm sm:flex-row sm:gap-3"
+              >
+                <time className="shrink-0 tabular-nums text-muted-foreground sm:w-36">
                   {item.data.toLocaleDateString("pt-BR")}
                 </time>
                 <span className="font-medium">{item.titulo}</span>

@@ -12,6 +12,8 @@ import {
 } from "@/server/clinical/divergencia";
 import { SoapForm } from "./soap-form";
 import { ChecklistCifForm } from "./checklist-cif-form";
+import { FileText } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type ItemGrade = {
   servico: string;
@@ -41,7 +43,7 @@ const ROTULOS_DIVERGENCIA: Record<string, string> = {
 const CLASSE_GRAU: Record<GrauDivergencia, string> = {
   ALTA: "border-destructive/40 bg-destructive/10 text-destructive",
   MEDIA: "border-warning/40 bg-warning/10 text-warning",
-  BAIXA: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  BAIXA: "border-success/40 bg-success/10 text-success",
   NENHUMA: "border-border bg-muted text-muted-foreground",
 };
 
@@ -159,7 +161,11 @@ export async function AbaAvaliacoes({
           </ul>
         )}
         {avaliacoes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma avaliação SOAP ainda.</p>
+          <EmptyState
+            icon={FileText}
+            titulo="Nenhuma avaliação SOAP"
+            descricao="Registre a primeira avaliação para acompanhar a evolução clínica."
+          />
         ) : (
           <ul className="space-y-3">
             {avaliacoes.map((a) => {
@@ -191,7 +197,7 @@ export async function AbaAvaliacoes({
                         </span>
                       )}
                       {escores.glasgow?.completo && (
-                        <span className="rounded-full border border-amber-500/40 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                        <span className="rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
                           Glasgow: {escores.glasgow.total}/15
                         </span>
                       )}

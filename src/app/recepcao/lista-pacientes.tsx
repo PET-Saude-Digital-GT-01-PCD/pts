@@ -28,15 +28,15 @@ import { ToastSucesso } from "@/components/ui/toast-sucesso";
 function BadgeOrigem({ origem }: { origem: string }) {
   if (origem === "importado") {
     return (
-      <Badge variant="importado" className="gap-1 text-[10px]">
-        <Wifi className="h-2.5 w-2.5" />
+      <Badge variant="importado" className="gap-1 text-xs">
+        <Wifi className="size-2.5" aria-hidden />
         e-SUS
       </Badge>
     );
   }
   return (
-    <Badge variant="digitado" className="gap-1 text-[10px]">
-      <Edit2 className="h-2.5 w-2.5" />
+    <Badge variant="digitado" className="gap-1 text-xs">
+      <Edit2 className="size-2.5" aria-hidden />
       Digitado
     </Badge>
   );
@@ -68,7 +68,7 @@ function BaselineResumo({
     <div className="grid gap-2 text-xs sm:grid-cols-2">
       {diagnosticos.length > 0 && (
         <div className="flex items-start gap-1.5">
-          <Stethoscope className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+          <Stethoscope className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
           <div>
             <span className="font-medium">Diagnósticos:</span>{" "}
             {diagnosticos.join(", ")}
@@ -82,7 +82,7 @@ function BaselineResumo({
       )}
       {alergias.length > 0 && (
         <div className="flex items-start gap-1.5">
-          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+          <AlertTriangle className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
           <div>
             <span className="font-medium">Alergias:</span>{" "}
             {alergias.join(", ")}
@@ -96,7 +96,7 @@ function BaselineResumo({
       )}
       {medicacoes.length > 0 && (
         <div className="flex items-start gap-1.5">
-          <Pill className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+          <Pill className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
           <div>
             <span className="font-medium">Medicações:</span>{" "}
             {medicacoes.map((m) => m.nome).join(", ")}
@@ -110,7 +110,7 @@ function BaselineResumo({
       )}
       {internacoes.length > 0 && (
         <div className="flex items-start gap-1.5">
-          <BedDouble className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+          <BedDouble className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
           <div>
             <span className="font-medium">Internações:</span>{" "}
             {internacoes.join(", ")}
@@ -136,8 +136,8 @@ function StatusPaciente({ paciente }: { paciente: PacienteListado }) {
   }
   if (paciente.encaminhadoTriagem) {
     return (
-      <Badge className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-xs">
-        <ArrowRight className="h-3 w-3" />
+      <Badge variant="warning" className="gap-1 text-xs">
+        <ArrowRight className="size-3" aria-hidden />
         Na fila de triagem
       </Badge>
     );
@@ -213,32 +213,30 @@ export function ListaPacientes({
               <BaselineResumo baseline={p.baseline} />
 
               <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-                <Link href={`/pacientes/${p.id}`}>
-                  <Button variant="ghost" size="sm" className="text-xs">
-                    Ver detalhes
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="sm" className="text-xs" asChild>
+                  <Link href={`/pacientes/${p.id}`}>Ver detalhes</Link>
+                </Button>
                 {!p.encaminhadoTriagem && p.pts.length === 0 && (
                   <Button
                     size="sm"
                     variant="outline"
                     className="gap-1.5 text-xs"
-                    disabled={pending && encaminhando === p.id}
+                    loading={pending && encaminhando === p.id}
                     onClick={() => handleEncaminhar(p.id, p.nome)}
                   >
                     {pending && encaminhando === p.id ? (
                       "Encaminhando…"
                     ) : (
                       <>
-                        <ArrowRight className="h-3 w-3" />
+                        <ArrowRight className="size-3" aria-hidden />
                         Encaminhar triagem
                       </>
                     )}
                   </Button>
                 )}
                 {p.encaminhadoTriagem && p.pts.length === 0 && (
-                  <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                    <Check className="h-3 w-3" />
+                  <span className="flex items-center gap-1 text-xs text-success">
+                    <Check className="size-3" aria-hidden />
                     Encaminhado
                   </span>
                 )}

@@ -24,6 +24,7 @@ import {
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 import type { OrgConfigView } from "@/server/iam/org-config-schema";
+import { Button } from "@/components/ui/button";
 
 type NavItem = {
   label: string;
@@ -93,7 +94,7 @@ export function Sidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {itens.map((item) => {
             const Icon = resolveIcon(item.icon);
@@ -106,14 +107,15 @@ export function Sidebar({
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                     active
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
-                  <Icon className="size-4 shrink-0" />
+                  <Icon className="size-4 shrink-0" aria-hidden />
                   {item.label}
                 </Link>
               </li>
@@ -131,14 +133,15 @@ export function Sidebar({
             {user.nomePapel}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => signOut({ redirectTo: "/login" })}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="w-full justify-start gap-3 px-3 text-muted-foreground"
         >
-          <LogOut className="size-4 shrink-0" />
+          <LogOut className="size-4 shrink-0" aria-hidden />
           Sair
-        </button>
+        </Button>
       </div>
     </aside>
   );

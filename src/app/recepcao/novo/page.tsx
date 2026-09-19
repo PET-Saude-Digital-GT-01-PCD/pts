@@ -19,7 +19,7 @@ export default async function NovoPacientePage({
   const { q } = await searchParams;
 
   return (
-    <main className="mx-auto max-w-3xl flex flex-col gap-8 p-8">
+    <main className="mx-auto max-w-3xl flex flex-col gap-8 p-4 sm:p-8">
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Recepção

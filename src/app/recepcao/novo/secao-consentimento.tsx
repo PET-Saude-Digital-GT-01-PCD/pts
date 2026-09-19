@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { campoNativoClasses } from "@/lib/utils";
 
 export function SecaoConsentimento({ pacienteId }: { pacienteId: string }) {
   const [erro, setErro] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export function SecaoConsentimento({ pacienteId }: { pacienteId: string }) {
                 id="canal"
                 name="canal"
                 required
-                className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+                className={campoNativoClasses}
               >
                 <option value="TABLET">Tablet</option>
                 <option value="WHATSAPP">WhatsApp</option>
@@ -113,7 +114,7 @@ export function SecaoConsentimento({ pacienteId }: { pacienteId: string }) {
               Revogar consentimento
             </Button>
           ) : (
-            <Button type="submit" variant="outline" disabled={pending}>
+            <Button type="submit" variant="outline" loading={pending}>
               {consentimentoId ? "Registrado" : pending ? "Salvando…" : "Registrar consentimento"}
             </Button>
           )}

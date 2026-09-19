@@ -67,7 +67,7 @@ export function AtribuirPapelForm({
       </Button>
       {erro ? <span className="text-xs text-destructive">{erro}</span> : null}
       {ok ? (
-        <span className="text-xs text-emerald-600">salvo</span>
+        <span className="text-xs font-medium text-success">salvo</span>
       ) : null}
     </div>
   );

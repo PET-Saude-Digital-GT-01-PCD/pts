@@ -119,7 +119,7 @@ export function EditarPapelForm({
         </p>
       ) : null}
       {ok ? (
-        <p role="status" className="text-sm text-emerald-600">
+        <p role="status" className="text-sm font-medium text-success">
           Alterações salvas.
         </p>
       ) : null}

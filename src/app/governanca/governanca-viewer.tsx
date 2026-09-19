@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_CLASSE: Record<string, string> = {
-  OK: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  OK: "border-success/40 bg-success/10 text-success",
   ATENCAO: "border-destructive/40 bg-destructive/10 text-destructive",
   SEM_DADO: "border-border bg-muted text-muted-foreground",
 };
@@ -84,7 +84,7 @@ export function GovernancaViewer({
           <Label htmlFor="ate">Até</Label>
           <Input id="ate" type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
         </div>
-        <Button type="submit" variant="outline" disabled={carregando}>
+        <Button type="submit" variant="outline" loading={carregando}>
           {carregando ? "Atualizando…" : "Aplicar período"}
         </Button>
         <Button type="button" onClick={exportar} disabled={carregando}>

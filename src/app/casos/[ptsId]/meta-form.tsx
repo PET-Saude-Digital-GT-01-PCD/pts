@@ -3,6 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { criarMeta } from "@/server/care-plan/metas";
 
 const CAMPOS_SMART = [
@@ -22,6 +27,7 @@ export function MetaForm({
 }) {
   const [aberto, setAberto] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -44,11 +50,12 @@ export function MetaForm({
         prazo: typeof prazoBruto === "string" ? prazoBruto : undefined,
       });
       if (r.ok) {
+        setErro(null);
         setMensagem("Meta criada.");
         setAberto(false);
         router.refresh();
       } else {
-        setMensagem(r.erro ?? "Erro ao criar meta.");
+        setErro(r.erro ?? "Erro ao criar meta.");
       }
     });
   }
@@ -56,14 +63,21 @@ export function MetaForm({
   if (!aberto) {
     return (
       <div className="space-y-1">
-        <button
+        <Button
           type="button"
-          onClick={() => setAberto(true)}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+          onClick={() => {
+            setMensagem(null);
+            setAberto(true);
+          }}
+          className="w-full sm:w-auto"
         >
           Nova meta
-        </button>
-        {mensagem && <p className="text-sm text-muted-foreground">{mensagem}</p>}
+        </Button>
+        {mensagem && (
+          <p role="status" className="text-sm text-muted-foreground">
+            {mensagem}
+          </p>
+        )}
       </div>
     );
   }
@@ -71,48 +85,51 @@ export function MetaForm({
   return (
     <form
       action={salvar}
-      className="space-y-3 rounded-lg border p-4"
+      className="space-y-4 rounded-lg border border-border p-4"
       data-testid="form-nova-meta"
     >
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">
-          Descrição técnica
-          <textarea name="descTecnica" required className="mt-1 w-full rounded-md border p-2 text-sm" rows={2} />
-        </label>
-        <label className="text-sm font-medium">
-          Descrição acessível (para o paciente)
-          <textarea name="descAcessivel" required className="mt-1 w-full rounded-md border p-2 text-sm" rows={2} />
-        </label>
+      <div className="grid gap-4">
+        <FormField id="meta-desc-tecnica" label="Descrição técnica" obrigatorio>
+          {(aria) => <Textarea {...aria} name="descTecnica" rows={2} required />}
+        </FormField>
+        <FormField
+          id="meta-desc-acessivel"
+          label="Descrição acessível"
+          dica="Linguagem simples, para o paciente e a família."
+          obrigatorio
+        >
+          {(aria) => <Textarea {...aria} name="descAcessivel" rows={2} required />}
+        </FormField>
       </div>
-      <fieldset className="grid gap-2 sm:grid-cols-2">
-        <legend className="mb-1 text-sm font-medium">Critérios SMART</legend>
+      <fieldset className="grid gap-3 sm:grid-cols-2">
+        <legend className="mb-2 text-sm font-medium">Critérios SMART</legend>
         {CAMPOS_SMART.map(([chave, titulo]) => (
-          <label key={chave} className="text-xs text-muted-foreground">
-            {titulo}
-            <input name={`smart-${chave}`} className="mt-0.5 w-full rounded-md border p-1.5 text-sm" />
-          </label>
+          <div key={chave} className="flex flex-col gap-1.5">
+            <Label htmlFor={`smart-${chave}`}>{titulo}</Label>
+            <Input id={`smart-${chave}`} name={`smart-${chave}`} />
+          </div>
         ))}
       </fieldset>
-      <label className="block text-sm font-medium">
-        Prazo
-        <input type="date" name="prazo" required className="ml-2 rounded-md border p-1.5 text-sm" />
-      </label>
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
+      <FormField id="meta-prazo" label="Prazo" obrigatorio className="sm:max-w-48">
+        {(aria) => <Input {...aria} type="date" name="prazo" required />}
+      </FormField>
+      {erro && (
+        <p role="alert" className="text-sm font-medium text-destructive">
+          {erro}
+        </p>
+      )}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+        <Button type="submit" loading={pending}>
           {pending ? "Salvando…" : "Salvar meta"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setAberto(false)}
-          className="text-sm text-muted-foreground"
+          disabled={pending}
         >
           Cancelar
-        </button>
-        {mensagem && <span className="text-sm text-destructive">{mensagem}</span>}
+        </Button>
       </div>
     </form>
   );
