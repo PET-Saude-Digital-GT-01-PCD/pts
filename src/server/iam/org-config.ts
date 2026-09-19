@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requirePermissao } from "@/server/iam/session";
 import { buscarCerUnico } from "@/server/shared/tenant";
+import { causaDaFalhaDeBanco } from "@/server/shared/db-health";
 import {
   orgConfigInputSchema,
   resolverOrgConfig,
@@ -17,16 +18,28 @@ import {
  * Leitura pública (sem sessão): usada no layout raiz, header e rodapé.
  * `cache()` dedupe as chamadas de generateMetadata + AppShell dentro da
  * mesma navegação — sem isso são 2 queries Prisma idênticas por request.
+ *
+ * Banco fora do ar cai no padrão em vez de propagar: isto é branding, e o
+ * layout raiz roda em toda rota — um throw aqui derruba até a landing e o
+ * /login, que não dependem de banco, e o usuário só vê "Application error".
+ * Quem responde pela saúde do banco é /api/health.
  */
 export const buscarOrgConfigView = cache(async (): Promise<OrgConfigView> => {
-  const cer = await buscarCerUnico();
-  if (!cer) return resolverOrgConfig(null);
+  try {
+    const cer = await buscarCerUnico();
+    if (!cer) return resolverOrgConfig(null);
 
-  const config = await db.orgConfig.findUnique({
-    where: { cerId: cer.id },
-    select: { nomeExibido: true, logoUrl: true, parceirosJson: true },
-  });
-  return resolverOrgConfig(config);
+    const config = await db.orgConfig.findUnique({
+      where: { cerId: cer.id },
+      select: { nomeExibido: true, logoUrl: true, parceirosJson: true },
+    });
+    return resolverOrgConfig(config);
+  } catch (erro) {
+    console.error(
+      `[org-config] banco indisponível, usando branding padrão: ${causaDaFalhaDeBanco(erro)}`,
+    );
+    return resolverOrgConfig(null);
+  }
 });
 
 type Resultado = { ok: true } | { ok: false; erro: string };
