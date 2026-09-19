@@ -10,7 +10,8 @@ import { emitirContrarreferencia } from "@/server/triage/contrarreferencia";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { campoNativoClasses, areaNativaClasses } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { campoNativoClasses } from "@/lib/utils";
 
 const ROTULOS_STATUS: Record<StatusPts, string> = {
   EM_AVALIACAO: "Em avaliação",
@@ -224,12 +225,11 @@ export function TransicaoStatusForm({
                   Plano de cuidados à APS (opcional — pré-preenchido a partir do
                   motivo, revise antes de encerrar)
                 </Label>
-                <textarea
+                <Textarea
                   id="planoCuidados"
                   name="planoCuidados"
                   rows={3}
                   maxLength={2000}
-                  className={areaNativaClasses}
                 />
               </div>
             </div>
