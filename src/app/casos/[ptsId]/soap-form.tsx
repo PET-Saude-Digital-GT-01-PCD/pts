@@ -5,7 +5,26 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { criarAvaliacaoSoap } from "@/server/clinical/soap";
+
+const CAMPOS_SOAP = [
+  {
+    campo: "subjetivo",
+    rotulo: "Subjetivo",
+    dica: "O que a pessoa e a família relatam.",
+  },
+  {
+    campo: "objetivo",
+    rotulo: "Objetivo",
+    dica: "Achados de exame, medidas e observações.",
+  },
+  {
+    campo: "avaliacao",
+    rotulo: "Avaliação clínica",
+    dica: "Sua interpretação do quadro.",
+  },
+] as const;
 import {
   GRUPOS_ASHWORTH,
   type GrupoAshworth,
@@ -100,16 +119,19 @@ export function SoapForm({ ptsId }: { ptsId: string }) {
 
   return (
     <form className="grid gap-4" onSubmit={onSubmit}>
-      {(["subjetivo", "objetivo", "avaliacao"] as const).map((campo) => (
-        <div key={campo} className="grid gap-2">
-          <Label htmlFor={campo}>{campo[0].toUpperCase() + campo.slice(1)}</Label>
-          <textarea
+      {CAMPOS_SOAP.map(({ campo, rotulo, dica }) => (
+        <div key={campo} className="grid gap-1.5">
+          <Label htmlFor={campo}>{rotulo}</Label>
+          <Textarea
             id={campo}
             name={campo}
             required
             rows={3}
-            className="rounded-md border bg-background px-3 py-2 text-sm"
+            aria-describedby={`${campo}-dica`}
           />
+          <p id={`${campo}-dica`} className="text-xs text-muted-foreground">
+            {dica}
+          </p>
         </div>
       ))}
 
@@ -135,12 +157,12 @@ export function SoapForm({ ptsId }: { ptsId: string }) {
         </p>
       ) : null}
       {ok ? (
-        <p role="status" data-testid="soap-ok" className="text-sm text-emerald-600">
+        <p role="status" data-testid="soap-ok" className="text-sm font-medium text-success">
           Avaliação registrada.
         </p>
       ) : null}
 
-      <Button type="submit" disabled={salvando} className="justify-self-start">
+      <Button type="submit" loading={salvando} className="justify-self-start">
         Salvar avaliação SOAP
       </Button>
     </form>

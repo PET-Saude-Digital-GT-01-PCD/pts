@@ -99,13 +99,13 @@ export function ChecklistCifForm({
         </p>
       ) : null}
       {ok && cifGerada ? (
-        <p role="status" data-testid="cif-ok" className="text-emerald-600 text-sm">
+        <p role="status" data-testid="cif-ok" className="text-success text-sm font-medium">
           Avaliação registrada. Códigos CIF gerados:{" "}
           {cifGerada.length > 0 ? cifGerada.join(", ") : "nenhum"}.
         </p>
       ) : null}
 
-      <Button type="submit" disabled={salvando} className="justify-self-start">
+      <Button type="submit" loading={salvando} className="justify-self-start">
         {especialidade === "FISIO" ? "Salvar avaliação Fisio" : "Salvar avaliação T.O."}
       </Button>
     </form>

@@ -6,6 +6,7 @@ import { emitirContrarreferencia } from "@/server/triage/contrarreferencia";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { areaNativaClasses } from "@/lib/utils";
 
 export function GuiaContrarreferenciaForm({
   pacienteId,
@@ -56,7 +57,7 @@ export function GuiaContrarreferenciaForm({
 
   if (emitidaId) {
     return (
-      <p className="text-sm text-emerald-600" data-testid="guia-emitida">
+      <p className="text-sm font-medium text-success" data-testid="guia-emitida">
         Guia de contrarreferência emitida.{" "}
         <a
           href={`/contrarreferencia/${emitidaId}`}
@@ -99,7 +100,7 @@ export function GuiaContrarreferenciaForm({
           required
           maxLength={1000}
           defaultValue={motivoInicial}
-          className="border-input bg-background rounded-md border px-3 py-2 text-sm"
+          className={areaNativaClasses}
         />
       </div>
       <div className="grid gap-2">
@@ -114,7 +115,7 @@ export function GuiaContrarreferenciaForm({
           rows={3}
           maxLength={2000}
           defaultValue={motivoInicial ? `Resumo: ${motivoInicial}` : undefined}
-          className="border-input bg-background rounded-md border px-3 py-2 text-sm"
+          className={areaNativaClasses}
         />
       </div>
       {erro && (
@@ -122,7 +123,7 @@ export function GuiaContrarreferenciaForm({
           {erro}
         </p>
       )}
-      <Button type="submit" size="sm" disabled={pending}>
+      <Button type="submit" size="sm" loading={pending}>
         {pending ? "Emitindo…" : "Emitir guia"}
       </Button>
     </form>

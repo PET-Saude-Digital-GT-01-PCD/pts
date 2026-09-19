@@ -231,7 +231,7 @@ export function NovoPacienteForm({
               {erro}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending} className="w-full">
+          <Button type="submit" loading={pending} className="w-full">
             {pending ? "Salvando…" : "Cadastrar Paciente e Linha de Base"}
           </Button>
         </form>

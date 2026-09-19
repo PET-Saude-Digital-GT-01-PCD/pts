@@ -20,6 +20,16 @@ import { AbaMural } from "./aba-mural";
 import { CasoHeader } from "./caso-header";
 import { EventoForm } from "./evento-form";
 import { AbaRevisoes } from "./aba-revisoes";
+import { TimelineCaso } from "./timeline-caso";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function PainelCasoPage({
   params,
@@ -135,7 +145,7 @@ export default async function PainelCasoPage({
   );
 
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-6 p-8">
+    <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-8">
       <CasoHeader
         pts={pts}
         faltaRecente={faltaRecente}
@@ -146,48 +156,55 @@ export default async function PainelCasoPage({
         sugestaoSemaforo={sugestaoSemaforo}
       />
 
-      <section aria-label="Timeline do caso" className="space-y-2">
-        <h2 className="text-lg font-medium">Timeline</h2>
-        {podeRegistrarEvento && naoFechado && (
-          <EventoForm ptsId={pts.id} />
-        )}
-        {timeline.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nenhum evento registrado ainda.
-          </p>
-        ) : (
-          <ol className="space-y-2">
-            {timeline.map((item, i) => (
-              <li key={`${item.tipo}-${i}`} className="flex gap-3 text-sm">
-                <time className="w-36 shrink-0 tabular-nums text-muted-foreground">
-                  {item.data.toLocaleDateString("pt-BR")}
-                </time>
-                <span className="font-medium">{item.titulo}</span>
-                {item.detalhe && (
-                  <span className="text-muted-foreground">{item.detalhe}</span>
-                )}
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <section className="space-y-4">
+          <AbasNav ativa={abaAtiva} ptsId={pts.id} />
+          <div role="tabpanel">
+            <Suspense key={abaAtiva} fallback={<AbaCarregando />}>
+              {abaAtiva === "avaliacoes" ? (
+                <AbaAvaliacoes ptsId={pts.id} podeEscrever={naoFechado} />
+              ) : abaAtiva === "triagem" ? (
+                <AbaTriagem ptsId={pts.id} versaoPts={pts.versao} triagens={pts.triagens} />
+              ) : abaAtiva === "metas" ? (
+                <AbaMetas ptsId={pts.id} podeEscrever={podeMetaEscrever} donoId={usuario.id} />
+              ) : abaAtiva === "mural" ? (
+                <AbaMural ptsId={pts.id} podeEscrever={podeMuralEscrever} />
+              ) : abaAtiva === "revisoes" ? (
+                <AbaRevisoes ptsId={pts.id} podeEscrever={podePtsRevisar} />
+              ) : null}
+            </Suspense>
+          </div>
+        </section>
 
-      <section className="space-y-4">
-        <AbasNav ativa={abaAtiva} ptsId={pts.id} />
-        <div role="tabpanel">
-          {abaAtiva === "avaliacoes" ? (
-            <AbaAvaliacoes ptsId={pts.id} podeEscrever={naoFechado} />
-          ) : abaAtiva === "triagem" ? (
-            <AbaTriagem ptsId={pts.id} versaoPts={pts.versao} triagens={pts.triagens} />
-          ) : abaAtiva === "metas" ? (
-            <AbaMetas ptsId={pts.id} podeEscrever={podeMetaEscrever} donoId={usuario.id} />
-          ) : abaAtiva === "mural" ? (
-            <AbaMural ptsId={pts.id} podeEscrever={podeMuralEscrever} />
-          ) : abaAtiva === "revisoes" ? (
-            <AbaRevisoes ptsId={pts.id} podeEscrever={podePtsRevisar} />
-          ) : null}
-        </div>
-      </section>
+        <section aria-label="Linha do tempo do caso" className="lg:sticky lg:top-6">
+          <Card>
+            <CardHeader className="gap-1">
+              <CardTitle asChild className="text-base">
+                <h2>Linha do tempo</h2>
+              </CardTitle>
+              <CardDescription>Últimos acontecimentos do caso.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {podeRegistrarEvento && naoFechado && <EventoForm ptsId={pts.id} />}
+              <TimelineCaso itens={timeline} />
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </main>
+  );
+}
+
+/** Esqueleto da aba enquanto o conteúdo carrega (Suspense por aba). */
+function AbaCarregando() {
+  return (
+    <div className="space-y-3" aria-busy="true">
+      <span className="sr-only" role="status">
+        Carregando…
+      </span>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Skeleton key={i} className="h-24 w-full" />
+      ))}
+    </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   type MarcoRevisao,
 } from "@/server/care-plan/revisao";
 import type { ComparativoRevisoes } from "@/server/care-plan/comparativo";
+import { campoNativoClasses } from "@/lib/utils";
 
 const ELEGIBILIDADE_STATUS: Record<string, string> = {
   NOVA: "Nova",
@@ -60,7 +61,7 @@ export function ComparativoView({
             id="revisao-de"
             value={deId}
             onChange={(e) => setDeId(e.target.value)}
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+            className={campoNativoClasses}
           >
             {revisoes.map((r) => (
               <option key={r.id} value={r.id}>
@@ -75,7 +76,7 @@ export function ComparativoView({
             id="revisao-para"
             value={paraId}
             onChange={(e) => setParaId(e.target.value)}
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+            className={campoNativoClasses}
           >
             {revisoes.map((r) => (
               <option key={r.id} value={r.id}>

@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+
+import { ShieldAlert, TriangleAlert } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Semaforo, type SemaforoStatus } from "@/components/ui/semaforo";
 import {
   queryCasosPorPapel,
@@ -25,28 +28,36 @@ function paraSemaforo(s: string): SemaforoStatus {
 
 function CardCasoView({ caso }: { caso: CardCaso }) {
   return (
-    <Link href={`/casos/${caso.ptsId}`} className="block">
-      <Card className="transition-colors hover:border-primary">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-2">
-            <span className="truncate">{caso.pacienteNome}</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {STATUS_LABEL[caso.statusPts] ?? caso.statusPts}
-            </span>
+    <Link
+      href={`/casos/${caso.ptsId}`}
+      className="group block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <Card className="h-full transition-colors group-hover:border-primary">
+        <CardHeader className="gap-2">
+          <CardTitle asChild>
+            <h2 className="text-base leading-snug">{caso.pacienteNome}</h2>
           </CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">
+              {STATUS_LABEL[caso.statusPts] ?? caso.statusPts}
+            </Badge>
+            <Semaforo status={paraSemaforo(caso.semaforo)} />
+          </div>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <Semaforo status={paraSemaforo(caso.semaforo)} />
-          {caso.alertas.map((alerta) => (
-            <p
-              key={alerta}
-              className="rounded-md bg-warning/15 px-2 py-1 text-xs text-warning"
-              role="status"
-            >
-              {alerta}
-            </p>
-          ))}
-        </CardContent>
+        {caso.alertas.length > 0 && (
+          <CardContent className="space-y-1.5">
+            {caso.alertas.map((alerta) => (
+              <p
+                key={alerta}
+                className="flex items-start gap-1.5 text-xs text-warning"
+                role="status"
+              >
+                <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
+                {alerta}
+              </p>
+            ))}
+          </CardContent>
+        )}
       </Card>
     </Link>
   );
@@ -55,9 +66,10 @@ function CardCasoView({ caso }: { caso: CardCaso }) {
 function Grade({ casos }: { casos: CardCaso[] }) {
   if (casos.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-        Sem casos vinculados a você por enquanto.
-      </div>
+      <EmptyState
+        titulo="Sem casos vinculados a você"
+        descricao="Assim que você entrar na equipe de um PTS, ele aparece aqui."
+      />
     );
   }
   return (
@@ -72,14 +84,31 @@ function Grade({ casos }: { casos: CardCaso[] }) {
 export default async function DashboardPage() {
   const user = await requireAuth();
   const recursos = await recursosDoUsuario(user.papelId);
-  if (!visaoPorRecursos(recursos)) redirect("/");
-  const visao = await queryCasosPorPapel(user, recursos);
-  if (!visao) redirect("/");
+  const visao = visaoPorRecursos(recursos)
+    ? await queryCasosPorPapel(user, recursos)
+    : null;
+
+  // Sem visão de casos o usuário fica no painel com um aviso: mandá-lo para a
+  // página pública criaria um vaivém com o redirecionamento de quem já entrou.
+  if (!visao) {
+    return (
+      <main className="mx-auto flex max-w-3xl flex-col gap-6 p-4 sm:p-8">
+        <header>
+          <h1 className="text-2xl font-semibold">Painel</h1>
+        </header>
+        <EmptyState
+          icon={ShieldAlert}
+          titulo="Sem permissões de acompanhamento"
+          descricao="Seu papel ainda não dá acesso a casos ou indicadores. Fale com a administração do CER para ajustar suas permissões."
+        />
+      </main>
+    );
+  }
 
   if (visao.visao === "GESTAO") {
     const { agregados } = visao;
     return (
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
+      <main className="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-8">
         <header>
           <h1 className="text-2xl font-semibold">Visão geral</h1>
         </header>
@@ -135,7 +164,7 @@ export default async function DashboardPage() {
       : [];
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-8">
       <header>
         <h1 className="text-2xl font-semibold">
           {visao.visao === "RECEPCAO_TRIAGEM" ? "Fila do dia" : "Meus casos"}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { campoNativoClasses } from "@/lib/utils";
 import {
   adicionarMembroEquipe,
   removerMembroEquipe,
@@ -113,7 +114,7 @@ export function EquipeForm({ detalhe }: { detalhe: DetalheEquipeCaso }) {
                   name="usuarioId"
                   required
                   defaultValue=""
-                  className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+                  className={campoNativoClasses}
                 >
                   <option value="" disabled>
                     Selecione…
@@ -141,7 +142,7 @@ export function EquipeForm({ detalhe }: { detalhe: DetalheEquipeCaso }) {
                   {erro}
                 </p>
               ) : null}
-              <Button type="submit" disabled={pending} className="justify-self-start">
+              <Button type="submit" loading={pending} className="justify-self-start">
                 {pending ? "Adicionando…" : "Adicionar"}
               </Button>
             </form>

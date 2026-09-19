@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { autoCadastrar } from "@/server/iam/admissao";
 import type { CampoFormularioConfig } from "@/server/iam/formulario-config";
+import { campoNativoClasses } from "@/lib/utils";
 
 const CATEGORIA_LABEL: Record<string, string> = {
   RECEPCAO: "Recepção",
@@ -51,7 +52,7 @@ function CampoDinamico({ campo }: { campo: CampoFormularioConfig }) {
           name={campo.campo}
           required={campo.obrigatorio}
           defaultValue=""
-          className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+          className={campoNativoClasses}
         >
           <option value="" disabled>
             Selecione…
@@ -172,7 +173,7 @@ export function CadastroForm({ campos }: { campos: CampoFormularioConfig[] }) {
               name="categoria"
               required
               defaultValue=""
-              className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+              className={campoNativoClasses}
             >
               <option value="" disabled>
                 Selecione…
@@ -194,7 +195,7 @@ export function CadastroForm({ campos }: { campos: CampoFormularioConfig[] }) {
               {erro}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" loading={pending}>
             {pending ? "Enviando…" : "Solicitar acesso"}
           </Button>
           <Link className="text-center text-sm underline" href="/login">

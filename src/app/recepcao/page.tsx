@@ -18,6 +18,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const metadata: Metadata = {
   title: "Recepção — PTS Digital",
@@ -42,7 +44,7 @@ export default async function RecepcaoPage({
   const pacientes = await listarPacientesCer();
 
   return (
-    <main className="flex flex-col gap-6 p-8">
+    <main className="flex flex-col gap-6 p-4 sm:p-8">
       <div className="flex items-end justify-between gap-4">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -83,9 +85,11 @@ export default async function RecepcaoPage({
 
       {/* Lista de pacientes */}
       {pacientes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nenhum paciente cadastrado neste CER ainda.
-        </p>
+        <EmptyState
+          icon={UserPlus}
+          titulo="Nenhum paciente cadastrado"
+          descricao="Cadastre o primeiro paciente deste CER para abrir um PTS."
+        />
       ) : (
         <ListaPacientes pacientes={pacientes} />
       )}

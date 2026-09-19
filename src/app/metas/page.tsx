@@ -19,7 +19,7 @@ export default async function MetasPage({
   const { ptsId } = await searchParams;
   if (!ptsId) {
     return (
-      <main className="mx-auto max-w-4xl space-y-4 p-8">
+      <main className="mx-auto max-w-4xl space-y-4 p-4 sm:p-8">
         <h1 className="text-2xl font-semibold">Metas do caso</h1>
         <p className="text-sm text-muted-foreground">
           Informe o caso: <code>/metas?ptsId=…</code>
@@ -41,7 +41,7 @@ export default async function MetasPage({
   const conflitos = verificarConflitoMetas(paraConflito);
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-8">
+    <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-8">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">Metas do caso — painel cruzado</h1>
         <Link

@@ -118,7 +118,7 @@ export function SemaforoReuniaoForm({
         </p>
       )}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button type="submit" size="sm" loading={pending}>
           {pending ? "Salvando…" : `Confirmar ${ROTULOS_SEMAFORO[sugestao]}`}
         </Button>
         <Button

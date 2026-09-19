@@ -12,6 +12,16 @@ import {
 } from "@/server/clinical/divergencia";
 import { SoapForm } from "./soap-form";
 import { ChecklistCifForm } from "./checklist-cif-form";
+import { FileText } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 type ItemGrade = {
   servico: string;
@@ -41,7 +51,7 @@ const ROTULOS_DIVERGENCIA: Record<string, string> = {
 const CLASSE_GRAU: Record<GrauDivergencia, string> = {
   ALTA: "border-destructive/40 bg-destructive/10 text-destructive",
   MEDIA: "border-warning/40 bg-warning/10 text-warning",
-  BAIXA: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  BAIXA: "border-success/40 bg-success/10 text-success",
   NENHUMA: "border-border bg-muted text-muted-foreground",
 };
 
@@ -102,30 +112,52 @@ export async function AbaAvaliacoes({
     <div className="space-y-8">
       {podeEscrever &&
         escopos.map((esp) => (
-          <section key={esp} aria-label={`Nova avaliação ${esp}`} className="space-y-4">
-            <h3 className="text-md font-medium">
-              Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
-            </h3>
-            <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
+          <section key={esp} aria-label={`Nova avaliação ${esp}`}>
+            <Card>
+              <CardHeader className="gap-1">
+                <CardTitle asChild className="text-base">
+                  <h3>
+                    Nova avaliação — {esp === "FISIO" ? "Fisioterapia" : "Terapia Ocupacional"}
+                  </h3>
+                </CardTitle>
+                <CardDescription>
+                  Marque os itens observados; os códigos CIF saem daqui.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChecklistCifForm ptsId={ptsId} especialidade={esp} />
+              </CardContent>
+            </Card>
           </section>
         ))}
 
       {podeEscrever && (
-        <section aria-label="Nova avaliação SOAP" className="space-y-4">
-          <h3 className="text-md font-medium">Nova avaliação SOAP</h3>
-          <SoapForm ptsId={ptsId} />
+        <section aria-label="Nova avaliação SOAP">
+          <Card>
+            <CardHeader className="gap-1">
+              <CardTitle asChild className="text-base">
+                <h3>Nova avaliação SOAP</h3>
+              </CardTitle>
+              <CardDescription>
+                Subjetivo, objetivo e avaliação do atendimento de hoje.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SoapForm ptsId={ptsId} />
+            </CardContent>
+          </Card>
         </section>
       )}
 
       <section aria-label="Avaliações registradas" className="space-y-3" data-testid="lista-soap">
-        <h3 className="text-md font-medium">Avaliações registradas</h3>
+        <h3 className="text-base font-medium">Avaliações registradas</h3>
         {avaliacoesEspecialidade.length > 0 && (
           <ul className="space-y-3" data-testid="lista-especialidade">
             {avaliacoesEspecialidade.map((a) => {
               const dados = a.dadosJson as Record<string, unknown>;
               const escores = (a.escoresJson as { cif?: string[] } | null) ?? {};
               return (
-                <li key={a.id} className="rounded-lg border p-4 text-sm">
+                <li key={a.id} className="rounded-lg border border-border p-4 text-sm">
                   <p className="mb-1 text-xs text-muted-foreground">
                     {a.especialidade} ·{" "}
                     {a.criadaEm.toLocaleDateString("pt-BR")} · {a.avaliadorNome} ·
@@ -133,12 +165,9 @@ export async function AbaAvaliacoes({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {(escores.cif ?? []).map((codigo) => (
-                      <span
-                        key={codigo}
-                        className="rounded-full border border-sky-500/40 bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-                      >
+                      <Badge key={codigo} variant="outline">
                         CIF {codigo}
-                      </span>
+                      </Badge>
                     ))}
                     {(escores.cif ?? []).length === 0 && (
                       <span className="text-muted-foreground text-xs">
@@ -159,7 +188,11 @@ export async function AbaAvaliacoes({
           </ul>
         )}
         {avaliacoes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma avaliação SOAP ainda.</p>
+          <EmptyState
+            icon={FileText}
+            titulo="Nenhuma avaliação SOAP"
+            descricao="Registre a primeira avaliação para acompanhar a evolução clínica."
+          />
         ) : (
           <ul className="space-y-3">
             {avaliacoes.map((a) => {
@@ -167,7 +200,7 @@ export async function AbaAvaliacoes({
               const grade = itensGrade(a.dadosJson);
               const escores = (a.escoresJson ?? null) as EscoresSoap | null;
               return (
-                <li key={a.id} className="rounded-lg border p-4 text-sm">
+                <li key={a.id} className="rounded-lg border border-border p-4 text-sm">
                   <p className="mb-1 text-xs text-muted-foreground">
                     {a.criadaEm.toLocaleDateString("pt-BR")} · {a.avaliadorNome} · versão{" "}
                     {a.versao}
@@ -191,7 +224,7 @@ export async function AbaAvaliacoes({
                         </span>
                       )}
                       {escores.glasgow?.completo && (
-                        <span className="rounded-full border border-amber-500/40 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                        <span className="rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
                           Glasgow: {escores.glasgow.total}/15
                         </span>
                       )}

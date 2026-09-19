@@ -49,7 +49,7 @@ export default async function TriagemPacientePage({
 
   if (!paciente) {
     return (
-      <main className="flex items-center justify-center p-8">
+      <main className="flex items-center justify-center p-4 sm:p-8">
         <p role="alert" className="text-destructive text-sm">
           Paciente não encontrado.
         </p>
@@ -59,7 +59,7 @@ export default async function TriagemPacientePage({
 
   if (paciente.pts.length > 0) {
     return (
-      <main className="flex flex-col items-center gap-4 p-8">
+      <main className="flex flex-col items-center gap-4 p-4 sm:p-8">
         <p className="text-sm text-muted-foreground">
           Este paciente já possui um caso ativo.{" "}
           <a className="underline" href={`/casos/${paciente.pts[0].id}?aba=triagem`}>
@@ -79,7 +79,7 @@ export default async function TriagemPacientePage({
   const internacoes = (paciente.baseline?.internacoesJson ?? []) as string[];
 
   return (
-    <main className="mx-auto max-w-3xl flex flex-col gap-6 p-8">
+    <main className="mx-auto max-w-3xl flex flex-col gap-6 p-4 sm:p-8">
       <div className="flex items-center gap-3">
         <Link href="/triagem">
           <Button variant="ghost" size="sm" className="gap-1.5">

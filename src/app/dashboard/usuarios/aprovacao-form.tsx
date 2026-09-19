@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { aprovarUsuario, rejeitarUsuario } from "@/server/iam/admissao";
 import type { UsuarioPendente } from "@/server/iam/admissao";
+import { campoNativoClasses } from "@/lib/utils";
 
 export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
   const router = useRouter();
@@ -84,7 +85,7 @@ export function AprovacaoForm({ usuario }: { usuario: UsuarioPendente }) {
         <div className="flex items-center gap-2">
           <input
             aria-label={`Motivo da rejeição de ${usuario.nome}`}
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+            className={campoNativoClasses}
             placeholder="Motivo (obrigatório)"
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}

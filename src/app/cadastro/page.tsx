@@ -1,7 +1,13 @@
+import { redirect } from "next/navigation";
+
+import { auth } from "@/lib/auth";
 import { buscarFormularioCadastro } from "@/server/iam/admissao";
 import { CadastroForm } from "./cadastro-form";
 
 export default async function CadastroPage() {
+  const session = await auth();
+  if (session?.user?.papelId) redirect("/dashboard");
+
   const formulario = await buscarFormularioCadastro();
 
   return (

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { areaNativaClasses } from "@/lib/utils";
 
 const FUNCIONAL_LABELS = [
   "Mobilidade",
@@ -190,7 +191,7 @@ export function TriagemForm({
               name="justificativa"
               rows={3}
               maxLength={500}
-              className="border-input bg-background flex w-full rounded-md border px-3 py-2 text-sm"
+              className={areaNativaClasses}
             />
           </div>
 
@@ -200,7 +201,7 @@ export function TriagemForm({
             </p>
           ) : null}
 
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" loading={pending}>
             {pending ? "Classificando…" : ptsId ? "Registrar re-triagem" : "Concluir triagem"}
           </Button>
         </form>

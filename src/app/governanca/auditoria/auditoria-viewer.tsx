@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { campoNativoClasses } from "@/lib/utils";
 import {
   listarAuditoria,
   type EventoAuditoria,
@@ -98,7 +99,7 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
             id="filtro-entityType"
             value={filtro.entityType}
             onChange={(e) => setFiltro((f) => ({ ...f, entityType: e.target.value }))}
-            className="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+            className={campoNativoClasses}
           >
             <option value="">Todos</option>
             {tiposEntidade.map((t) => (
@@ -151,7 +152,7 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
             onChange={(e) => setFiltro((f) => ({ ...f, ate: e.target.value }))}
           />
         </div>
-        <Button type="submit" disabled={carregando} className="justify-self-start sm:col-span-3">
+        <Button type="submit" loading={carregando} className="justify-self-start sm:col-span-3">
           {carregando ? "Buscando…" : "Buscar"}
         </Button>
       </form>

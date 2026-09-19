@@ -46,7 +46,7 @@ export default async function UsuariosPage() {
   ]);
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
+    <main className="mx-auto flex max-w-3xl flex-col gap-8 p-4 sm:p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Usuários</h1>
         <Button asChild variant="outline" size="sm">
