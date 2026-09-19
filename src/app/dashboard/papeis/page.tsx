@@ -6,6 +6,7 @@ import { AdminPanel, AdminShell } from "@/components/admin/admin-shell";
 import { StatCard } from "@/components/admin/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/lib/db";
 import { requirePermissao } from "@/server/iam/session";
 import { CriarPapelForm } from "./criar-papel-form";
@@ -75,32 +76,40 @@ export default async function PapeisPage() {
         titulo="Papéis do CER"
         descricao="Abra um papel para revisar nome, base e permissões. Papel em uso não pode ser apagado."
       >
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {papeis.map((p) => (
-            <li key={p.id}>
-              <Link
-                href={`/dashboard/papeis/${p.id}`}
-                className="flex h-full flex-col gap-2 rounded-2xl bg-surface-sunken p-4 transition-colors outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{p.nome}</span>
-                  <Badge variant={BASE_VARIANT[p.base] ?? "secondary"}>
-                    {p.base}
-                  </Badge>
-                  {!p.ativo ? <Badge variant="outline">inativo</Badge> : null}
-                </span>
-                {p.descricao ? (
-                  <span className="text-xs text-muted-foreground">
-                    {p.descricao}
+        {papeis.length === 0 ? (
+          <EmptyState
+            icon={ShieldCheck}
+            titulo="Nenhum papel encontrado"
+            descricao="Crie o primeiro papel do CER no formulário abaixo."
+          />
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {papeis.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/dashboard/papeis/${p.id}`}
+                  className="flex h-full flex-col gap-2 rounded-2xl bg-surface-sunken p-4 transition-colors outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{p.nome}</span>
+                    <Badge variant={BASE_VARIANT[p.base] ?? "secondary"}>
+                      {p.base}
+                    </Badge>
+                    {!p.ativo ? <Badge variant="outline">inativo</Badge> : null}
                   </span>
-                ) : null}
-                <span className="mt-auto text-xs text-muted-foreground tabular-nums">
-                  {p.recursos.length} recursos · {p._count.usuarios} usuários
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  {p.descricao ? (
+                    <span className="text-xs text-muted-foreground">
+                      {p.descricao}
+                    </span>
+                  ) : null}
+                  <span className="mt-auto text-xs text-muted-foreground tabular-nums">
+                    {p.recursos.length} recursos · {p._count.usuarios} usuários
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </AdminPanel>
 
       <AdminPanel
