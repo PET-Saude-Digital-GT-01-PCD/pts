@@ -21,7 +21,7 @@ test("profissional sem vínculo é redirecionado do caso; membro da equipe acess
   // to@pts.local tem clinical.avaliacao.ler/escrever mas nenhum vínculo ao caso
   await login(page, "to@pts.local", "to123456");
   await page.goto(`/casos/${PTS_ATIVO_ID}`);
-  await page.waitForURL((u) => u.pathname === "/", { timeout: 15000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 15000 });
 
   // medico@pts.local está na equipe do caso (seed) sem ser a referência
   await page.context().clearCookies();
@@ -57,7 +57,7 @@ test("gestor gerencia equipe do caso sem acessar conteúdo clínico (#69)", asyn
 
   // gestor não acessa o conteúdo clínico do caso diretamente
   await page.goto(`/casos/${PTS_ATIVO_ID}`);
-  await page.waitForURL((u) => u.pathname === "/", { timeout: 15000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 15000 });
 });
 
 test("dashboard clínico lista casos por equipe, não só pela referência (#69)", async ({
