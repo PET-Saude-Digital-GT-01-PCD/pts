@@ -1,7 +1,7 @@
 // Fila outbound persistida (ADR-0006): INSERT dentro da MESMA transação da
 // mutação de negócio que gera o efeito externo — se a mutação faz rollback,
-// o evento nunca existiu. Worker de entrega (SELECT ... FOR UPDATE SKIP
-// LOCKED + retry/backoff) é Fase 2; aqui só a persistência + enfileiramento.
+// o evento nunca existiu. `worker.ts` reserva e entrega os eventos com
+// SKIP LOCKED e retry.
 
 import { createHash } from "node:crypto";
 import type { Prisma, TipoOutboundEvent } from "@prisma/client";
@@ -13,8 +13,8 @@ function hashPayload(payload: unknown): string {
 }
 
 /**
- * Idempotência por hash: se já existe um evento PENDING/SENT do mesmo tipo
- * com o mesmo payload, reaproveita em vez de duplicar o envio.
+ * Idempotência por hash serializada com advisory lock: concorrência no mesmo
+ * payload não cria duas linhas, e falhas são retomadas pelo reprocessamento.
  */
 export async function enfileirarOutbound(
   tx: Prisma.TransactionClient,
@@ -22,9 +22,14 @@ export async function enfileirarOutbound(
   payload: unknown,
 ): Promise<ResultadoEnfileiramento> {
   const payloadHash = hashPayload(payload);
+  const chaveLock = `${tipo}:${payloadHash}`;
+
+  await tx.$queryRaw<Array<{ pg_advisory_xact_lock: unknown }>>`
+    SELECT pg_advisory_xact_lock(hashtextextended(${chaveLock}, 0))
+  `;
 
   const existente = await tx.outboundEvent.findFirst({
-    where: { tipo, payloadHash, status: { in: ["PENDING", "SENT"] } },
+    where: { tipo, payloadHash },
     select: { id: true },
   });
   if (existente) return { id: existente.id, duplicado: true };
