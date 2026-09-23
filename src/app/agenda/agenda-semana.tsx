@@ -325,8 +325,8 @@ export function AgendaSemana({ agenda }: { agenda: AgendaDados }) {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="duracaoMinutos">Duração</Label>
-                    <select id="duracaoMinutos" name="duracaoMinutos" defaultValue="30" className={campoNativoClasses}>
-                      {[15, 30, 45, 60, 90, 120].map((minutos) => <option key={minutos} value={minutos}>{minutos} minutos</option>)}
+                    <select id="duracaoMinutos" name="duracaoMinutos" defaultValue="30" className={`${campoNativoClasses} bg-background text-foreground [color-scheme:light] dark:[color-scheme:dark]`}>
+                      {[15, 30, 45, 60, 90, 120].map((minutos) => <option className="bg-background text-foreground" key={minutos} value={minutos}>{minutos} minutos</option>)}
                     </select>
                   </div>
                   <p className="text-xs text-muted-foreground">A agenda bloqueia horários sobrepostos e impede marcar atendimentos em PTS encerrados.</p>
