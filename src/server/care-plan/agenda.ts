@@ -9,7 +9,7 @@ import { buscarFilaAmarela } from "@/server/triage/fila-espera";
 import { assertPtsMutavel } from "@/server/care-plan/acesso";
 import { recursosDoUsuario, requireAuth } from "@/server/iam/session";
 import {
-  dataCivilRecife,
+  dataCivilBrasilia,
   horariosSeSobrepoem,
   intervaloSemanaAgenda,
   somarDiasCivis,
@@ -116,7 +116,7 @@ export async function buscarSemanaAgenda(dataReferencia?: string) {
   if (!recursos.includes("agenda.atendimentos.ver")) return null;
   if (!user.cerId) return null;
 
-  const referencia = dataReferencia ?? dataCivilRecife(new Date());
+  const referencia = dataReferencia ?? dataCivilBrasilia(new Date());
   const intervalo = intervaloSemanaAgenda(referencia);
   const gerenteAgenda = recursos.includes("agenda.atendimentos.gerenciar");
   const podeAgendar = recursos.includes("agenda.atendimentos.agendar");

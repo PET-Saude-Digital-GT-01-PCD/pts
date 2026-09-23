@@ -37,7 +37,7 @@ const SEMAFORO: Record<string, string> = {
 
 function dateTimeLocal(data: Date): string {
   const partes = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Recife",
+    timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -51,7 +51,7 @@ function dateTimeLocal(data: Date): string {
 
 function hora(data: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Recife",
+    timeZone: "America/Sao_Paulo",
     hour: "2-digit",
     minute: "2-digit",
   }).format(data);
@@ -59,7 +59,7 @@ function hora(data: Date) {
 
 function diaCivil(data: Date) {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Recife",
+    timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -68,7 +68,7 @@ function diaCivil(data: Date) {
 
 function diaSemana(dataCivil: string) {
   return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Recife",
+    timeZone: "America/Sao_Paulo",
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -76,8 +76,8 @@ function diaSemana(dataCivil: string) {
 }
 
 function dataProximaMeiaHora() {
-  const agoraRecife = dateTimeLocal(new Date());
-  const [data, hora] = agoraRecife.split("T");
+  const agoraBrasilia = dateTimeLocal(new Date());
+  const [data, hora] = agoraBrasilia.split("T");
   const [ano, mes, dia] = data.split("-").map(Number);
   const [horas, minutos] = hora.split(":").map(Number);
   const arredondado = new Date(Date.UTC(ano, mes - 1, dia, horas, minutos + 30));
@@ -89,7 +89,7 @@ function dataProximaMeiaHora() {
   return `${arredondado.toISOString().slice(0, 10)}T${arredondado.toISOString().slice(11, 16)}`;
 }
 
-function converterHorarioRecifeParaIso(horarioLocal: string): string | null {
+function converterHorarioBrasiliaParaIso(horarioLocal: string): string | null {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(horarioLocal)) return null;
   const data = new Date(`${horarioLocal}:00-03:00`);
   return Number.isNaN(data.getTime()) ? null : data.toISOString();
@@ -121,7 +121,7 @@ export function AgendaSemana({ agenda }: { agenda: AgendaDados }) {
     setOcupado("novo");
     const form = new FormData(event.currentTarget);
     const horarioLocal = String(form.get("inicioEm") ?? "");
-    const inicioEm = converterHorarioRecifeParaIso(horarioLocal);
+    const inicioEm = converterHorarioBrasiliaParaIso(horarioLocal);
     if (!inicioEm) {
       setOcupado(null);
       setErro("Informe a data e o horário do atendimento.");
@@ -150,7 +150,7 @@ export function AgendaSemana({ agenda }: { agenda: AgendaDados }) {
     setSucesso(null);
     setOcupado(item.id);
     const horarioLocal = String(new FormData(event.currentTarget).get("inicioEm") ?? "");
-    const inicioEm = converterHorarioRecifeParaIso(horarioLocal);
+    const inicioEm = converterHorarioBrasiliaParaIso(horarioLocal);
     if (!inicioEm) {
       setOcupado(null);
       setErro("Informe a nova data e o horário do atendimento.");
@@ -320,7 +320,7 @@ export function AgendaSemana({ agenda }: { agenda: AgendaDados }) {
                     </select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="inicioEm">Data e horário (Recife)</Label>
+                    <Label htmlFor="inicioEm">Data e horário (horário de Brasília)</Label>
                     <Input id="inicioEm" name="inicioEm" type="datetime-local" min={dataInicial} value={dataInicial} required onChange={(event) => setDataInicial(event.target.value)} />
                   </div>
                   <div className="grid gap-2">
@@ -343,7 +343,7 @@ export function AgendaSemana({ agenda }: { agenda: AgendaDados }) {
 
 function formatarDataEvento(data: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Recife",
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

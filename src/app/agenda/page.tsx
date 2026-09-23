@@ -10,7 +10,7 @@ import { AgendaSemana } from "./agenda-semana";
 function formatarData(data: Date, opcoes: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat("pt-BR", {
     ...opcoes,
-    timeZone: "America/Recife",
+    timeZone: "America/Sao_Paulo",
   }).format(data);
 }
 
@@ -40,7 +40,7 @@ export default async function AgendaPage({
   return (
     <AdminShell
       titulo="Agenda de atendimentos"
-      descricao="Atendimentos do CER vinculados ao PTS e à equipe responsável. Os horários são exibidos no fuso de Recife."
+      descricao="Atendimentos do CER vinculados ao PTS e à equipe responsável. Os horários são exibidos no horário de Brasília."
       largura="larga"
       acoes={
         <div className="flex items-center gap-2" aria-label="Navegação da semana">
