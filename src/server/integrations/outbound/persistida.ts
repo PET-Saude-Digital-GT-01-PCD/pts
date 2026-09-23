@@ -24,8 +24,11 @@ export async function enfileirarOutbound(
   const payloadHash = hashPayload(payload);
   const chaveLock = `${tipo}:${payloadHash}`;
 
-  await tx.$queryRaw<Array<{ pg_advisory_xact_lock: unknown }>>`
-    SELECT pg_advisory_xact_lock(hashtextextended(${chaveLock}, 0))
+  await tx.$queryRaw<Array<{ locked: number }>>`
+    WITH lock AS MATERIALIZED (
+      SELECT pg_advisory_xact_lock(hashtextextended(${chaveLock}, 0))
+    )
+    SELECT 1::int AS locked FROM lock
   `;
 
   const existente = await tx.outboundEvent.findFirst({
