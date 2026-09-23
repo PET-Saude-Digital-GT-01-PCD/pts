@@ -6,7 +6,7 @@ import { enviarEventoAoGateway } from "./gateway";
 const TENTATIVAS_MAXIMAS = 5;
 const TAMANHO_LOTE_MAXIMO = 10;
 const LEASE_MS = 60_000;
-const ESPERA_BASE_MS = 30_000;
+const ESPERA_BASE_MS = 5 * 60_000;
 const ESPERA_MAXIMA_MS = 30 * 60_000;
 
 type ItemWorker = Pick<
