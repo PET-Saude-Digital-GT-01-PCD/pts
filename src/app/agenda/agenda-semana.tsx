@@ -306,16 +306,16 @@ export function AgendaSemana({ agenda }: { agenda: AgendaDados }) {
                 <form className="grid gap-4" onSubmit={onAgendar}>
                   <div className="grid gap-2">
                     <Label htmlFor="ptsId">Paciente / PTS</Label>
-                    <select id="ptsId" name="ptsId" value={casoSelecionado} required className={campoNativoClasses} onChange={(event) => setCasoSelecionado(event.target.value)}>
-                      {agenda.casos.map((caso) => <option key={caso.ptsId} value={caso.ptsId}>{caso.pacienteNome} · {caso.status.replaceAll("_", " ")}</option>)}
+                    <select id="ptsId" name="ptsId" value={casoSelecionado} required className={`${campoNativoClasses} bg-background text-foreground [color-scheme:light] dark:[color-scheme:dark]`} onChange={(event) => setCasoSelecionado(event.target.value)}>
+                      {agenda.casos.map((caso) => <option className="bg-background text-foreground" key={caso.ptsId} value={caso.ptsId}>{caso.pacienteNome} · {caso.status.replaceAll("_", " ")}</option>)}
                     </select>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="profissionalId">Profissional da equipe</Label>
-                    <select id="profissionalId" name="profissionalId" required className={campoNativoClasses} defaultValue="">
-                      <option value="" disabled>Selecione…</option>
+                    <select id="profissionalId" name="profissionalId" required className={`${campoNativoClasses} bg-background text-foreground [color-scheme:light] dark:[color-scheme:dark]`} defaultValue="">
+                      <option className="bg-background text-foreground" value="" disabled>Selecione…</option>
                       {casoAtual?.profissionais.map((profissional) => (
-                        <option key={profissional.id} value={profissional.id}>{profissional.nome}{profissional.categoria ? ` · ${profissional.categoria}` : ""}</option>
+                        <option className="bg-background text-foreground" key={profissional.id} value={profissional.id}>{profissional.nome}{profissional.categoria ? ` · ${profissional.categoria}` : ""}</option>
                       ))}
                     </select>
                   </div>
