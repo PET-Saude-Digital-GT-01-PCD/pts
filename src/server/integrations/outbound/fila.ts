@@ -1,7 +1,5 @@
-// Base da fila outbound (ADR-0006): evento canônico enfileirado na mesma
-// transação da mutação. Worker + retry + persistência são Fase 2.
-// ponytail: fila em memória; upgrade = tabela outbound_event + worker quando
-// a Fase 2 chegar.
+// Adapter em memória mantido para testes unitários. A aplicação usa
+// `persistida.ts`; o worker e os retries operam sobre outbound_event no PG.
 
 export type EventoOutbound = {
   id: string;

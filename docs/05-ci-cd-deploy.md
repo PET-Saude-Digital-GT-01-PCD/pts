@@ -71,6 +71,32 @@ Vercel sobe com um banco vazio — ver Troubleshooting.
    `Preview` (pts-stage). **Não** definir `SEED_DEMO` em Production.
 5. GitHub → repo Secrets: `PROD_DIRECT_URL`, `STAGE_DIRECT_URL`.
 
+### Fila outbound: worker e retries
+
+`outbound_event` é processada pela rota `/api/cron/outbound`, chamada a cada
+minuto pelo Vercel Cron na implantação Production. A rota exige o header
+`Authorization: Bearer <CRON_SECRET>`. Configure `CRON_SECRET` como variável
+secreta no ambiente Production da Vercel.
+
+O worker reserva até cinco eventos por execução com `FOR UPDATE SKIP LOCKED` e
+lease de 60 segundos. Eventos aceitos pelo gateway ficam `SENT`; falhas tentam
+novamente após 30 s, 1 min, 2 min e 4 min. Depois de cinco tentativas ficam
+`FAILED` e aparecem em **Dashboard → Integrações**. A tela mostra estado,
+tentativas, próximo retry e mensagem segura do gateway; o payload fica oculto.
+Um administrador pode reenfileirar a falha, operação registrada na auditoria.
+
+Configure `OUTBOUND_WEBHOOK_URL` e `OUTBOUND_WEBHOOK_SECRET` na Vercel. O
+gateway recebe `{ id, tipo, payload }` em JSON, com `Idempotency-Key` estável
+para reentregas; ele deve deduplicar essa chave e responder 2xx apenas após
+aceitar o evento. Corpos de resposta do gateway não são armazenados. O worker
+não substitui o adapter clínico e-SUS/RNDS, que ainda precisa ser configurado
+no destino.
+
+O cron do Vercel executa apenas na implantação Production. Em Preview, a rota
+pode ser chamada manualmente com o mesmo `CRON_SECRET`. A cadência por minuto
+requer Vercel Pro; no plano Hobby, o Vercel aceita no máximo uma execução por
+dia, o que não atende ao retry operacional desta fila.
+
 ## Troubleshooting
 
 ### "Application error: a server-side exception has occurred"

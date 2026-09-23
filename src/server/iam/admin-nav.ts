@@ -16,6 +16,7 @@ export const ITENS_ADMIN: readonly ItemAdmin[] = [
   { chave: "fluxo", label: "Fluxo do cuidado", href: "/dashboard/fluxo", requer: "governanca.dashboard.ver" },
   { chave: "usuarios", label: "Usuários", href: "/dashboard/usuarios", requer: "admin.usuarios.ver" },
   { chave: "papeis", label: "Papéis", href: "/dashboard/papeis", requer: "admin.papeis.gerenciar" },
+  { chave: "integracoes", label: "Integrações", href: "/dashboard/integracoes", requer: "admin.config.org.editar" },
   { chave: "equipes", label: "Equipes", href: "/dashboard/casos", requer: "care-plan.equipe.gerenciar" },
   { chave: "identidade", label: "Identidade visual", href: "/dashboard/config-org", requer: "admin.config.org.editar" },
   { chave: "indicadores", label: "Indicadores", href: "/governanca", requer: "governanca.dashboard.ver" },
