@@ -22,6 +22,7 @@ import {
   Settings,
   Workflow,
   Menu,
+  CalendarDays,
 } from "lucide-react";
 
 import { Logo } from "@/components/ui/logo";
@@ -65,6 +66,7 @@ const ICONS: Record<string, React.ElementType> = {
   Brain,
   Settings,
   Workflow,
+  CalendarDays,
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {

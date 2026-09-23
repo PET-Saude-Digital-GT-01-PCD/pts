@@ -87,6 +87,14 @@ enum TipoEventoCuidado {
   OUTRO
 }
 
+enum StatusAgendamento {
+  AGENDADO
+  REALIZADO
+  FALTA
+  CANCELADO
+  REMARCADO
+}
+
 enum Sexo {
   MASCULINO
   FEMININO
@@ -214,19 +222,21 @@ model Usuario {
   camposDinamicosJson Json?                 @db.JsonB
   criadoEm            DateTime              @default(now()) @db.Timestamptz(3)
 
-  cer                Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
-  papel              Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
-  ptsComoReferencia  Pts[]                 @relation("referencia")
-  auditorias         Auditoria[]
-  ajustes            AjusteClassificacao[]
-  avaliacoes         Avaliacao[]
-  metasDono          Meta[]                @relation("donoMeta")
-  revisoes           PtsRevisao[]
-  metaHistorico      MetaStatusHistorico[]
-  eventosRegistrados EventoCuidado[]       @relation("eventosRegistrados")
-  discussoes         Discussao[]           @relation("discussoes")
+  cer                        Cer                   @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  papel                      Papel                 @relation(fields: [papelId], references: [id], onDelete: Restrict)
+  ptsComoReferencia          Pts[]                 @relation("referencia")
+  auditorias                 Auditoria[]
+  ajustes                    AjusteClassificacao[]
+  avaliacoes                 Avaliacao[]
+  metasDono                  Meta[]                @relation("donoMeta")
+  revisoes                   PtsRevisao[]
+  metaHistorico              MetaStatusHistorico[]
+  eventosRegistrados         EventoCuidado[]       @relation("eventosRegistrados")
+  discussoes                 Discussao[]           @relation("discussoes")
   contrarreferenciasEmitidas Contrarreferencia[]
   equipePts                  EquipePts[]
+  atendimentosAgendados      Agendamento[]         @relation("AgendamentoProfissional")
+  agendamentosCriados        Agendamento[]         @relation("AgendamentoCriador")
 
   @@map("usuario")
 }
@@ -253,24 +263,24 @@ model FormularioConfig {
 // ===== Recepção =====
 
 model Paciente {
-  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cerId               String     @db.Uuid
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId              String     @db.Uuid
   // ponytail: unique global (não parcial) enquanto não há reativação de soft-delete
-  cpf                 String?    @unique @db.Citext
-  cns                 String?    @unique @db.Citext
-  nome                String
-  dtnasc              DateTime
-  sexo                Sexo
-  enderecoJson        Json?      @db.JsonB
-  ubsId               String?
-  origem              OrigemDado @default(digitado)
-  ativo               Boolean    @default(true)
-  encaminhadoTriagem  Boolean    @default(false)
-  criadoEm            DateTime   @default(now()) @db.Timestamptz(3)
+  cpf                String?    @unique @db.Citext
+  cns                String?    @unique @db.Citext
+  nome               String
+  dtnasc             DateTime
+  sexo               Sexo
+  enderecoJson       Json?      @db.JsonB
+  ubsId              String?
+  origem             OrigemDado @default(digitado)
+  ativo              Boolean    @default(true)
+  encaminhadoTriagem Boolean    @default(false)
+  criadoEm           DateTime   @default(now()) @db.Timestamptz(3)
   // Validação de pactuação PPI (#65)
-  municipioOrigem     String?
-  provisorio          Boolean    @default(false)
-  prazoRegularizacao  DateTime?  @db.Timestamptz(3)
+  municipioOrigem    String?
+  provisorio         Boolean    @default(false)
+  prazoRegularizacao DateTime?  @db.Timestamptz(3)
 
   cer                Cer                 @relation(fields: [cerId], references: [id], onDelete: Restrict)
   cuidadores         Cuidador[]
@@ -332,18 +342,18 @@ model Baseline {
 // ===== Núcleo: PTS =====
 
 model Pts {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pacienteId         String    @db.Uuid
-  cerId              String    @db.Uuid
-  status             StatusPts @default(EM_AVALIACAO)
-  refProfissionalId  String?   @db.Uuid
-  semaforoReuniao    Semaforo  @default(VERDE)
-  versao             Int       @default(0)
-  aberturaEm         DateTime  @default(now()) @db.Timestamptz(3)
-  encerramentoEm     DateTime? @db.Timestamptz(3)
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId         String            @db.Uuid
+  cerId              String            @db.Uuid
+  status             StatusPts         @default(EM_AVALIACAO)
+  refProfissionalId  String?           @db.Uuid
+  semaforoReuniao    Semaforo          @default(VERDE)
+  versao             Int               @default(0)
+  aberturaEm         DateTime          @default(now()) @db.Timestamptz(3)
+  encerramentoEm     DateTime?         @db.Timestamptz(3)
   motivoEncerramento String?
   tipoEncerramento   TipoEncerramento?
-  criadoEm           DateTime  @default(now()) @db.Timestamptz(3)
+  criadoEm           DateTime          @default(now()) @db.Timestamptz(3)
 
   paciente           Paciente            @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
   cer                Cer                 @relation(fields: [cerId], references: [id], onDelete: Restrict)
@@ -356,6 +366,7 @@ model Pts {
   discussoes         Discussao[]
   contrarreferencias Contrarreferencia[]
   equipePts          EquipePts[]
+  agendamentos       Agendamento[]
 
   @@index([pacienteId])
   @@index([cerId, status])
@@ -494,11 +505,37 @@ model EventoCuidado {
   registradoPorId String            @db.Uuid
   criadoEm        DateTime          @default(now()) @db.Timestamptz(3)
 
-  pts           Pts     @relation(fields: [ptsId], references: [id], onDelete: Restrict)
-  registradoPor Usuario @relation("eventosRegistrados", fields: [registradoPorId], references: [id], onDelete: Restrict)
+  pts           Pts          @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  registradoPor Usuario      @relation("eventosRegistrados", fields: [registradoPorId], references: [id], onDelete: Restrict)
+  agendamento   Agendamento? @relation("AgendamentoEvento")
 
   @@index([ptsId, data])
   @@map("evento_cuidado")
+}
+
+model Agendamento {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId           String            @db.Uuid
+  profissionalId  String            @db.Uuid
+  criadoPorId     String            @db.Uuid
+  inicioEm        DateTime          @db.Timestamptz(3)
+  fimEm           DateTime          @db.Timestamptz(3)
+  status          StatusAgendamento @default(AGENDADO)
+  observacao      String?           @db.VarChar(500)
+  remarcadoDeId   String?           @unique @db.Uuid
+  eventoCuidadoId String?           @unique @db.Uuid
+  criadoEm        DateTime          @default(now()) @db.Timestamptz(3)
+
+  pts           Pts            @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  profissional  Usuario        @relation("AgendamentoProfissional", fields: [profissionalId], references: [id], onDelete: Restrict)
+  criadoPor     Usuario        @relation("AgendamentoCriador", fields: [criadoPorId], references: [id], onDelete: Restrict)
+  remarcadoDe   Agendamento?   @relation("AgendamentoRemarcacao", fields: [remarcadoDeId], references: [id], onDelete: Restrict)
+  remarcamentos Agendamento[]  @relation("AgendamentoRemarcacao")
+  eventoCuidado EventoCuidado? @relation("AgendamentoEvento", fields: [eventoCuidadoId], references: [id], onDelete: Restrict)
+
+  @@index([profissionalId, inicioEm, status])
+  @@index([ptsId, inicioEm, status])
+  @@map("agendamento")
 }
 
 // ===== Mural do caso (assíncrono) =====
@@ -540,17 +577,17 @@ model Auditoria {
 // que gera o efeito externo. Worker reserva eventos com lease e SKIP LOCKED;
 // leases vencidos são recuperáveis após queda do processo.
 model OutboundEvent {
-  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tipo        TipoOutboundEvent
-  payloadJson Json                @db.JsonB
-  payloadHash String
-  status      StatusOutboundEvent @default(PENDING)
-  attempts    Int                 @default(0)
-  lastError   String?
-  nextRetryAt DateTime?           @db.Timestamptz(3)
-  lockedUntil DateTime?           @db.Timestamptz(3)
-  criadoEm    DateTime            @default(now()) @db.Timestamptz(3)
-  processadoEm DateTime?          @db.Timestamptz(3)
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo         TipoOutboundEvent
+  payloadJson  Json                @db.JsonB
+  payloadHash  String
+  status       StatusOutboundEvent @default(PENDING)
+  attempts     Int                 @default(0)
+  lastError    String?
+  nextRetryAt  DateTime?           @db.Timestamptz(3)
+  lockedUntil  DateTime?           @db.Timestamptz(3)
+  criadoEm     DateTime            @default(now()) @db.Timestamptz(3)
+  processadoEm DateTime?           @db.Timestamptz(3)
 
   @@index([status, nextRetryAt])
   @@index([tipo, payloadHash, status])
