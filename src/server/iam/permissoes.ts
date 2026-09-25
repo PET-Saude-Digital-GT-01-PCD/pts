@@ -24,6 +24,7 @@ export function ehRecursoClinico(chave: string): boolean {
 export function ehRecursoVedadoGestor(chave: string): boolean {
   return (
     ehRecursoClinico(chave) ||
+    chave.startsWith("agenda.") ||
     RECURSOS_ESCRITA_CLINICA_VEDADOS_GESTOR.includes(chave)
   );
 }

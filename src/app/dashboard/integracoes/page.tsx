@@ -32,7 +32,7 @@ const STATUS_VARIANT: Record<
 
 function dataHora(data: Date | null) {
   return data
-    ? data.toLocaleString("pt-BR", { timeZone: "America/Recife" })
+    ? data.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
     : "—";
 }
 
