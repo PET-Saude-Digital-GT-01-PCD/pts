@@ -24,7 +24,7 @@ jobs:
       DIRECT_URL: ${{ github.ref_name == 'main' && secrets.PROD_DIRECT_URL || secrets.STAGE_DIRECT_URL }}
       DATABASE_URL: ${{ github.ref_name == 'main' && secrets.PROD_DIRECT_URL || secrets.STAGE_DIRECT_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Sem isto o Prisma falha com P1012 ("DIRECT_URL resolveu para string
       # vazia"), que não diz que o que falta é um secret do repositório.
