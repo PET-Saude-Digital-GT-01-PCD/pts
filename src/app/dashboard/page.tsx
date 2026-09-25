@@ -91,10 +91,10 @@ function paraSemaforo(s: string): SemaforoStatus {
   return s.toLowerCase() as SemaforoStatus;
 }
 
-function CardCasoView({ caso }: { caso: CardCaso }) {
+function CardCasoView({ caso, href }: { caso: CardCaso; href: string }) {
   return (
     <Link
-      href={`/casos/${caso.ptsId}`}
+      href={href}
       className="group block h-full rounded-2xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <Card className="h-full rounded-2xl transition-colors group-hover:ring-primary/40">
@@ -128,7 +128,7 @@ function CardCasoView({ caso }: { caso: CardCaso }) {
   );
 }
 
-function Grade({ casos }: { casos: CardCaso[] }) {
+function Grade({ casos, hrefDe }: { casos: CardCaso[]; hrefDe: (caso: CardCaso) => string }) {
   if (casos.length === 0) {
     return (
       <EmptyState
@@ -140,7 +140,7 @@ function Grade({ casos }: { casos: CardCaso[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {casos.map((c) => (
-        <CardCasoView key={c.ptsId} caso={c} />
+        <CardCasoView key={c.ptsId} caso={c} href={hrefDe(c)} />
       ))}
     </div>
   );
@@ -358,7 +358,14 @@ export default async function DashboardPage() {
           estimativa {visao.filaAmarela.proximaEstimativaDias} dia(s)
         </p>
       ) : null}
-      <Grade casos={visao.casos} />
+      <Grade
+        casos={visao.casos}
+        hrefDe={(caso) =>
+          visao.visao === "RECEPCAO_TRIAGEM"
+            ? `/pacientes/${caso.pacienteId}`
+            : `/casos/${caso.ptsId}`
+        }
+      />
     </main>
   );
 }

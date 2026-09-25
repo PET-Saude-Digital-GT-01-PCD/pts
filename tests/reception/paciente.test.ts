@@ -26,7 +26,7 @@ const pacienteIds: string[] = [];
 
 // CPFs de teste válidos (não usados no seed nem em outros arquivos de teste).
 const CPF_A = "98765432100";
-const CPF_B = "52998224725";
+const CPF_B = "71296224740";
 
 const CER_ID = "00000000-0000-4000-8000-000000000001";
 
