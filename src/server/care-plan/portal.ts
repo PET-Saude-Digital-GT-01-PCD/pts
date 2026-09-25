@@ -8,8 +8,6 @@ import {
   type PortalCidadaoView,
 } from "@/server/care-plan/portal-cidadao-leitura";
 
-export type { PortalCidadaoView };
-
 // Portal do cidadão (#73): visão em linguagem acessível do percurso e das
 // metas do PTS. Esta é a conferência pela equipe (mesmo OR de permissão da
 // página do caso). O acesso do próprio cidadão é o link público
