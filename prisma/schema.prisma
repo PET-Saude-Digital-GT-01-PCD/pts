@@ -235,6 +235,7 @@ model Usuario {
   discussoes                 Discussao[]           @relation("discussoes")
   contrarreferenciasEmitidas Contrarreferencia[]
   equipePts                  EquipePts[]
+  acessosCidadaoGerados      AcessoCidadao[]       @relation("acessoCidadaoCriador")
   atendimentosAgendados      Agendamento[]         @relation("AgendamentoProfissional")
   agendamentosCriados        Agendamento[]         @relation("AgendamentoCriador")
 
@@ -366,11 +367,50 @@ model Pts {
   discussoes         Discussao[]
   contrarreferencias Contrarreferencia[]
   equipePts          EquipePts[]
+  acessosCidadao     AcessoCidadao[]
   agendamentos       Agendamento[]
 
   @@index([pacienteId])
   @@index([cerId, status])
   @@map("pts")
+}
+
+// Link do cidadão para o próprio PTS (ADR-0012): código no fim da URL, sem
+// conta e sem senha. Só o hash do código é gravado — o código cru aparece
+// uma única vez, na tela de emissão. Revogar = preencher revogadoEm
+// (append-only, como o resto do sistema); "gerar novo" sempre revoga o
+// anterior. Um link ativo por PTS.
+model AcessoCidadao {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ptsId          String    @db.Uuid
+  codigoHash     String    @unique
+  criadoPorId    String    @db.Uuid
+  criadoEm       DateTime  @default(now()) @db.Timestamptz(3)
+  expiraEm       DateTime  @db.Timestamptz(3)
+  revogadoEm     DateTime? @db.Timestamptz(3)
+  ultimoAcessoEm DateTime? @db.Timestamptz(3)
+  totalAcessos   Int       @default(0)
+
+  pts       Pts                @relation(fields: [ptsId], references: [id], onDelete: Restrict)
+  criadoPor Usuario            @relation("acessoCidadaoCriador", fields: [criadoPorId], references: [id], onDelete: Restrict)
+  acessos   AcessoCidadaoLog[]
+
+  @@index([ptsId])
+  @@index([criadoPorId])
+  @@map("acesso_cidadao")
+}
+
+// Momentos em que o cidadão abriu o portal. Append-only: o cidadão não tem
+// identidade no sistema, então o registro é o instante, não o ator.
+model AcessoCidadaoLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  acessoCidadaoId String   @db.Uuid
+  acessadoEm      DateTime @default(now()) @db.Timestamptz(3)
+
+  acessoCidadao AcessoCidadao @relation(fields: [acessoCidadaoId], references: [id], onDelete: Restrict)
+
+  @@index([acessoCidadaoId, acessadoEm])
+  @@map("acesso_cidadao_log")
 }
 
 // Equipe do caso (#69): acesso clínico individual = referência (Pts.refProfissionalId)

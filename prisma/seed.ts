@@ -46,6 +46,7 @@ const RECURSOS = [
   ["agenda.atendimentos.agendar", "agenda", "Criar e remarcar atendimentos dos casos autorizados"],
   ["agenda.atendimentos.gerenciar", "agenda", "Agendar, remarcar e cancelar atendimentos do CER (recepção)"],
   ["agenda.atendimentos.registrar", "agenda", "Registrar realização ou falta no atendimento"],
+  ["portal.cidadao.acesso", "care-plan", "Gerar novo link de acesso do cidadão ao PTS"],
   ["governanca.dashboard.ver", "governanca", "Dashboards de indicadores e filas"],
   ["governanca.auditoria.ver", "governanca", "Trilha de auditoria (leitura)"],
   ["governanca.relatorios.ver", "governanca", "Relatórios de produção e qualidade"],
@@ -68,6 +69,7 @@ const PAPEIS_BASE = [
       "recepcao.paciente.ver",
       "recepcao.consentimento.registrar",
       "recepcao.baseline.ver",
+      "portal.cidadao.acesso",
       "agenda.atendimentos.ver",
       "agenda.atendimentos.agendar",
       "agenda.atendimentos.gerenciar",
@@ -84,6 +86,7 @@ const PAPEIS_BASE = [
       "triage.triagem.ver",
       "triage.semaforo.ajustar",
       "triage.contrarreferencia.emissao",
+      "portal.cidadao.acesso",
     ],
   },
   {
@@ -99,6 +102,7 @@ const PAPEIS_BASE = [
       "agenda.atendimentos.registrar",
       "care-plan.meta.ler",
       "care-plan.mural.ler",
+      "portal.cidadao.acesso",
     ],
   },
   {
@@ -115,6 +119,7 @@ const PAPEIS_BASE = [
       "care-plan.meta.escrever",
       "care-plan.mural.ler",
       "care-plan.mural.escrever",
+      "portal.cidadao.acesso",
     ],
   },
   {
@@ -131,6 +136,7 @@ const PAPEIS_BASE = [
       "care-plan.meta.escrever",
       "care-plan.mural.ler",
       "care-plan.mural.escrever",
+      "portal.cidadao.acesso",
     ],
   },
   {
@@ -147,6 +153,7 @@ const PAPEIS_BASE = [
       "care-plan.meta.escrever",
       "care-plan.mural.ler",
       "care-plan.mural.escrever",
+      "portal.cidadao.acesso",
     ],
   },
   {
@@ -168,6 +175,7 @@ const PAPEIS_BASE = [
       "triage.triagem.ver",
       // encerramento por contrarreferência (#62) emite a guia junto
       "triage.contrarreferencia.emissao",
+      "portal.cidadao.acesso",
     ],
   },
   {
@@ -182,6 +190,8 @@ const PAPEIS_BASE = [
       // clínica e fica vedado à base GESTOR (guardrail em iam/permissoes.ts).
       "triage.triagem.ver",
       "care-plan.equipe.gerenciar",
+      // não é conteúdo clínico: link do cidadão para o próprio PTS (ADR-0012)
+      "portal.cidadao.acesso",
     ],
   },
   {

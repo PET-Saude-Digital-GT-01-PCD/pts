@@ -2,6 +2,13 @@ import { requirePermissao } from "@/server/iam/session";
 import { zaritAlto } from "@/server/reception/zarit";
 import { diasAteRegularizacao } from "@/server/reception/ppi";
 import { buscarPosicaoNaFila } from "@/server/triage/fila-espera";
+import { temUmaDas } from "@/server/care-plan/acesso";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
+import {
+  buscarAcessoCidadaoDoPts,
+} from "@/server/care-plan/acesso-cidadao";
+import { acessoCidadaoVazio } from "@/server/care-plan/portal-cidadao-leitura";
+import { AcessoCidadaoBloco } from "@/components/portal/acesso-cidadao-bloco";
 import { db } from "@/lib/db";
 import { EncaminharTriagemBtn } from "./encaminhar-btn";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +18,7 @@ export default async function PacientePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePermissao("recepcao.paciente.ver");
+  const user = await requirePermissao("recepcao.paciente.ver");
   const { id } = await params;
 
   const paciente = await db.paciente.findUnique({
@@ -74,6 +81,21 @@ export default async function PacientePage({
     ? await buscarPosicaoNaFila(ptsAtivoId, paciente.cerId)
     : null;
 
+  const podeGerarLinkCidadao = await temUmaDas(["portal.cidadao.acesso"]);
+  const infoAcessoCidadao =
+    podeGerarLinkCidadao && ptsAtivoId
+      ? await buscarAcessoCidadaoDoPts(ptsAtivoId)
+      : acessoCidadaoVazio();
+
+  const podeVerCaso =
+    !!ptsAtivoId &&
+    (await temUmaDas([
+      "care-plan.meta.ler",
+      "clinical.soap.ler",
+      "triage.triagem.ver",
+    ])) &&
+    (await podeAcessarCaso(user.id, ptsAtivoId));
+
   return (
     <main className="flex flex-col items-center gap-8 p-4 sm:p-8">
       <div className="w-full max-w-lg space-y-4">
@@ -115,6 +137,15 @@ export default async function PacientePage({
             {posicaoFila.estimativaDias} dia(s) até a chamada.
           </p>
         ) : null}
+        {podeGerarLinkCidadao && ptsAtivoId && (
+          <AcessoCidadaoBloco ptsId={ptsAtivoId} info={infoAcessoCidadao} />
+        )}
+        {podeGerarLinkCidadao && !ptsAtivoId && (
+          <p className="text-sm text-muted-foreground" data-testid="acesso-cidadao-aguarda-caso">
+            O link de acesso do cidadão fica disponível aqui depois que a triagem abrir o caso
+            deste paciente.
+          </p>
+        )}
         <dl className="divide-y rounded-md border">
           <Linha rotulo="CPF" valor={paciente.cpf ?? "—"} />
           <Linha rotulo="CNS" valor={paciente.cns ?? "—"} />
@@ -212,15 +243,21 @@ export default async function PacientePage({
 
         {/* Ações / Navegação */}
         {paciente.pts.length > 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Caso em andamento:{" "}
-            <a
-              className="underline"
-              href={`/casos/${paciente.pts[0].id}?aba=triagem`}
-            >
-              abrir painel do caso
-            </a>
-          </p>
+          podeVerCaso ? (
+            <p className="text-sm text-muted-foreground">
+              Caso em andamento:{" "}
+              <a
+                className="underline"
+                href={`/casos/${paciente.pts[0].id}?aba=triagem`}
+              >
+                abrir painel do caso
+              </a>
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Caso em andamento — o painel do caso é acessado pela equipe responsável.
+            </p>
+          )
         ) : (
           <EncaminharTriagemBtn
             pacienteId={paciente.id}

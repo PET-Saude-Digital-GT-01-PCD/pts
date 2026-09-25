@@ -11,6 +11,16 @@ commit desde o início do projeto.
 ## [Não lançado]
 
 ### Adicionado
+- Portal do cidadão com acesso real, por link com código
+  (`/portal-cidadao/<código>`), sem conta e sem senha (ADR-0012): recepção e
+  equipe clínica emitem, copiam e revogam o link do próprio PTS pela ficha do
+  paciente ou pelo painel do caso. Código Crockford base32 de 10 caracteres
+  (`XXXXX-XXXXX`, ~50 bits, válido 30 dias) exibido uma única vez — o banco
+  guarda só o hash sha256. Um link ativo por PTS: emitir de novo revoga o
+  anterior na mesma transação. Permissão data-driven `portal.cidadao.acesso`
+  (recepção, papéis clínicos e gestor), emissão/revogação auditadas, e
+  `acesso_cidadao_log` registrando o instante de cada abertura (a falha ao
+  registrar não bloqueia a visão do cidadão, como em ADR-0008).
 - Tela "Fluxo do cuidado" (`/dashboard/fluxo`): trilha interativa da recepção
   ao encerramento, com contagem por etapa, quem atua, permissões RBAC exigidas
   e transições vindas da máquina de status.
@@ -28,8 +38,17 @@ commit desde o início do projeto.
 - E2E realinhados às refatorações de UI: rótulo "Descrição acessível", link
   "Abrir portal do cidadão" e negativa de permissão caindo em `/dashboard`
   (sessão ativa não volta mais para a landing).
+- Ficha do paciente oferece "abrir painel do caso" apenas para quem tem
+  permissão clínica e vínculo com o caso; antes a recepção (que só tem
+  `recepcao.paciente.ver`) clicava no link e era devolvida para `/`. Cards da
+  fila `RECEPCAO_TRIAGEM` no dashboard passaram a apontar para a ficha do
+  paciente, pelo mesmo motivo.
 
 ### Alterado
+- Conteúdo do portal do cidadão extraído para `PortalCidadaoConteudo`,
+  compartilhado entre a conferência da equipe (`/portal/[ptsId]`, que continua
+  exigindo sessão) e o novo acesso por link — as duas rotas mostram a mesma
+  projeção mínima (nome, percurso, metas), sem SOAP, mural ou avaliações.
 - `db-migrate` confere o secret antes de rodar e falha dizendo qual falta;
   ganha `workflow_dispatch` (execução sob demanda) com seed de bootstrap
   opcional, necessário na primeira subida de um banco vazio.

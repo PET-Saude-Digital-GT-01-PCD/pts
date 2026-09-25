@@ -13,9 +13,13 @@ export function iniciarServidorSmtpFalso(
   opts: { aceitar?: boolean } = {},
 ): Promise<ServidorSmtpFalso> {
   const mensagens: string[] = [];
+  const sockets = new Set<Socket>();
 
   return new Promise((resolve) => {
     const server = createServer((socket: Socket) => {
+      sockets.add(socket);
+      socket.on("error", () => undefined);
+      socket.on("close", () => sockets.delete(socket));
       socket.write("220 fake.smtp ESMTP\r\n");
       let buffer = "";
       let emData = false;
@@ -61,7 +65,12 @@ export function iniciarServidorSmtpFalso(
         server,
         port,
         mensagens,
-        fechar: () => new Promise((res) => server.close(() => res())),
+        fechar: () =>
+          new Promise((res) => {
+            for (const socket of sockets) socket.destroy();
+            sockets.clear();
+            server.close(() => res());
+          }),
       });
     });
   });

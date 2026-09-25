@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Semaforo, type SemaforoStatus } from "@/components/ui/semaforo";
 import { TransicaoStatusForm } from "./transicao-status-form";
 import { SemaforoReuniaoForm } from "./semaforo-reuniao-form";
+import { AcessoCidadaoBloco } from "@/components/portal/acesso-cidadao-bloco";
+import type { InfoAcessoCidadao } from "@/server/care-plan/portal-cidadao-leitura";
 import type { EntradaReuniao } from "@/server/care-plan/semaforo-reuniao";
 
 const LABEL_STATUS: Record<string, string> = {
@@ -25,6 +27,8 @@ export function CasoHeader({
   naoFechado,
   entradaReuniao,
   sugestaoSemaforo,
+  podeGerarLinkCidadao,
+  infoAcessoCidadao,
 }: {
   pts: {
     id: string;
@@ -42,6 +46,8 @@ export function CasoHeader({
   naoFechado: boolean;
   entradaReuniao: EntradaReuniao;
   sugestaoSemaforo: "VERDE" | "AMARELO" | "VERMELHO";
+  podeGerarLinkCidadao: boolean;
+  infoAcessoCidadao: InfoAcessoCidadao;
 }) {
   return (
     <header className="space-y-4">
@@ -127,6 +133,9 @@ export function CasoHeader({
         podeRevisar={podePtsRevisar}
         podeEncerrar={podePtsEncerrar}
       />
+      {podeGerarLinkCidadao && (
+        <AcessoCidadaoBloco ptsId={pts.id} info={infoAcessoCidadao} />
+      )}
       {podePtsRevisar && naoFechado && (
         <SemaforoReuniaoForm
           ptsId={pts.id}

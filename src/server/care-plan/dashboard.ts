@@ -48,6 +48,7 @@ export type SessaoBasica = { id: string; cerId: string | null };
 
 export type CardCaso = {
   ptsId: string;
+  pacienteId: string;
   pacienteNome: string;
   statusPts: StatusPts;
   semaforo: Semaforo;
@@ -117,6 +118,7 @@ export async function queryCasosPorPapel(
         },
         select: {
           id: true,
+          pacienteId: true,
           status: true,
           aberturaEm: true,
           semaforoReuniao: true,
@@ -132,6 +134,7 @@ export async function queryCasosPorPapel(
       visao: "RECEPCAO_TRIAGEM",
       casos: ptsHoje.map((p) => ({
         ptsId: p.id,
+        pacienteId: p.pacienteId,
         pacienteNome: p.paciente.nome,
         statusPts: p.status,
         semaforo: p.triagens[0]?.classificacao ?? p.semaforoReuniao,
@@ -153,6 +156,7 @@ export async function queryCasosPorPapel(
     },
     select: {
       id: true,
+      pacienteId: true,
       status: true,
       aberturaEm: true,
       semaforoReuniao: true,
@@ -166,6 +170,7 @@ export async function queryCasosPorPapel(
     visao: "CLINICA",
     casos: meusPts.map((p) => ({
       ptsId: p.id,
+      pacienteId: p.pacienteId,
       pacienteNome: p.paciente.nome,
       statusPts: p.status,
       semaforo: p.semaforoReuniao,
