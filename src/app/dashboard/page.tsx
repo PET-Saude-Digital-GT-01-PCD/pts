@@ -5,6 +5,7 @@ import {
   ClipboardList,
   FileText,
   Layers,
+  Radio,
   ShieldAlert,
   ShieldCheck,
   TriangleAlert,
@@ -63,6 +64,13 @@ const ATALHOS = [
     descricao: "Matriz de recursos por papel, com guardrails.",
     icon: ShieldCheck,
     requer: "admin.papeis.gerenciar",
+  },
+  {
+    href: "/dashboard/integracoes",
+    titulo: "Fila de integrações",
+    descricao: "Entregas externas, retries e falhas do gateway.",
+    icon: Radio,
+    requer: "admin.config.org.editar",
   },
   {
     href: "/dashboard/casos",

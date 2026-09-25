@@ -45,6 +45,18 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Scan de vulnerabilidades (#121). Bloqueia só crítico em dependência de
+      # runtime (--prod): é o caso do CVE do next corrigido no PR #124, e o time
+      # consegue agir nele com bump direto. High/moderate costumam ser
+      # transitivos fora do nosso controle: só reportam, e o bump vem pelo
+      # Dependabot (.github/dependabot.yml, #120).
+      - name: Audit (bloqueante — crítico em runtime)
+        run: pnpm audit --prod --audit-level=critical
+
+      - name: Audit (relatório — high+, inclui dev)
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
       - name: Typecheck
         run: pnpm typecheck
 

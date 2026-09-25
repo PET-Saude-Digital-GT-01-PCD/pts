@@ -71,6 +71,32 @@ Vercel sobe com um banco vazio — ver Troubleshooting.
    `Preview` (pts-stage). **Não** definir `SEED_DEMO` em Production.
 5. GitHub → repo Secrets: `PROD_DIRECT_URL`, `STAGE_DIRECT_URL`.
 
+### Fila outbound: worker e retries
+
+`outbound_event` é processada pela rota `/api/cron/outbound`, chamada a cada
+minuto pelo Vercel Cron na implantação Production. A rota exige o header
+`Authorization: Bearer <CRON_SECRET>`. Configure `CRON_SECRET` como variável
+secreta no ambiente Production da Vercel.
+
+O worker reserva até cinco eventos por execução com `FOR UPDATE SKIP LOCKED` e
+lease de 60 segundos. Eventos aceitos pelo gateway ficam `SENT`; falhas tentam
+novamente após 30 s, 1 min, 2 min e 4 min. Depois de cinco tentativas ficam
+`FAILED` e aparecem em **Dashboard → Integrações**. A tela mostra estado,
+tentativas, próximo retry e mensagem segura do gateway; o payload fica oculto.
+Um administrador pode reenfileirar a falha, operação registrada na auditoria.
+
+Configure `OUTBOUND_WEBHOOK_URL` e `OUTBOUND_WEBHOOK_SECRET` na Vercel. O
+gateway recebe `{ id, tipo, payload }` em JSON, com `Idempotency-Key` estável
+para reentregas; ele deve deduplicar essa chave e responder 2xx apenas após
+aceitar o evento. Corpos de resposta do gateway não são armazenados. O worker
+não substitui o adapter clínico e-SUS/RNDS, que ainda precisa ser configurado
+no destino.
+
+O cron do Vercel executa apenas na implantação Production. Em Preview, a rota
+pode ser chamada manualmente com o mesmo `CRON_SECRET`. A cadência por minuto
+requer Vercel Pro; no plano Hobby, o Vercel aceita no máximo uma execução por
+dia, o que não atende ao retry operacional desta fila.
+
 ## Troubleshooting
 
 ### "Application error: a server-side exception has occurred"
@@ -104,3 +130,24 @@ Banco migrado sem seed: não há CER, papéis nem admin. Rodar `db-migrate` com
 - `pgcrypto` para campos sensíveis; dados clínicos só dentro do PTS (FK `RESTRICT`).
 - Auditoria append-only na mesma transação; lock otimista (`version`) → conflito = 409.
 - Backup: backup automático / PITR do Supabase (substitui o `pg_dump` agendado do `plano/15`).
+
+## Dependências fixadas em pré-release
+
+| Pacote | Versão | Por quê | Reavaliar quando |
+|---|---|---|---|
+| `next-auth` | `5.0.0-beta.32` (exata, sem `^`) | Em 2026-09-19 a v5 não tem GA: `beta.32` (jul/2026) é o último release da linha 5.x e a tag `latest` ainda é `4.24.x`. Voltar para a v4 perde o que o repo usa da v5 (`auth()` no App Router, `authConfig` compartilhado com o middleware, callbacks `jwt`/`session` com `trigger: "update"` na simulação de perfil). | Sair `5.0.0` estável. Aí: bump, ler as notas de breaking change de sessão/JWT e rodar `pnpm typecheck && pnpm lint && pnpm test && pnpm e2e`. |
+
+Conferir com `npm view next-auth dist-tags`. Bump entre betas vem pelo Dependabot, e cada um precisa passar na suíte e2e de login/admissão antes do merge.
+
+## Dependências transitivas com alerta (triagem 2026-09-19, #120)
+
+Bumps de rotina vêm pelo Dependabot (`.github/dependabot.yml`, semanal, para `develop`). Correção fora do range que o pai pede fica em `overrides` no `pnpm-workspace.yaml`, sempre na mesma major. Cada linha sai quando o pai passar a pedir a versão corrigida.
+
+| Pacote | Vem de | Decisão |
+|---|---|---|
+| `sharp` (2 high) | `next` (otimização de imagem) | override `^0.35.4`, dentro do range que o `next@15.5.25` aceita |
+| `postcss` (2 high, 2 moderate) | `next` pina `8.4.31` | override `^8.5.23` (mesma major; build verificado) |
+| `fast-uri` (4 high), `hono` (3 moderate), `qs` (2 moderate) | CLI `shadcn` → `@modelcontextprotocol/sdk` | `shadcn` movido para `devDependencies` (é só CLI, o app não importa) + overrides na mesma major |
+| `js-yaml` (1 high) | `eslint` (dev) | override `^4.3.2` |
+| `vitest`/`@vitest/mocker` (3 moderate) | dependência direta (dev) | bump `^3` → `^4.1.11` |
+| `deepmerge-ts` (1 high) | `prisma` → `@prisma/config` | **risco aceito**: a correção é major (8.x) e nem o `@prisma/config` mais recente a usa. Só afeta merge de objeto recursivo no carregamento de config do Prisma, que não recebe entrada de usuário. Reavaliar no próximo bump do Prisma. |

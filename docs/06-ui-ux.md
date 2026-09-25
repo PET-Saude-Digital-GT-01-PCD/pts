@@ -30,9 +30,11 @@ de forma consistente, via token, no lugar de cores soltas do Tailwind.
 | `empty-state.tsx` *(novo)* | estado vazio padrão: ícone, título, descrição e ação. |
 | `form-field.tsx` *(novo)* | liga label, dica e erro ao controle por `aria-describedby`/`aria-invalid`, com `role="alert"` no erro. |
 
-`lib/utils.ts` ganhou `campoNativoClasses` e `areaNativaClasses`: os `<select>` e
-`<textarea>` nativos espalhados pelo app agora usam a mesma string em vez de dez
-cópias divergentes de `rounded-md border px-3 text-sm`.
+`lib/utils.ts` ganhou `campoNativoClasses`: os `<select>` nativos espalhados pelo
+app agora usam a mesma string em vez de dez cópias divergentes de
+`rounded-md border px-3 text-sm`. Textareas usam o primitivo `Textarea`. O
+`<select>` continua nativo de propósito: picker do sistema no mobile e
+`selectOption` direto nos e2e.
 
 ## 3. PTS (`src/app/casos/[ptsId]`)
 
@@ -78,6 +80,12 @@ cópias divergentes de `rounded-md border px-3 text-sm`.
 3. O menu lateral usa `aria-label="Menu principal"`. Com "Navegação principal",
    o `getByLabel("Ação")` do e2e de auditoria casava também com o `<nav>`, já
    que "Navegação" contém "ação" e o seletor faz busca por substring.
+4. `loading.tsx` em tela com server action que chama `revalidatePath`
+   (`/dashboard/usuarios`, `/dashboard/papeis`) deixa a lista desatualizada
+   depois da mutação: a action grava, mas a UI não re-renderiza (bug do Next,
+   vercel/next.js#66426 e #87529; `e2e/admissao.spec.ts` e `e2e/papeis.spec.ts`
+   quebram). Por isso o esqueleto `AdminSkeleton` só está em
+   `/governanca/auditoria`, que é somente leitura.
 
 ## 6. Verificação
 
