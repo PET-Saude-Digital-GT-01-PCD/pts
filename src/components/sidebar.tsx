@@ -23,6 +23,8 @@ import {
   Workflow,
   Menu,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { Logo } from "@/components/ui/logo";
@@ -175,6 +177,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [aberto, setAberto] = useState(false);
+  const [retractado, setRetractado] = useState(false);
 
   return (
     <>
@@ -211,7 +214,18 @@ export function Sidebar({
         </div>
       </div>
 
-      <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-card text-card-foreground lg:flex">
+      <aside 
+  className="hidden h-screen flex-col border-r border-border bg-card text-card-foreground lg:flex w-64 transition-width"
+  style={{ width: retractado ? '5rem' : '16rem' }}
+>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setRetractado(!retractado)}
+          aria-label={retractado ? "Expandir sidebar" : "Retrair sidebar"}
+        >
+          {retractado ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        </Button>
         <ConteudoSidebar
           itens={itens}
           user={user}

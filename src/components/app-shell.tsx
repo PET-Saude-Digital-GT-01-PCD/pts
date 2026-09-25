@@ -1,7 +1,6 @@
 import { getSessaoComRecursos } from "@/server/iam/session";
 import { buscarOrgConfigView } from "@/server/iam/org-config";
 import { Sidebar } from "@/components/sidebar";
-import { SiteHeader } from "@/components/ui/site-header";
 import { ImpersonacaoBanner } from "@/components/impersonacao-banner";
 
 const NAV_CONFIG = [
@@ -27,12 +26,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   ]);
 
   if (!user) {
-    return (
-      <>
-        <SiteHeader orgConfig={orgConfig} />
-        {children}
-      </>
-    );
+    return <>{children}</>;
   }
 
   const itens = NAV_CONFIG.filter((item) => {
