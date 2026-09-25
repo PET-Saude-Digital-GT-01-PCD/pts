@@ -11,6 +11,8 @@ import {
 } from "@/server/care-plan/painel";
 import { temFaltaRecente } from "@/server/care-plan/eventos";
 import { montarResumoCaso } from "@/server/care-plan/resumo-caso";
+import { buscarAcessoCidadaoDoPts } from "@/server/care-plan/acesso-cidadao";
+import { acessoCidadaoVazio } from "@/server/care-plan/portal-cidadao-leitura";
 import { avaliarVinculoCaso } from "@/server/shared/acesso-caso";
 import { AbasNav, ehAba } from "./abas";
 import { AbaAvaliacoes } from "./aba-avaliacoes";
@@ -111,6 +113,7 @@ export default async function PainelCasoPage({
     podePtsRevisar,
     podePtsEncerrar,
     podeRegistrarEvento,
+    podeGerarLinkCidadao,
   ] = await Promise.all([
     temFaltaRecente(pts.id),
     temUmaDas(["care-plan.meta.escrever"]),
@@ -118,6 +121,7 @@ export default async function PainelCasoPage({
     temUmaDas(["care-plan.pts.revisar"]),
     temUmaDas(["care-plan.pts.encerrar"]),
     temUmaDas(["care-plan.pts.revisar", "clinical.avaliacao.escrever"]),
+    temUmaDas(["portal.cidadao.acesso"]),
   ]);
 
   // PTS FECHADO → somente leitura para a equipe, em toda aba de escrita.
@@ -142,6 +146,10 @@ export default async function PainelCasoPage({
     faltaRecente,
   );
 
+  const infoAcessoCidadao = podeGerarLinkCidadao
+    ? await buscarAcessoCidadaoDoPts(pts.id)
+    : acessoCidadaoVazio();
+
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-8">
       <CasoHeader
@@ -152,6 +160,8 @@ export default async function PainelCasoPage({
         naoFechado={naoFechado}
         entradaReuniao={entradaReuniao}
         sugestaoSemaforo={sugestaoSemaforo}
+        podeGerarLinkCidadao={podeGerarLinkCidadao}
+        infoAcessoCidadao={infoAcessoCidadao}
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">

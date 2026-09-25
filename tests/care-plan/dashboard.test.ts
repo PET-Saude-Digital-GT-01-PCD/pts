@@ -39,6 +39,16 @@ describe("care-plan/dashboard visaoPorRecursos", () => {
     );
   });
 
+  it("triador com acesso ao portal do cidadão segue em RECEPCAO_TRIAGEM", () => {
+    expect(
+      visaoPorRecursos([
+        "triage.triagem.escrever",
+        "recepcao.paciente.cadastrar",
+        "portal.cidadao.acesso",
+      ]),
+    ).toBe("RECEPCAO_TRIAGEM");
+  });
+
   it("sem recursos reconhecidos → null", () => {
     expect(visaoPorRecursos([])).toBeNull();
     expect(visaoPorRecursos(["admin.usuarios.ver"])).toBeNull();

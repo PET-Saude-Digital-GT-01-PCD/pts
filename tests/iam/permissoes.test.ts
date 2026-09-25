@@ -52,6 +52,11 @@ describe("iam/permissoes", () => {
       expect(ehRecursoVedadoGestor("triage.triagem.ver")).toBe(false);
       expect(ehRecursoVedadoGestor("governanca.dashboard.ver")).toBe(false);
     });
+
+    it("veda agenda individualizada à base GESTOR", () => {
+      expect(ehRecursoVedadoGestor("agenda.atendimentos.ver")).toBe(true);
+      expect(ehRecursoVedadoGestor("agenda.atendimentos.agendar")).toBe(true);
+    });
   });
 
   describe("validarRecursos", () => {
