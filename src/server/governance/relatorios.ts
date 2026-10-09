@@ -1,344 +1,191 @@
 "use server";
 
+import { createHash, randomUUID } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
-import { requireAuth, recursosDoUsuario, type SessaoUsuario } from "@/server/iam/session";
+import { requireAuth, getAtorReal } from "@/server/iam/session";
 import {
-  paraCsv,
-  periodoPadrao,
-  type IndicadorGovernanca,
-  type PeriodoRelatorio,
+  FUSO_RELATORIO, limitesPeriodo, montarIndicador, paraCsv, validarFiltroRelatorio,
+  type FiltroRelatorio, type IndicadorGovernanca, type RelatorioGovernanca,
 } from "@/server/governance/indicadores";
+import {
+  assinarSnapshot, verificarSnapshot, type ContextoExportacao,
+} from "@/server/governance/snapshot";
 
-// Painel de indicadores (#72, plano/09 §19–37). North Star + input/health
-// metrics. Cada indicador documenta a fórmula e a fonte de dado no comentário
-// da função que o calcula — é o que "fonte de dado rastreável" (critério de
-// aceite) significa aqui. ponytail: alguns indicadores dependem da fila de
-// integração outbound (#63/#64), que ainda não está em main — marcados
-// disponivel:false até essa dependência entrar, em vez de inventar número.
+export type PainelIndicadores = RelatorioGovernanca & {
+  tokenExportacao: string;
+  podeExportar: boolean;
+};
 
-// OR de permissões: dashboard.ver OU relatorios.ver, conforme a issue.
-async function exigirVisaoGovernanca(): Promise<SessaoUsuario> {
-  const user = await requireAuth();
-  const recursos = await recursosDoUsuario(user.papelId);
-  const chaves = ["governanca.dashboard.ver", "governanca.relatorios.ver"];
-  if (!chaves.some((c) => recursos.includes(c))) redirect("/");
-  return user;
+type Identidade = {
+  usuarioId: string;
+  atorRealId: string;
+  impersonando: boolean;
+};
+
+async function identidadeAtual(): Promise<Identidade> {
+  const [sessao, real] = await Promise.all([requireAuth(), getAtorReal()]);
+  if (!real.atorRealId || (!real.impersonando && real.atorRealId !== sessao.id)
+      || (real.impersonando && real.usuarioSimuladoId !== sessao.id)) redirect("/login");
+  return { usuarioId: sessao.id, atorRealId: real.atorRealId, impersonando: real.impersonando };
 }
 
-const DIA_MS = 24 * 60 * 60 * 1000;
-
-// Agregados limitados ao CER do usuário (mesmo princípio do #57 no dashboard
-// do gestor). cerId null → sem filtro, como no dashboard.
-type EscopoCer = string | undefined;
-
-const CADENCIA_REVISAO_DIAS = 90; // ponytail: sem SLA formal de cadência ainda; ajustar quando o piloto definir
-
-/**
- * North Star (plano/09): % de PTS ativos com revisão em dia (último marco
- * PtsRevisao — ou a abertura, se nenhum marco existir — dentro de
- * CADENCIA_REVISAO_DIAS) E ≥1 meta cadastrada (toda Meta já nasce com
- * critérios SMART, ver meta-schema.ts). Fonte: pts, pts_revisao, meta.
- */
-async function calcularNorthStar(agora: Date, cerId: EscopoCer): Promise<IndicadorGovernanca> {
-  const ptsAtivos = await db.pts.findMany({
-    where: { cerId, status: { not: "FECHADO" } },
+/** A sessão identifica; usuário, papel, permissões e CER vêm do banco a cada operação. */
+async function exigirAcesso(tx: Prisma.TransactionClient, identidade: Identidade, exportacao: boolean) {
+  const user = await tx.usuario.findUnique({
+    where: { id: identidade.usuarioId },
     select: {
-      aberturaEm: true,
-      revisoes: { select: { data: true }, orderBy: { data: "desc" }, take: 1 },
-      _count: { select: { metas: true } },
+      id: true, status: true, cerId: true,
+      cer: { select: { id: true, nome: true } },
+      papel: {
+        select: {
+          cerId: true, ativo: true, base: true,
+          recursos: { select: { recurso: { select: { chave: true } } } },
+        },
+      },
     },
   });
+  if (!user || user.status !== "ATIVO") redirect("/login");
+  // CER ausente nunca vira filtro undefined. Mesmo admin recebe escopo explícito.
+  if (!user.cerId || !user.cer || !user.papel.ativo || user.papel.cerId !== user.cerId) redirect("/");
+  const recursos = user.papel.recursos.map((r) => r.recurso.chave);
+  const podeExportar = recursos.includes("governanca.relatorios.ver");
+  if (exportacao ? !podeExportar : !podeExportar && !recursos.includes("governanca.dashboard.ver")) redirect("/");
 
-  if (ptsAtivos.length === 0) {
-    return {
-      id: "north-star",
-      titulo: "PTS ativos com revisão em dia e ≥1 meta",
-      valor: null,
-      unidade: "%",
-      meta: 100,
-      maiorEhMelhor: true,
-      fonte: "pts, pts_revisao, meta",
-      disponivel: false,
-    };
+  if (identidade.impersonando) {
+    const real = await tx.usuario.findUnique({
+      where: { id: identidade.atorRealId },
+      select: { status: true, cerId: true, papel: { select: { base: true, ativo: true, cerId: true } } },
+    });
+    if (!real || real.status !== "ATIVO" || !real.papel.ativo || real.papel.base !== "ADMIN"
+        || real.cerId !== user.cerId || real.papel.cerId !== real.cerId
+        || identidade.atorRealId === user.id || user.papel.base === "ADMIN") redirect("/");
   }
-
-  const limite = agora.getTime() - CADENCIA_REVISAO_DIAS * DIA_MS;
-  const emDia = ptsAtivos.filter((p) => {
-    const ultimoMarco = p.revisoes[0]?.data ?? p.aberturaEm;
-    return ultimoMarco.getTime() >= limite && p._count.metas > 0;
-  }).length;
-
   return {
-    id: "north-star",
-    titulo: "PTS ativos com revisão em dia e ≥1 meta",
-    valor: Math.round((emDia / ptsAtivos.length) * 1000) / 10,
-    unidade: "%",
-    meta: 100,
-    maiorEhMelhor: true,
-    fonte: "pts, pts_revisao, meta",
-    disponivel: true,
+    cer: user.cer,
+    podeExportar,
+    contexto: { ...identidade, cerId: user.cerId } satisfies ContextoExportacao,
   };
 }
 
-/** Cobertura de baseline: % de pacientes com PTS ativo que têm baseline importada. Fonte: paciente, baseline, pts. */
-async function calcularCoberturaBaseline(cerId: EscopoCer): Promise<IndicadorGovernanca> {
-  const pacientesComPtsAtivo = await db.paciente.findMany({
-    where: { cerId, pts: { some: { status: { not: "FECHADO" } } } },
-    select: { baseline: { select: { id: true } } },
-  });
-
-  if (pacientesComPtsAtivo.length === 0) {
-    return {
-      id: "cobertura-baseline",
-      titulo: "Cobertura de baseline",
-      valor: null,
-      unidade: "%",
-      meta: 100,
-      maiorEhMelhor: true,
-      fonte: "paciente, baseline",
-      disponivel: false,
-    };
-  }
-
-  const comBaseline = pacientesComPtsAtivo.filter((p) => p.baseline !== null).length;
-  return {
-    id: "cobertura-baseline",
-    titulo: "Cobertura de baseline",
-    valor: Math.round((comBaseline / pacientesComPtsAtivo.length) * 1000) / 10,
-    unidade: "%",
-    meta: 100,
-    maiorEhMelhor: true,
-    fonte: "paciente, baseline",
-    disponivel: true,
-  };
+const DIA_MS = 86_400_000;
+function percentual(numerador: number, denominador: number): number | null {
+  return denominador === 0 ? null : Math.round(numerador / denominador * 1000) / 10;
 }
 
-/** Metas por PTS (≥80%): % de PTS ativos com ≥1 meta cadastrada. Fonte: pts, meta. */
-async function calcularMetasPorPts(cerId: EscopoCer): Promise<IndicadorGovernanca> {
-  const ptsAtivos = await db.pts.findMany({
-    where: { cerId, status: { not: "FECHADO" } },
-    select: { _count: { select: { metas: true } } },
-  });
-
-  if (ptsAtivos.length === 0) {
-    return {
-      id: "metas-por-pts",
-      titulo: "PTS ativos com ao menos 1 meta",
-      valor: null,
-      unidade: "%",
-      meta: 80,
-      maiorEhMelhor: true,
-      fonte: "pts, meta",
-      disponivel: false,
-    };
-  }
-
+/** Todos os acessos recebem CER obrigatório e o mesmo snapshot RepeatableRead. */
+async function calcularIndicadores(
+  tx: Prisma.TransactionClient,
+  cerId: string,
+  periodo: ReturnType<typeof limitesPeriodo>,
+  cadenciaRevisaoDias: number,
+  agora: Date,
+): Promise<IndicadorGovernanca[]> {
+  const intervalo = { gte: periodo.desde, lt: periodo.ateExclusivo };
+  const [ptsAtivos, pacientes, eventos, ptsDoPeriodo, triagens] = await Promise.all([
+    tx.pts.findMany({
+      where: { cerId, status: { not: "FECHADO" } },
+      select: {
+        aberturaEm: true,
+        revisoes: { select: { data: true }, orderBy: { data: "desc" }, take: 1 },
+        _count: { select: { metas: true } },
+      },
+    }),
+    tx.paciente.findMany({
+      where: { cerId, pts: { some: { cerId, status: { not: "FECHADO" } } } },
+      select: { baseline: { select: { id: true } } },
+    }),
+    tx.eventoCuidado.groupBy({
+      by: ["tipo"], where: { pts: { cerId }, data: intervalo, tipo: { in: ["SESSAO", "FALTA"] } },
+      _count: { _all: true },
+    }),
+    tx.pts.findMany({
+      where: { cerId, aberturaEm: intervalo },
+      select: {
+        aberturaEm: true,
+        avaliacoes: { select: { criadaEm: true }, orderBy: { criadaEm: "asc" }, take: 1 },
+      },
+    }),
+    tx.triagem.findMany({
+      where: { pts: { cerId }, criadaEm: intervalo },
+      select: { _count: { select: { ajustes: true } } },
+    }),
+  ]);
+  const limiteRevisao = agora.getTime() - cadenciaRevisaoDias * DIA_MS;
+  const emDiaComMeta = ptsAtivos.filter((p) =>
+    (p.revisoes[0]?.data ?? p.aberturaEm).getTime() >= limiteRevisao && p._count.metas > 0).length;
   const comMeta = ptsAtivos.filter((p) => p._count.metas > 0).length;
-  return {
-    id: "metas-por-pts",
-    titulo: "PTS ativos com ao menos 1 meta",
-    valor: Math.round((comMeta / ptsAtivos.length) * 1000) / 10,
-    unidade: "%",
-    meta: 80,
-    maiorEhMelhor: true,
-    fonte: "pts, meta",
-    disponivel: true,
-  };
-}
-
-/** Adesão (≥70%): % de eventos de cuidado no período que são SESSAO (não FALTA). Fonte: evento_cuidado. */
-async function calcularAdesao(periodo: PeriodoRelatorio, cerId: EscopoCer): Promise<IndicadorGovernanca> {
-  const eventos = await db.eventoCuidado.groupBy({
-    by: ["tipo"],
-    where: {
-      pts: { cerId },
-      data: { gte: periodo.desde, lte: periodo.ate },
-      tipo: { in: ["SESSAO", "FALTA"] },
-    },
-    _count: { _all: true },
-  });
-
   const sessoes = eventos.find((e) => e.tipo === "SESSAO")?._count._all ?? 0;
   const faltas = eventos.find((e) => e.tipo === "FALTA")?._count._all ?? 0;
-  const total = sessoes + faltas;
-
-  return {
-    id: "adesao",
-    titulo: "Adesão (sessões realizadas vs. faltas)",
-    valor: total === 0 ? null : Math.round((sessoes / total) * 1000) / 10,
-    unidade: "%",
-    meta: 70,
-    maiorEhMelhor: true,
-    fonte: "evento_cuidado",
-    disponivel: total > 0,
-  };
-}
-
-/** Tempo até 1ª avaliação multiprofissional: média de dias entre abertura do PTS e a 1ª avaliação, para PTS abertos no período. Fonte: pts, avaliacao. */
-async function calcularTempoPrimeiraAvaliacao(
-  periodo: PeriodoRelatorio,
-  cerId: EscopoCer,
-): Promise<IndicadorGovernanca> {
-  const ptsDoPeriodo = await db.pts.findMany({
-    where: { cerId, aberturaEm: { gte: periodo.desde, lte: periodo.ate } },
-    select: {
-      aberturaEm: true,
-      avaliacoes: { select: { criadaEm: true }, orderBy: { criadaEm: "asc" }, take: 1 },
-    },
-  });
-
   const comAvaliacao = ptsDoPeriodo.filter((p) => p.avaliacoes.length > 0);
-  if (comAvaliacao.length === 0) {
-    return {
-      id: "tempo-primeira-avaliacao",
-      titulo: "Tempo até a 1ª avaliação multiprofissional",
-      valor: null,
-      unidade: "dias",
-      meta: 7,
-      maiorEhMelhor: false,
-      fonte: "pts, avaliacao",
-      disponivel: false,
-    };
-  }
-
-  const somaDias = comAvaliacao.reduce((acc, p) => {
-    const dias = (p.avaliacoes[0]!.criadaEm.getTime() - p.aberturaEm.getTime()) / DIA_MS;
-    return acc + dias;
-  }, 0);
-
-  return {
-    id: "tempo-primeira-avaliacao",
-    titulo: "Tempo até a 1ª avaliação multiprofissional",
-    valor: Math.round((somaDias / comAvaliacao.length) * 10) / 10,
-    unidade: "dias",
-    meta: 7,
-    maiorEhMelhor: false,
-    fonte: "pts, avaliacao",
-    disponivel: true,
-  };
-}
-
-/** Taxa de divergência manual (>30% = alerta): % de triagens no período com ao menos 1 ajuste manual de classificação. Fonte: triagem, ajuste_classificacao. */
-async function calcularDivergenciaManual(
-  periodo: PeriodoRelatorio,
-  cerId: EscopoCer,
-): Promise<IndicadorGovernanca> {
-  const triagens = await db.triagem.findMany({
-    where: { pts: { cerId }, criadaEm: { gte: periodo.desde, lte: periodo.ate } },
-    select: { _count: { select: { ajustes: true } } },
-  });
-
-  if (triagens.length === 0) {
-    return {
-      id: "divergencia-manual",
-      titulo: "Taxa de divergência manual (ajuste de classificação)",
-      valor: null,
-      unidade: "%",
-      meta: 30,
-      maiorEhMelhor: false,
-      fonte: "triagem, ajuste_classificacao",
-      disponivel: false,
-    };
-  }
-
-  const comAjuste = triagens.filter((t) => t._count.ajustes > 0).length;
-  return {
-    id: "divergencia-manual",
-    titulo: "Taxa de divergência manual (ajuste de classificação)",
-    valor: Math.round((comAjuste / triagens.length) * 1000) / 10,
-    unidade: "%",
-    meta: 30,
-    maiorEhMelhor: false,
-    fonte: "triagem, ajuste_classificacao",
-    disponivel: true,
-  };
-}
-
-// Indicadores que dependem da fila outbound (#63/#64 — OutboundEvent), ainda
-// não em main: sem fonte de dado real, não fabricamos número.
-function indicadoresIndisponiveis(): IndicadorGovernanca[] {
+  const somaDias = comAvaliacao.reduce((soma, p) =>
+    soma + (p.avaliacoes[0]!.criadaEm.getTime() - p.aberturaEm.getTime()) / DIA_MS, 0);
+  // Preserva coortes do MVP: avaliações/ajustes posteriores ao período contam
+  // se já cadastrados no snapshot. A descrição temporal explicita essa regra.
   return [
-    {
-      id: "tempo-recepcao",
-      titulo: "Tempo de recepção (cadastro ≤ 2min)",
-      valor: null,
-      unidade: "min",
-      meta: 2,
-      maiorEhMelhor: false,
-      fonte: "requer instrumentação de sessão (não coletada nesta versão)",
-      disponivel: false,
-    },
-    {
-      id: "pendencia-sync",
-      titulo: "Pendência de sincronização (>24h)",
-      valor: null,
-      unidade: "h",
-      meta: 24,
-      maiorEhMelhor: false,
-      fonte: "outbound_event — depende de #63/#64 (fila de integração), ainda não integrado",
-      disponivel: false,
-    },
-    {
-      id: "erro-integracao",
-      titulo: "Taxa de erro de integração (>10%)",
-      valor: null,
-      unidade: "%",
-      meta: 10,
-      maiorEhMelhor: false,
-      fonte: "outbound_event — depende de #63/#64 (fila de integração), ainda não integrado",
-      disponivel: false,
-    },
+    montarIndicador("north-star", percentual(emDiaComMeta, ptsAtivos.length)),
+    montarIndicador("cobertura-baseline", percentual(pacientes.filter((p) => p.baseline !== null).length, pacientes.length)),
+    montarIndicador("metas-por-pts", percentual(comMeta, ptsAtivos.length)),
+    montarIndicador("adesao", percentual(sessoes, sessoes + faltas)),
+    montarIndicador("tempo-primeira-avaliacao", comAvaliacao.length === 0 ? null : Math.round(somaDias / comAvaliacao.length * 10) / 10),
+    montarIndicador("divergencia-manual", percentual(triagens.filter((t) => t._count.ajustes > 0).length, triagens.length)),
+    montarIndicador("tempo-recepcao", null),
+    montarIndicador("pendencia-sync", null),
+    montarIndicador("erro-integracao", null),
   ];
 }
 
-export type PainelIndicadores = {
-  periodo: PeriodoRelatorio;
-  indicadores: IndicadorGovernanca[];
-};
-
-export async function buscarIndicadores(
-  periodoInput?: { desde?: Date; ate?: Date },
-): Promise<PainelIndicadores> {
-  const user = await exigirVisaoGovernanca();
-  const cerId = user.cerId ?? undefined;
-
+export async function buscarIndicadores(filtroInput?: FiltroRelatorio): Promise<PainelIndicadores> {
+  const identidade = await identidadeAtual();
   const agora = new Date();
-  const padrao = periodoPadrao(agora);
-  const periodo: PeriodoRelatorio = {
-    desde: periodoInput?.desde ?? padrao.desde,
-    ate: periodoInput?.ate ?? padrao.ate,
-  };
-
-  const [northStar, coberturaBaseline, metasPorPts, adesao, tempoPrimeiraAvaliacao, divergenciaManual] =
-    await Promise.all([
-      calcularNorthStar(agora, cerId),
-      calcularCoberturaBaseline(cerId),
-      calcularMetasPorPts(cerId),
-      calcularAdesao(periodo, cerId),
-      calcularTempoPrimeiraAvaliacao(periodo, cerId),
-      calcularDivergenciaManual(periodo, cerId),
-    ]);
-
-  return {
-    periodo,
-    indicadores: [
-      northStar,
-      coberturaBaseline,
-      metasPorPts,
-      adesao,
-      tempoPrimeiraAvaliacao,
-      divergenciaManual,
-      ...indicadoresIndisponiveis(),
-    ],
-  };
+  const filtro = validarFiltroRelatorio(filtroInput, agora);
+  return db.$transaction(async (tx) => {
+    const acesso = await exigirAcesso(tx, identidade, false);
+    const indicadores = await calcularIndicadores(
+      tx, acesso.cer.id, limitesPeriodo(filtro.periodo), filtro.cadenciaRevisaoDias, agora,
+    );
+    const relatorio: RelatorioGovernanca = {
+      snapshotId: randomUUID(), geradoEm: agora.toISOString(), cer: acesso.cer,
+      ...filtro, indicadores,
+    };
+    return { ...relatorio, podeExportar: acesso.podeExportar, tokenExportacao: assinarSnapshot(relatorio, acesso.contexto) };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
 
-export async function exportarCsv(periodoInput?: {
-  desde?: Date;
-  ate?: Date;
-}): Promise<string> {
-  const { indicadores } = await buscarIndicadores(periodoInput);
-  return paraCsv(indicadores);
+export async function exportarCsv(tokenExportacao: string): Promise<{
+  conteudo: string;
+  nomeArquivo: string;
+  tipoConteudo: "text/csv;charset=utf-8";
+}> {
+  const identidade = await identidadeAtual();
+  return db.$transaction(async (tx) => {
+    const acesso = await exigirAcesso(tx, identidade, true);
+    const relatorio = verificarSnapshot(tokenExportacao, acesso.contexto);
+    const conteudo = paraCsv(relatorio);
+    // Auditoria append-only é pré-condição do retorno do arquivo. Sem INSERT
+    // confirmado/commit, nenhum conteúdo de exportação é devolvido ao cliente.
+    await tx.auditoria.create({
+      data: {
+        actorId: identidade.atorRealId,
+        action: "governanca.relatorios.exportar",
+        entityType: "relatorio_governanca",
+        entityId: relatorio.snapshotId,
+        afterJson: {
+          cerId: relatorio.cer.id, periodo: relatorio.periodo, geradoEm: relatorio.geradoEm,
+          fusoHorario: FUSO_RELATORIO,
+          cadenciaRevisaoDias: relatorio.cadenciaRevisaoDias, formato: "CSV",
+          quantidadeIndicadores: relatorio.indicadores.length,
+          sha256: createHash("sha256").update(conteudo, "utf8").digest("hex"),
+          usuarioEfetivoId: identidade.usuarioId, impersonando: identidade.impersonando,
+        },
+      },
+    });
+    return {
+      conteudo,
+      nomeArquivo: `indicadores-governanca-${relatorio.periodo.desde}-a-${relatorio.periodo.ate}.csv`,
+      tipoConteudo: "text/csv;charset=utf-8" as const,
+    };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }

@@ -8,7 +8,7 @@ export default async function GovernancaPage() {
   return (
     <AdminShell
       titulo="Indicadores de governança"
-      descricao="North Star e indicadores de entrada/saúde do piloto (plano/09). Cada card mostra a fonte de dado usada no cálculo."
+      descricao="Acompanhe os indicadores de cuidado do CER, escolha o período e a janela de revisão e exporte os valores exibidos. Cada indicador apresenta seu cálculo, fonte e alcance temporal."
       largura="larga"
     >
       <GovernancaViewer painelInicial={painel} />
