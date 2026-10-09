@@ -24,10 +24,6 @@ let cerAId: string;
 let cerBId: string;
 const pacienteIds: string[] = [];
 
-// CPFs de teste válidos (não usados no seed nem em outros arquivos de teste).
-const CPF_A = "98765432100";
-const CPF_B = "52998224725";
-
 const CER_ID = "00000000-0000-4000-8000-000000000001";
 
 function gerarCpf(): string {
@@ -40,6 +36,10 @@ function gerarCpf(): string {
   };
   return [...d, dv(d), dv([...d, dv(d)])].join("");
 }
+
+// Gera documentos válidos únicos por execução para permitir reruns no mesmo DB.
+const CPF_A = gerarCpf();
+const CPF_B = gerarCpf();
 
 beforeAll(async () => {
   const admin = await db.usuario.findUniqueOrThrow({

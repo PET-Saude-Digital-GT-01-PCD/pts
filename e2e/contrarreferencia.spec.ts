@@ -1,8 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "node:crypto";
-
-const db = new PrismaClient();
+import { db } from "./db";
 const CER_ID = "00000000-0000-4000-8000-000000000001";
 
 const pacienteIds: string[] = [];

@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { loadEnvFile } from "node:process";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 // tsx não carrega .env (só o CLI do Prisma carrega). Carregar quando presente.
@@ -9,7 +10,14 @@ try {
   // .env ausente (ex.: CI injeta as variáveis diretamente)
 }
 
-const prisma = new PrismaClient();
+// Prisma 7 exige driver adapter no runtime.
+const adapter = new PrismaPg(
+  process.env.DATABASE_URL
+    ? { connectionString: process.env.DATABASE_URL }
+    : {},
+);
+
+const prisma = new PrismaClient({ adapter });
 
 // SEED_DEMO=true cria usuários/pacientes/PTS de exemplo (dev, stage, CI/e2e).
 // Ausente/qualquer outro valor => só bootstrap (RBAC + 1 admin) — usar em produção.
@@ -42,6 +50,10 @@ const RECURSOS = [
   ["care-plan.mural.ler", "care-plan", "Ler mural do caso"],
   ["care-plan.mural.escrever", "care-plan", "Participar do mural do caso"],
   ["care-plan.equipe.gerenciar", "care-plan", "Vincular/desvincular profissionais à equipe do caso"],
+  ["agenda.atendimentos.ver", "agenda", "Consultar agenda de atendimentos autorizados"],
+  ["agenda.atendimentos.agendar", "agenda", "Criar e remarcar atendimentos dos casos autorizados"],
+  ["agenda.atendimentos.gerenciar", "agenda", "Agendar, remarcar e cancelar atendimentos do CER (recepção)"],
+  ["agenda.atendimentos.registrar", "agenda", "Registrar realização ou falta no atendimento"],
   ["governanca.dashboard.ver", "governanca", "Dashboards de indicadores e filas"],
   ["governanca.auditoria.ver", "governanca", "Trilha de auditoria (leitura)"],
   ["governanca.relatorios.ver", "governanca", "Relatórios de produção e qualidade"],
@@ -64,6 +76,9 @@ const PAPEIS_BASE = [
       "recepcao.paciente.ver",
       "recepcao.consentimento.registrar",
       "recepcao.baseline.ver",
+      "agenda.atendimentos.ver",
+      "agenda.atendimentos.agendar",
+      "agenda.atendimentos.gerenciar",
     ],
   },
   {
@@ -87,6 +102,9 @@ const PAPEIS_BASE = [
       "clinical.soap.ler",
       "clinical.soap.escrever",
       "clinical.avaliacao.ler",
+      "agenda.atendimentos.ver",
+      "agenda.atendimentos.agendar",
+      "agenda.atendimentos.registrar",
       "care-plan.meta.ler",
       "care-plan.mural.ler",
     ],
@@ -98,6 +116,9 @@ const PAPEIS_BASE = [
     recursos: [
       "clinical.avaliacao.ler",
       "clinical.avaliacao.escrever",
+      "agenda.atendimentos.ver",
+      "agenda.atendimentos.agendar",
+      "agenda.atendimentos.registrar",
       "care-plan.meta.ler",
       "care-plan.meta.escrever",
       "care-plan.mural.ler",
@@ -111,6 +132,9 @@ const PAPEIS_BASE = [
     recursos: [
       "clinical.avaliacao.ler",
       "clinical.avaliacao.escrever",
+      "agenda.atendimentos.ver",
+      "agenda.atendimentos.agendar",
+      "agenda.atendimentos.registrar",
       "care-plan.meta.ler",
       "care-plan.meta.escrever",
       "care-plan.mural.ler",
@@ -124,6 +148,9 @@ const PAPEIS_BASE = [
     recursos: [
       "clinical.avaliacao.ler",
       "clinical.avaliacao.escrever",
+      "agenda.atendimentos.ver",
+      "agenda.atendimentos.agendar",
+      "agenda.atendimentos.registrar",
       "care-plan.meta.ler",
       "care-plan.meta.escrever",
       "care-plan.mural.ler",
@@ -137,6 +164,9 @@ const PAPEIS_BASE = [
     recursos: [
       "clinical.soap.ler",
       "clinical.avaliacao.ler",
+      "agenda.atendimentos.ver",
+      "agenda.atendimentos.agendar",
+      "agenda.atendimentos.registrar",
       "care-plan.meta.ler",
       "care-plan.meta.escrever",
       "care-plan.pts.revisar",

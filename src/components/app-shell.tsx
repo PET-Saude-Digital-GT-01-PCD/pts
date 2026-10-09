@@ -8,6 +8,7 @@ const NAV_CONFIG = [
   { requires: null, label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
   { requires: "recepcao.paciente.cadastrar", label: "Recepção", href: "/recepcao", icon: "UserPlus" },
   { requires: "recepcao.paciente.cadastrar", label: "Novo paciente", href: "/recepcao/novo", icon: "UserPlus" },
+  { requires: "agenda.atendimentos.ver", label: "Agenda", href: "/agenda", icon: "CalendarDays" },
   { requires: "triage.triagem.escrever", label: "Triagem", href: "/triagem", icon: "ClipboardList" },
   { requires: "care-plan.meta.escrever", label: "Metas", href: "/metas", icon: "Target" },
   { requires: "governanca.dashboard.ver", label: "Fluxo do cuidado", href: "/dashboard/fluxo", icon: "Workflow" },

@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { StatusPts, TipoEncerramento } from "@prisma/client";
+import { Prisma, StatusPts, TipoEncerramento } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import {
@@ -167,6 +167,18 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
 
   try {
     await db.$transaction(async (tx) => {
+      if (para === "FECHADO") {
+        const atendimentoPendente = await tx.agendamento.findFirst({
+          where: { ptsId, status: "AGENDADO" },
+          select: { id: true },
+        });
+        if (atendimentoPendente) {
+          throw new Error(
+            "Cancele ou registre os atendimentos agendados antes de encerrar o PTS.",
+          );
+        }
+      }
+
       // Lock otimista: updateMany condicionado à versão conhecida.
       const atualizado = await tx.pts.updateMany({
         where: { id: ptsId, versao: version },
@@ -203,10 +215,17 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
           },
         },
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     return { ok: true, ptsId };
   } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2034") {
+      return {
+        ok: false,
+        erro: "O PTS ou a agenda foi atualizado em paralelo. Recarregue a página e tente novamente.",
+        codigo: 409,
+      };
+    }
     if (e instanceof ConflitoVersao) {
       return { ok: false, erro: e.message, codigo: e.codigo };
     }

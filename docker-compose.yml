@@ -33,6 +33,8 @@ services:
     environment:
       DATABASE_URL: postgresql://pts:pts@db:5432/pts?schema=public
       DIRECT_URL: postgresql://pts:pts@db:5432/pts?schema=public
+      AUTH_SECRET: apWSblffI1D2gKndelNY+1SHzk8qBWv7VYQqm2PNAnw=
+      AUTH_URL: http://localhost:3000
       SEED_DEMO: "true"
       CI: "true"
       SMTP_HOST: mailhog

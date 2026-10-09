@@ -32,6 +32,7 @@ const CER_ID = "00000000-0000-4000-8000-000000000001";
 let adminId: string;
 const pacienteIds: string[] = [];
 const ptsIds: string[] = [];
+const agendamentoIds: string[] = [];
 
 async function criarPaciente() {
   const p = await db.paciente.create({
@@ -68,6 +69,7 @@ afterAll(async () => {
       },
     });
   }
+  await db.agendamento.deleteMany({ where: { id: { in: agendamentoIds } } });
   await db.pts.deleteMany({ where: { id: { in: ptsIds } } });
   await db.paciente.deleteMany({ where: { id: { in: pacienteIds } } });
   await db.$disconnect();
@@ -283,6 +285,37 @@ describe("care-plan/pts — transicionarStatusPts", () => {
     expect(fechado.motivoEncerramento).toBe("Alta funcional.");
     expect(fechado.tipoEncerramento).toBe("ALTA");
     expect(fechado.encerramentoEm).not.toBeNull();
+  });
+
+  it("impede encerrar PTS enquanto houver atendimento agendado", async () => {
+    sessao.chaves = ["care-plan.pts.encerrar"];
+    const pts = await ptsEm("REAVALIACAO", 1);
+    const inicioEm = new Date(Date.now() + 24 * 60 * 60_000);
+    const atendimento = await db.agendamento.create({
+      data: {
+        ptsId: pts.id,
+        profissionalId: adminId,
+        criadoPorId: adminId,
+        inicioEm,
+        fimEm: new Date(inicioEm.getTime() + 30 * 60_000),
+      },
+    });
+    agendamentoIds.push(atendimento.id);
+
+    const r = await transicionarStatusPts({
+      ptsId: pts.id,
+      para: "FECHADO",
+      motivo: "Alta funcional.",
+      tipoEncerramento: "ALTA",
+      version: 1,
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.erro).toContain("atendimentos agendados");
+
+    const inalterado = await db.pts.findUniqueOrThrow({ where: { id: pts.id } });
+    expect(inalterado.status).toBe("REAVALIACAO");
+    expect(inalterado.versao).toBe(1);
   });
 
   it("versão velha retorna conflito 409 e não altera nada", async () => {

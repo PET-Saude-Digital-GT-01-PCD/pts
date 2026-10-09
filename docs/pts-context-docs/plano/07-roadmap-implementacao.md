@@ -63,7 +63,7 @@ Build dos módulos 1, 2, 3 e 5 (núcleo) + módulo 4 (Fisio/TO essencial) confor
 | Reavaliação + versionamento com comparativo (UC-11) | Entregue (#70) |
 | Portal do cidadão | Parcial (#73): percurso e metas acessíveis entregues; auth própria, consentimento e pré-chegada pendentes de decisão de arquitetura |
 | Contrarreferência à APS | Guia + plano de cuidados entregues (#62); escrita real no e-SUS pendente (integração segue em mock, ADR-0008) |
-| Sincronização de agendas (M6) | Pendente |
+| Agenda própria de atendimentos (M6) | Primeiro corte local no PTS: calendário por semana, vínculo com PTS/profissional, faltas, remarcações e cancelamentos auditados; sincronização externa segue pendente |
 | M4 ampliado (Psicologia e demais especialidades) | Pendente |
 | Ajustes de usabilidade pós-piloto | Pendente (depende do piloto) |
 

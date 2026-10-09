@@ -1,7 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
-
-const db = new PrismaClient();
+import { db } from "./db";
 const CER_PILOTO_ID = "00000000-0000-4000-8000-000000000001";
 
 async function loginAdmin(page: import("@playwright/test").Page) {

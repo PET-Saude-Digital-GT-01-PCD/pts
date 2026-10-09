@@ -12,9 +12,9 @@ const cuidadorInputSchema = z.object({
   nome: z.string().trim().min(3).max(120),
   parentesco: z.string().trim().min(2).max(60),
   idade: z.number().int().min(0).max(120).optional(),
-  comorbidadesJson: z.record(z.unknown()).optional(),
+  comorbidadesJson: z.record(z.string(), z.unknown()).optional(),
   zaritScore: z.number().int().min(0).max(24).optional(),
-  vulnerabilidadesJson: z.record(z.unknown()).optional(),
+  vulnerabilidadesJson: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type ResultadoCuidador =
