@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { db as prisma } from "./db";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
 import { lerCsv } from "../tests/governance/csv-helper";
@@ -172,7 +172,6 @@ test("usuário sem permissão de governança é redirecionado", async ({ page })
 });
 
 test("permissão apenas de dashboard mostra CER vazio com orientação e bloqueia exportação", async ({ page }) => {
-  const prisma = new PrismaClient();
   const email = `dashboard-${randomUUID()}@governance.test`;
   const senha = "dashboard-teste-123";
   try {
