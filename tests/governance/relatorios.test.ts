@@ -4,8 +4,9 @@ import { createHash } from "node:crypto";
 import type { SessaoUsuario } from "@/server/iam/session";
 
 const sessao = vi.hoisted(() => ({ usuario: null as SessaoUsuario | null, atorRealId: null as string | null, impersonando: false }));
-vi.mock("@/server/iam/session", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/server/iam/session")>(),
+// Stub total (sem importOriginal): carregar a session real puxa o next-auth,
+// que no Next 16 quebra o mock com ERR_MODULE_NOT_FOUND em `next/server`.
+vi.mock("@/server/iam/session", () => ({
   getAtorReal: async () => ({ atorRealId: sessao.atorRealId ?? sessao.usuario!.id,
     impersonando: sessao.impersonando, usuarioSimuladoId: sessao.impersonando ? sessao.usuario!.id : null }),
   requireAuth: async () => {
