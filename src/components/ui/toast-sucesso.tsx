@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { CheckCircle2, X } from "lucide-react";
 
 /**
@@ -18,22 +18,15 @@ export function ToastSucesso({
   onFechar: () => void;
   duracao?: number;
 }) {
-  const [visivel, setVisivel] = useState(false);
-
   useEffect(() => {
-    if (!aberto) {
-      setVisivel(false);
-      return;
-    }
-    setVisivel(true);
+    if (!aberto) return;
     const timer = setTimeout(() => {
-      setVisivel(false);
       onFechar();
     }, duracao);
     return () => clearTimeout(timer);
   }, [aberto, duracao, onFechar]);
 
-  if (!visivel) return null;
+  if (!aberto) return null;
 
   return (
     <div
@@ -48,10 +41,7 @@ export function ToastSucesso({
         </p>
         <button
           type="button"
-          onClick={() => {
-            setVisivel(false);
-            onFechar();
-          }}
+          onClick={onFechar}
           aria-label="Fechar aviso"
           className="ml-auto rounded-md p-1 text-success transition-colors outline-none hover:bg-success/15 focus-visible:ring-3 focus-visible:ring-ring/50"
         >
