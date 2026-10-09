@@ -114,13 +114,15 @@ test("falha ao atualizar mantém snapshot anterior e recupera após nova tentati
   await page.getByLabel("Desde").fill("2020-01-01");
   await page.getByLabel("Até").fill("2020-01-31");
   await page.getByRole("button", { name: "Aplicar período" }).click();
-  await expect(page.getByRole("alert")).toContainText("O painel anterior foi mantido");
+  // `p` escopa a mensagem do app: no Next 16 o route-announcer (`div[role=alert]`)
+  // quebra o `getByRole("alert")` puro (strict mode, 2 elementos).
+  await expect(page.locator('p[role="alert"]')).toContainText("O painel anterior foi mantido");
   expect(await page.getByTestId("metadados-relatorio").innerText()).toBe(antigo);
   await expect(page.getByRole("button", { name: "Aplicar período" })).toBeEnabled();
   await page.unroute("**/governanca");
   await page.getByRole("button", { name: "Aplicar período" }).click();
   await expect(page.getByTestId("metadados-relatorio")).toContainText("01/01/2020 a 31/01/2020");
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.locator('p[role="alert"]')).toHaveCount(0);
 });
 
 test("CSV baixado preserva metadados e os nove valores realmente exibidos", async ({ page }) => {
@@ -159,7 +161,7 @@ test("falha na exportação informa erro e permite tentar o download novamente",
   await abrir(page);
   await page.route("**/governanca", (route) => route.request().method() === "POST" ? route.abort("failed") : route.continue());
   await page.getByRole("button", { name: "Exportar CSV" }).click();
-  await expect(page.getByRole("alert")).toContainText("Não foi possível exportar o CSV");
+  await expect(page.locator('p[role="alert"]')).toContainText("Não foi possível exportar o CSV");
   await expect(page.getByRole("button", { name: "Exportar CSV" })).toBeEnabled();
   await page.unroute("**/governanca");
   expect((await baixarCsv(page)).conteudo).toContain("north-star");
