@@ -92,7 +92,11 @@ export function GovernancaViewer({ painelInicial }: { painelInicial: PainelIndic
     let link: HTMLAnchorElement | undefined;
     try {
       const arquivo = await exportarCsv(painel.tokenExportacao);
-      url = URL.createObjectURL(new Blob([arquivo.conteudo], { type: arquivo.tipoConteudo }));
+      // O contrato do arquivo (docs/07) é UTF-8 com BOM — e o sha256 auditado
+      // no servidor é calculado sobre o conteúdo com BOM. Garante o BOM aqui
+      // para o byte baixado ser idêntico ao auditado.
+      const texto = arquivo.conteudo.startsWith("\uFEFF") ? arquivo.conteudo : `\uFEFF${arquivo.conteudo}`;
+      url = URL.createObjectURL(new Blob([texto], { type: arquivo.tipoConteudo }));
       link = document.createElement("a");
       link.href = url;
       link.download = arquivo.nomeArquivo;
