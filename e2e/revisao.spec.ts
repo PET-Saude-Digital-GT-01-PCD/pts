@@ -1,7 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
-
-const db = new PrismaClient();
+import { db } from "./db";
 const PTS_ATIVO_ID = "00000000-0000-4000-8000-000000000010";
 
 async function login(

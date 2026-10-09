@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { db } from "./db";
 
 // ponytail: limpeza por execução; fixtures API quando houver mais fluxos com paciente
-const db = new PrismaClient();
 
 function gerarCpf(): string {
   const d = [...Array(9)].map(() => Math.floor(Math.random() * 10));

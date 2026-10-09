@@ -5,8 +5,6 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL") // pooled (Supabase 6543, pgbouncer) / local
-  directUrl  = env("DIRECT_URL") // direct (Supabase 5432) para migrate/seed
   extensions = [pgcrypto, citext]
 }
 
