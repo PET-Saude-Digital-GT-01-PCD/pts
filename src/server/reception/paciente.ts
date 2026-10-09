@@ -26,7 +26,7 @@ const pacienteInputSchema = z.object({
     .optional(),
   dtnasc: z.coerce.date({ message: "Data de nascimento inválida." }),
   sexo: z.enum(["MASCULINO", "FEMININO", "OUTRO"]),
-  enderecoJson: z.record(z.unknown()).optional(),
+  enderecoJson: z.record(z.string(), z.unknown()).optional(),
   ubsId: z.string().uuid().optional(),
   municipioOrigem: z.string().trim().min(2, "Município é obrigatório.").max(120),
   origem: z.enum(["importado", "digitado"]).optional(),
