@@ -46,7 +46,7 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
   const [filtro, setFiltro] = useState<FiltroForm>(FILTRO_VAZIO);
   const [eventos, setEventos] = useState<EventoAuditoria[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [carregando, setCarregando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   async function buscar(f: FiltroForm) {
@@ -79,7 +79,24 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
   }
 
   useEffect(() => {
-    void buscar(FILTRO_VAZIO);
+    let cancelado = false;
+
+    void listarAuditoria(paraFiltroAuditoria(FILTRO_VAZIO))
+      .then((resultado) => {
+        if (cancelado) return;
+        setEventos(resultado.eventos);
+        setCursor(resultado.proximoCursor);
+      })
+      .catch(() => {
+        if (!cancelado) setErro("Erro ao buscar a trilha de auditoria.");
+      })
+      .finally(() => {
+        if (!cancelado) setCarregando(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
