@@ -11,6 +11,7 @@ Guia operacional do repositório: como subir, configurar, testar e versionar. Do
 | [03-configuracao.md](03-configuracao.md) | Variáveis de ambiente, Prisma, Tailwind/shadcn, scripts |
 | [04-commit-versionamento.md](04-commit-versionamento.md) | Conventional Commits, branches, PR, versionamento |
 | [05-ci-cd-deploy.md](05-ci-cd-deploy.md) | Pipeline GitHub Actions e deploy |
+| [07-relatorios-governanca.md](07-relatorios-governanca.md) | Períodos, janela de revisão e exportação dos indicadores de governança |
 
 ## Stack
 
