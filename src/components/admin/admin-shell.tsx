@@ -1,14 +1,11 @@
-import { getSessaoComRecursos } from "@/server/iam/session";
-import { itensAdmin } from "@/server/iam/admin-nav";
-import { AdminNav } from "@/components/admin/admin-nav";
 import { cn } from "@/lib/utils";
 
 /**
- * Moldura comum das telas administrativas: fundo levemente tingido, cabeçalho
- * com título/descrição/ações e as abas da área filtradas pelo RBAC do usuário.
- * As telas só cuidam do próprio conteúdo.
+ * Moldura comum das telas administrativas: fundo levemente tingido e cabeçalho
+ * com título/descrição/ações. A navegação entre as áreas é só a lateral
+ * (Sidebar); as telas cuidam apenas do próprio conteúdo.
  */
-export async function AdminShell({
+export function AdminShell({
   titulo,
   descricao,
   acoes,
@@ -21,9 +18,6 @@ export async function AdminShell({
   largura?: "padrao" | "estreita" | "larga";
   children: React.ReactNode;
 }) {
-  const { recursos } = await getSessaoComRecursos();
-  const itens = itensAdmin(recursos);
-
   return (
     <main className="min-h-full bg-surface pb-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-8">
@@ -44,9 +38,7 @@ export async function AdminShell({
           ) : null}
         </header>
 
-        {itens.length > 1 ? <AdminNav itens={itens} /> : null}
-
-        {/* O cabeçalho e as abas ficam na largura total; só o conteúdo estreita,
+        {/* O cabeçalho fica na largura total; só o conteúdo estreita,
             para o formulário não virar uma linha de leitura longa demais. */}
         <div
           className={cn(
