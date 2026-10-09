@@ -30,6 +30,8 @@ commit desde o início do projeto.
   (sessão ativa não volta mais para a landing).
 
 ### Alterado
+- Telas administrativas navegam só pela lateral (`Sidebar`): removidas as abas
+  do topo (`AdminNav`) do `AdminShell`, que duplicavam os mesmos destinos.
 - `db-migrate` confere o secret antes de rodar e falha dizendo qual falta;
   ganha `workflow_dispatch` (execução sob demanda) com seed de bootstrap
   opcional, necessário na primeira subida de um banco vazio.
