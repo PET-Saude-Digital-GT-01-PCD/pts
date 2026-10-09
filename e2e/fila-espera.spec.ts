@@ -1,7 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
-
-const db = new PrismaClient();
+import { db } from "./db";
 
 function gerarCpf(): string {
   const d = [...Array(9)].map(() => Math.floor(Math.random() * 10));

@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { loadEnvFile } from "node:process";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 // tsx não carrega .env (só o CLI do Prisma carrega). Carregar quando presente.
@@ -9,7 +10,14 @@ try {
   // .env ausente (ex.: CI injeta as variáveis diretamente)
 }
 
-const prisma = new PrismaClient();
+// Prisma 7 exige driver adapter no runtime.
+const adapter = new PrismaPg(
+  process.env.DATABASE_URL
+    ? { connectionString: process.env.DATABASE_URL }
+    : {},
+);
+
+const prisma = new PrismaClient({ adapter });
 
 // SEED_DEMO=true cria usuários/pacientes/PTS de exemplo (dev, stage, CI/e2e).
 // Ausente/qualquer outro valor => só bootstrap (RBAC + 1 admin) — usar em produção.

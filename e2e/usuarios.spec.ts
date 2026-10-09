@@ -1,12 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { db } from "./db";
 
 // Fluxo standalone de /dashboard/usuarios (#113). Usa um usuário próprio do
 // teste para não mutar o papel dos usuários do seed, dos quais outros specs
 // dependem.
 
-const db = new PrismaClient();
 const CER_ID = "00000000-0000-4000-8000-000000000001";
 const email = `usuarios-e2e-${randomUUID().slice(0, 8)}@pts.local`;
 let usuarioId: string;
