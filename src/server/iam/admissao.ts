@@ -57,7 +57,7 @@ const autoCadastroSchema = z.object({
   email: z.string().trim().email("E-mail inválido."),
   senha: z.string().min(8, "Senha deve ter ao menos 8 caracteres."),
   categoria: categoriaSchema,
-  camposDinamicos: z.record(z.unknown()).optional(),
+  camposDinamicos: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function autoCadastrar(input: unknown): Promise<Resultado> {
