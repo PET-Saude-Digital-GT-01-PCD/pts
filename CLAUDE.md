@@ -32,6 +32,7 @@ src/
 │   ├── triage/          #   semáforo, elegibilidade, contrarreferência
 │   ├── clinical/        #   SOAP, avaliações por especialidade
 │   ├── governance/      #   indicadores, auditoria
+│   ├── portal/          #   acesso do cidadão: código, sessão, auditoria (#73/ADR-0012)
 │   ├── iam/             #   usuários, papéis/permissões (RBAC dinâmico), admissão; senha/sessão (ativo)
 │   ├── integrations/    #   e-SUS (FHIR), notify, fila outbound
 │   └── shared/          #   zod, auditoria, lock otimista, tipos

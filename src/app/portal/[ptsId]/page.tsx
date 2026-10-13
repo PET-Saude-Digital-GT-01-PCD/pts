@@ -1,4 +1,6 @@
 import { buscarPortalCidadao } from "@/server/care-plan/portal";
+import { sairDoPortal } from "@/server/portal/acoes";
+import { Button } from "@/components/ui/button";
 
 const CLASSE_SITUACAO: Record<string, string> = {
   concluida: "border-success/40 bg-success/10 text-success",
@@ -19,7 +21,7 @@ export default async function PortalCidadaoPage({
   params: Promise<{ ptsId: string }>;
 }) {
   const { ptsId } = await params;
-  const { pacienteNome, etapas, metas } = await buscarPortalCidadao(ptsId);
+  const { pacienteNome, etapas, metas, via } = await buscarPortalCidadao(ptsId);
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-8 p-6 text-base leading-relaxed sm:p-8">
@@ -84,6 +86,17 @@ export default async function PortalCidadaoPage({
           </ul>
         )}
       </section>
+
+      {via === "cidadao" ? (
+        <form action={sairDoPortal} className="border-t pt-6">
+          <Button type="submit" variant="outline" size="sm">
+            Sair do portal
+          </Button>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Saia ao usar um aparelho compartilhado.
+          </p>
+        </form>
+      ) : null}
     </main>
   );
 }

@@ -61,7 +61,7 @@ Build dos módulos 1, 2, 3 e 5 (núcleo) + módulo 4 (Fisio/TO essencial) confor
 |---|---|
 | M6 — auditoria (viewer) e indicadores de produção/qualidade | Entregue (#71, #72) |
 | Reavaliação + versionamento com comparativo (UC-11) | Entregue (#70) |
-| Portal do cidadão | Parcial (#73): percurso e metas acessíveis entregues; auth própria, consentimento e pré-chegada pendentes de decisão de arquitetura |
+| Portal do cidadão | Entregue (#73, ADR-0012): percurso e metas acessíveis + acesso próprio por código emitido na recepção (sessão por cookie, auditable); consentimento e pré-chegada do cuidador seguem pendentes (follow-up) |
 | Contrarreferência à APS | Guia + plano de cuidados entregues (#62); escrita real no e-SUS pendente (integração segue em mock, ADR-0008) |
 | Agenda própria de atendimentos (M6) | Primeiro corte local no PTS: calendário por semana, vínculo com PTS/profissional, faltas, remarcações e cancelamentos auditados; sincronização externa segue pendente |
 | M4 ampliado (Psicologia e demais especialidades) | Pendente |

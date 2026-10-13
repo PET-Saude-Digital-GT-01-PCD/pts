@@ -16,6 +16,7 @@ type FiltroForm = {
   entityType: string;
   entityId: string;
   actorEmail: string;
+  actorTipo: string;
   action: string;
   desde: string;
   ate: string;
@@ -25,6 +26,7 @@ const FILTRO_VAZIO: FiltroForm = {
   entityType: "",
   entityId: "",
   actorEmail: "",
+  actorTipo: "",
   action: "",
   desde: "",
   ate: "",
@@ -35,6 +37,7 @@ function paraFiltroAuditoria(f: FiltroForm, cursor?: string): FiltroAuditoria {
     entityType: f.entityType || undefined,
     entityId: f.entityId || undefined,
     actorEmail: f.actorEmail || undefined,
+    actorTipo: (f.actorTipo as FiltroAuditoria["actorTipo"]) || undefined,
     action: f.action || undefined,
     desde: f.desde ? new Date(f.desde) : undefined,
     ate: f.ate ? new Date(`${f.ate}T23:59:59`) : undefined,
@@ -126,6 +129,20 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
           />
         </div>
         <div className="grid gap-1">
+          <Label htmlFor="filtro-actorTipo">Tipo de autor</Label>
+          <select
+            id="filtro-actorTipo"
+            value={filtro.actorTipo}
+            onChange={(e) => setFiltro((f) => ({ ...f, actorTipo: e.target.value }))}
+            className={campoNativoClasses}
+          >
+            <option value="">Todos</option>
+            <option value="USUARIO">Equipe</option>
+            <option value="CIDADAO">Cidadão</option>
+            <option value="SISTEMA">Sistema</option>
+          </select>
+        </div>
+        <div className="grid gap-1">
           <Label htmlFor="filtro-action">Ação</Label>
           <Input
             id="filtro-action"
@@ -179,7 +196,9 @@ export function AuditoriaViewer({ tiposEntidade }: { tiposEntidade: string[] }) 
                 </time>
               </div>
               <p className="text-xs text-muted-foreground">
-                {ev.actorNome} ({ev.actorEmail}) · {ev.entityType}/{ev.entityId}
+                {ev.actorNome}
+                {ev.actorEmail ? ` (${ev.actorEmail})` : ""} · {ev.entityType}/
+                {ev.entityId}
               </p>
               {ev.motivo ? <p className="mt-1">Motivo: {ev.motivo}</p> : null}
               {ev.beforeResumo ? (

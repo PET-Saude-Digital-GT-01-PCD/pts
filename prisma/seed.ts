@@ -26,6 +26,7 @@ const RECURSOS = [
   ["recepcao.paciente.cadastrar", "recepcao", "Cadastrar/editar paciente e cuidador"],
   ["recepcao.paciente.ver", "recepcao", "Visualizar cadastro de paciente"],
   ["recepcao.consentimento.registrar", "recepcao", "Registrar consentimento LGPD"],
+  ["recepcao.portal.emitir", "recepcao", "Emitir/revogar código de acesso ao portal do cidadão"],
   ["recepcao.baseline.ver", "recepcao", "Visualizar linha de base (leitura)"],
   ["triage.triagem.escrever", "triage", "Preencher triagem e aplicar elegibilidade"],
   ["triage.triagem.ver", "triage", "Visualizar triagem"],
@@ -67,6 +68,7 @@ const PAPEIS_BASE = [
       "recepcao.paciente.cadastrar",
       "recepcao.paciente.ver",
       "recepcao.consentimento.registrar",
+      "recepcao.portal.emitir",
       "recepcao.baseline.ver",
       "agenda.atendimentos.ver",
       "agenda.atendimentos.agendar",
@@ -198,6 +200,8 @@ const PAPEIS_BASE = [
       "admin.papeis.gerenciar",
       "admin.config.org.editar",
       "admin.usuarios.impersonar",
+      // emissão de código pelo balcão também é via admin (fallback operacional)
+      "recepcao.portal.emitir",
     ],
   },
   {
