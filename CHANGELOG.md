@@ -11,11 +11,32 @@ commit desde o início do projeto.
 ## [Não lançado]
 
 ### Adicionado
+- Portal do cidadão com acesso próprio (#73, ADR-0012): a recepção emite um
+  código de 10 caracteres (Crockford base32) para o paciente, entregue impresso
+  ou por QR; o cidadão troca o código por uma sessão (cookie HttpOnly) em
+  `/portal` — sem conta, sem e-mail. Validade por `PORTAL_ACESSO_TTL_DIAS`
+  (default 30 dias), revogável a qualquer momento pela recepção e com botão
+  "Sair do portal" para aparelho compartilhado. O código é guardado só como
+  HMAC-SHA256(AUTH_SECRET).
+- Auditoria com ator generalizado: `actorId` anulável + `actorTipo`
+  (`USUARIO | CIDADAO | SISTEMA`) + `actorPacienteId`, permitindo registrar o
+  cidadão na trilha (`portal.acesso.emitir|revogar|entrar|sair`). O viewer de
+  governança passa a mostrar o autor e filtra por tipo.
+- Recurso `recepcao.portal.emitir` no catálogo RBAC (papéis RECEPCAO e ADMIN).
 - Tela "Fluxo do cuidado" (`/dashboard/fluxo`): trilha interativa da recepção
   ao encerramento, com contagem por etapa, quem atua, permissões RBAC exigidas
   e transições vindas da máquina de status.
 
 ### Corrigido
+- Reemitir o código do portal não invalidava o anterior: agora vale **uma única
+  credencial ativa por paciente** — a nova emissão revoga a anterior na mesma
+  transação (auditoria `portal.acesso.revogar`, motivo `substituido_por_nova_emissao`),
+  e o código antigo deixa de entrar imediatamente (#73, ADR-0012).
+- Código do portal emitido para paciente ainda **sem PTS** (caso não aberto ou
+  não elegível na triagem) recusava a entrada como "código inválido": como a
+  credencial é do paciente e não do caso, a entrada passa a ser aceita e
+  `/portal` mostra "aguardando avaliação" em vez do erro genérico (#73,
+  ADR-0012).
 - Deploy Vercel + Supabase quebrava com "Application error: a server-side
   exception has occurred": o workflow `db-migrate` falhava em toda execução
   por secret ausente (`PROD_DIRECT_URL`/`STAGE_DIRECT_URL`), as migrations

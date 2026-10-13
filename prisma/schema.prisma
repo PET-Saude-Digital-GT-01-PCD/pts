@@ -112,6 +112,15 @@ enum Especialidade {
   PSICO
 }
 
+// Quem agiu numa linha de auditoria. USUARIO = sessão da equipe (padrão de
+// todo dado pré-existente); CIDADAO = sessão do portal (#73, ADR-0012);
+// SISTEMA = sem ator humano (reservado p/ automações futuras).
+enum ActorTipo {
+  USUARIO
+  CIDADAO
+  SISTEMA
+}
+
 enum Elegibilidade {
   ELEGIVEL
   NAO_ELEGIVEL
@@ -233,8 +242,10 @@ model Usuario {
   discussoes                 Discussao[]           @relation("discussoes")
   contrarreferenciasEmitidas Contrarreferencia[]
   equipePts                  EquipePts[]
-  atendimentosAgendados      Agendamento[]         @relation("AgendamentoProfissional")
-  agendamentosCriados        Agendamento[]         @relation("AgendamentoCriador")
+  atendimentosAgendados      Agendamento[]       @relation("AgendamentoProfissional")
+  agendamentosCriados        Agendamento[]       @relation("AgendamentoCriador")
+  acessosCidadaoEmitidos     AcessoCidadao[]     @relation("acessoEmitido")
+  acessosCidadaoRevogados    AcessoCidadao[]     @relation("acessoRevogado")
 
   @@map("usuario")
 }
@@ -286,6 +297,8 @@ model Paciente {
   baseline           Baseline?
   pts                Pts[]
   contrarreferencias Contrarreferencia[]
+  acessosCidadao     AcessoCidadao[]
+  auditoriasCidadao  Auditoria[]
 
   @@index([cpf])
   @@index([cns])
@@ -552,20 +565,51 @@ model Discussao {
   @@map("discussao")
 }
 
+// ===== Portal do cidadão (#73, ADR-0012) =====
+
+// Credencial de acesso ao portal, emitida pela recepção (código entregue no
+// balcão, impresso/QR). Guarda só o hash — o código em claro nunca é
+// persistido. A sessão do cidadão é a própria credencial (cookie troca o
+// código por sessão; revogar a credencial derruba a sessão).
+model AcessoCidadao {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId    String    @db.Uuid
+  tokenHash     String    @unique
+  emitidoPorId  String    @db.Uuid
+  emitidoEm     DateTime  @default(now()) @db.Timestamptz(3)
+  validoAte     DateTime  @db.Timestamptz(3)
+  usadoEm       DateTime? @db.Timestamptz(3)
+  revogadoEm    DateTime? @db.Timestamptz(3)
+  revogadoPorId String?   @db.Uuid
+
+  paciente   Paciente @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  emitidoPor Usuario  @relation("acessoEmitido", fields: [emitidoPorId], references: [id], onDelete: Restrict)
+  revogadoPor Usuario? @relation("acessoRevogado", fields: [revogadoPorId], references: [id], onDelete: Restrict)
+
+  @@index([pacienteId])
+  @@map("acesso_cidadao")
+}
+
 // ===== Governança =====
 
+// Append-only (ADR-0005). O ator é exatamente um dos: USUARIO tem
+// actorId (FK p/ Usuario), CIDADAO tem actorPacienteId (FK p/ Paciente),
+// SISTEMA tem os dois nulos — garantido por CHECK na migration.
 model Auditoria {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  actorId    String   @db.Uuid
-  action     String
-  entityType String
-  entityId   String   @db.Uuid
-  beforeJson Json?    @db.JsonB
-  afterJson  Json?    @db.JsonB
-  motivo     String?
-  criadaEm   DateTime @default(now()) @db.Timestamptz(3)
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId         String?    @db.Uuid
+  actorTipo       ActorTipo  @default(USUARIO)
+  actorPacienteId String?    @db.Uuid
+  action          String
+  entityType      String
+  entityId        String     @db.Uuid
+  beforeJson      Json?      @db.JsonB
+  afterJson       Json?      @db.JsonB
+  motivo          String?
+  criadaEm        DateTime   @default(now()) @db.Timestamptz(3)
 
-  actor Usuario @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  actor         Usuario? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  actorPaciente Paciente? @relation(fields: [actorPacienteId], references: [id], onDelete: Restrict)
 
   @@index([entityType, entityId, criadaEm])
   @@map("auditoria")
@@ -588,6 +632,9 @@ model OutboundEvent {
   processadoEm DateTime?           @db.Timestamptz(3)
 
   @@index([status, nextRetryAt])
+  // lease do worker (20260922120000_outbound_worker): recuperação de
+  // reservas vencidas por crash filtra status + lockedUntil.
+  @@index([status, lockedUntil])
   @@index([tipo, payloadHash, status])
   @@map("outbound_event")
 }

@@ -1,11 +1,24 @@
 import { describe, expect, it, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import { randomUUID } from "node:crypto";
 
-const sessao = vi.hoisted(() => ({ recursos: [] as string[], userId: "" }));
+const sessao = vi.hoisted(() => ({
+  recursos: [] as string[],
+  userId: "" as string,
+}));
+const portal = vi.hoisted(() => ({
+  sessao: null as null | { acessoId: string; pacienteId: string; validoAte: Date },
+}));
 
 vi.mock("@/server/iam/session", () => ({
-  requireAuth: async () => ({ id: sessao.userId, papelId: "p1", cerId: null }),
+  getCurrentUser: async () =>
+    sessao.userId
+      ? { id: sessao.userId, papelId: "p1", cerId: null }
+      : null,
   recursosDoUsuario: async () => sessao.recursos,
+}));
+
+vi.mock("@/server/portal/sessao", () => ({
+  lerSessaoPortal: async () => portal.sessao,
 }));
 
 import { db } from "@/lib/db";
@@ -33,7 +46,7 @@ async function criarPts(status: "EM_AVALIACAO" | "SEGUIMENTO" = "EM_AVALIACAO") 
     data: { pacienteId: paciente.id, cerId: CER_ID, status, refProfissionalId: fisioId },
   });
   ptsIds.push(pts.id);
-  return { ptsId: pts.id, nome: paciente.nome };
+  return { ptsId: pts.id, nome: paciente.nome, pacienteId: paciente.id };
 }
 
 async function criarMeta(
@@ -70,6 +83,7 @@ beforeAll(async () => {
 beforeEach(() => {
   sessao.recursos = ["care-plan.meta.ler"];
   sessao.userId = fisioId;
+  portal.sessao = null;
 });
 
 afterAll(async () => {
@@ -128,5 +142,39 @@ describe("care-plan/portal — buscarPortalCidadao", () => {
     const { ptsId } = await criarPts();
     sessao.userId = toId;
     await expect(buscarPortalCidadao(ptsId)).rejects.toThrow("NEXT_REDIRECT");
+  });
+
+  it("visitante sem sessão vai para a entrada do portal (não /login)", async () => {
+    const { ptsId } = await criarPts();
+    sessao.userId = "";
+    await expect(buscarPortalCidadao(ptsId)).rejects.toThrow("NEXT_REDIRECT");
+  });
+
+  it("cidadão com sessão do portal vê o próprio PTS", async () => {
+    const { ptsId, nome, pacienteId } = await criarPts("SEGUIMENTO");
+    sessao.userId = "";
+    portal.sessao = { acessoId: randomUUID(), pacienteId, validoAte: new Date() };
+
+    const view = await buscarPortalCidadao(ptsId);
+    expect(view.pacienteNome).toBe(nome);
+    expect(view.via).toBe("cidadao");
+  });
+
+  it("cidadão não enxerga PTS de outro paciente → volta para a entrada", async () => {
+    const { ptsId } = await criarPts();
+    const { pacienteId: outroPaciente } = await criarPts();
+    sessao.userId = "";
+    portal.sessao = {
+      acessoId: randomUUID(),
+      pacienteId: outroPaciente,
+      validoAte: new Date(),
+    };
+    await expect(buscarPortalCidadao(ptsId)).rejects.toThrow("NEXT_REDIRECT");
+  });
+
+  it("equipe mantém via equipe", async () => {
+    const { ptsId } = await criarPts();
+    const view = await buscarPortalCidadao(ptsId);
+    expect(view.via).toBe("equipe");
   });
 });

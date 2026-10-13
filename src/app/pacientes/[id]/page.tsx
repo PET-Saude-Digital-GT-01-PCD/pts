@@ -1,9 +1,11 @@
-import { requirePermissao } from "@/server/iam/session";
+import { requirePermissao, recursosDoUsuario } from "@/server/iam/session";
 import { zaritAlto } from "@/server/reception/zarit";
 import { diasAteRegularizacao } from "@/server/reception/ppi";
 import { buscarPosicaoNaFila } from "@/server/triage/fila-espera";
+import { buscarAcessosPortal } from "@/server/portal/listar";
 import { db } from "@/lib/db";
 import { EncaminharTriagemBtn } from "./encaminhar-btn";
+import { AcessoPortalCard } from "./acesso-portal-card";
 import { Badge } from "@/components/ui/badge";
 
 export default async function PacientePage({
@@ -11,7 +13,7 @@ export default async function PacientePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePermissao("recepcao.paciente.ver");
+  const user = await requirePermissao("recepcao.paciente.ver");
   const { id } = await params;
 
   const paciente = await db.paciente.findUnique({
@@ -73,6 +75,12 @@ export default async function PacientePage({
   const posicaoFila = ptsAtivoId
     ? await buscarPosicaoNaFila(ptsAtivoId, paciente.cerId)
     : null;
+
+  const recursos = await recursosDoUsuario(user.papelId);
+  const podeEmitirAcesso = recursos.includes("recepcao.portal.emitir");
+  const acessosPortal = podeEmitirAcesso
+    ? await buscarAcessosPortal(paciente.id)
+    : [];
 
   return (
     <main className="flex flex-col items-center gap-8 p-4 sm:p-8">
@@ -209,6 +217,11 @@ export default async function PacientePage({
             </div>
           </section>
         )}
+
+        {/* Acesso ao portal do cidadão (#73) */}
+        {podeEmitirAcesso ? (
+          <AcessoPortalCard pacienteId={paciente.id} acessos={acessosPortal} />
+        ) : null}
 
         {/* Ações / Navegação */}
         {paciente.pts.length > 0 ? (
