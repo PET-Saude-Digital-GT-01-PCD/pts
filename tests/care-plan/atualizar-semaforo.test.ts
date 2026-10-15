@@ -52,7 +52,9 @@ let adminId: string;
 const pacienteIds: string[] = [];
 const ptsIds: string[] = [];
 
-async function criarPts(): Promise<{ id: string; versao: number }> {
+async function criarPts(
+  status: "EM_AVALIACAO" | "FECHADO" = "EM_AVALIACAO",
+): Promise<{ id: string; versao: number }> {
   const paciente = await db.paciente.create({
     data: {
       cerId: CER_ID,
@@ -63,7 +65,7 @@ async function criarPts(): Promise<{ id: string; versao: number }> {
   });
   pacienteIds.push(paciente.id);
   const pts = await db.pts.create({
-    data: { pacienteId: paciente.id, cerId: CER_ID, refProfissionalId: adminId },
+    data: { pacienteId: paciente.id, cerId: CER_ID, refProfissionalId: adminId, status },
   });
   ptsIds.push(pts.id);
   return { id: pts.id, versao: pts.versao };
@@ -152,6 +154,25 @@ describe("care-plan/atualizarSemaforoReuniao — action", () => {
     });
     falhou(r);
     expect(r.codigo).toBe(409);
+
+    const depois = await db.pts.findUniqueOrThrow({ where: { id: pts.id } });
+    expect(depois.semaforoReuniao).toBe("VERDE");
+    expect(depois.versao).toBe(pts.versao);
+  });
+
+  it("PTS FECHADO é somente leitura: semáforo não muda", async () => {
+    sessao.chaves = ["care-plan.pts.revisar"];
+    const pts = await criarPts("FECHADO");
+
+    const r = await atualizarSemaforoReuniao({
+      ptsId: pts.id,
+      ...base,
+      eventoRisco: true,
+      version: pts.versao,
+    });
+    falhou(r);
+    if (r.ok) return;
+    expect(r.erro).toMatch(/fechado/i);
 
     const depois = await db.pts.findUniqueOrThrow({ where: { id: pts.id } });
     expect(depois.semaforoReuniao).toBe("VERDE");

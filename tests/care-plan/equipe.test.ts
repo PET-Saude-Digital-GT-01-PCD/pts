@@ -30,6 +30,7 @@ import {
 const CER_ID = "00000000-0000-4000-8000-000000000001";
 
 let adminId: string;
+let gestorId: string;
 let cerOutroId: string;
 let papelOutroId: string;
 let clinicoId: string;
@@ -57,12 +58,14 @@ async function criarPts(
 const vinculos = (ptsId: string) => db.equipePts.findMany({ where: { ptsId } });
 
 beforeAll(async () => {
-  const [admin, fisio] = await Promise.all([
+  const [admin, fisio, gestor] = await Promise.all([
     db.usuario.findUniqueOrThrow({ where: { email: "admin@pts.local" }, select: { id: true } }),
     db.usuario.findUniqueOrThrow({ where: { email: "fisio@pts.local" }, select: { id: true } }),
+    db.usuario.findUniqueOrThrow({ where: { email: "gestor@pts.local" }, select: { id: true } }),
   ]);
   adminId = admin.id;
   clinicoId = fisio.id;
+  gestorId = gestor.id;
 
   const outro = await db.cer.create({
     data: { nome: `CER Equipe ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
@@ -197,6 +200,21 @@ describe("care-plan/equipe — adicionarMembroEquipe", () => {
         erro: "Usuário não encontrado neste CER.",
       });
     }
+    expect(await vinculos(ptsId)).toHaveLength(0);
+  });
+
+  it("alvo não-CLINICO (gestor/admin) é recusado — não escala para conteúdo clínico", async () => {
+    const ptsId = await criarPts();
+    const esperado = {
+      ok: false,
+      erro: "Apenas profissionais clínicos ativos podem integrar a equipe do caso.",
+    };
+    expect(await adicionarMembroEquipe({ ptsId, usuarioId: gestorId, papelNoCaso: "x" })).toEqual(
+      esperado,
+    );
+    expect(await adicionarMembroEquipe({ ptsId, usuarioId: adminId, papelNoCaso: "x" })).toEqual(
+      esperado,
+    );
     expect(await vinculos(ptsId)).toHaveLength(0);
   });
 

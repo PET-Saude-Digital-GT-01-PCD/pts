@@ -125,6 +125,29 @@ describe("care-plan/pts — abrirPts", () => {
     await expect(abrirPts({ pacienteId })).rejects.toThrow(/permiss/i);
   });
 
+  it("não abre PTS para paciente de outro CER (isolamento multi-CER)", async () => {
+    sessao.chaves = ["recepcao.paciente.cadastrar"];
+    const cer = await db.cer.create({
+      data: { nome: `CER Pts ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
+    });
+    const paciente = await db.paciente.create({
+      data: {
+        cerId: cer.id,
+        nome: "Paciente Outro CER",
+        dtnasc: new Date("1990-01-01"),
+        sexo: "OUTRO",
+      },
+    });
+
+    const r = await abrirPts({ pacienteId: paciente.id });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erro).toContain("CER");
+    expect(await db.pts.count({ where: { pacienteId: paciente.id } })).toBe(0);
+
+    await db.paciente.delete({ where: { id: paciente.id } });
+    await db.cer.delete({ where: { id: cer.id } });
+  });
+
   describe("notificação à eSF (#64)", () => {
     const ENV_ORIGINAL = { ...process.env };
 

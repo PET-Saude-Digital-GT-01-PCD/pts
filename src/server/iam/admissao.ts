@@ -170,6 +170,10 @@ export async function aprovarUsuario(
 
   const usuario = await db.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario) return { ok: false, erro: "Usuário não encontrado." };
+  // Isolamento multi-CER: só aprova pendente do próprio CER.
+  if (admin.cerId && usuario.cerId !== admin.cerId) {
+    return { ok: false, erro: "Usuário não pertence ao seu CER." };
+  }
   if (usuario.status !== "PENDENTE") {
     return { ok: false, erro: "Usuário não está pendente de aprovação." };
   }
@@ -215,6 +219,10 @@ export async function rejeitarUsuario(usuarioId: string, input: unknown): Promis
 
   const usuario = await db.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario) return { ok: false, erro: "Usuário não encontrado." };
+  // Isolamento multi-CER: só rejeita pendente do próprio CER.
+  if (admin.cerId && usuario.cerId !== admin.cerId) {
+    return { ok: false, erro: "Usuário não pertence ao seu CER." };
+  }
   if (usuario.status !== "PENDENTE") {
     return { ok: false, erro: "Usuário não está pendente de aprovação." };
   }

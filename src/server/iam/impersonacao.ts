@@ -24,6 +24,11 @@ export async function iniciarImpersonacao(alvoId: string): Promise<Resultado> {
   });
   if (!check.ok) return check;
 
+  // Isolamento multi-CER: não simula perfil de usuário de outro CER.
+  if (ator.cerId && alvo.cerId !== ator.cerId) {
+    return { ok: false, erro: "Usuário não pertence ao seu CER." };
+  }
+
   await db.auditoria.create({
     data: {
       actorId: ator.id,

@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 const sessao = vi.hoisted(() => ({
   chaves: [] as string[],
   actorId: "",
+  cerId: "",
   atorReal: {
     atorRealId: "",
     impersonando: false,
@@ -21,7 +22,7 @@ vi.mock("@/server/iam/session", () => ({
       const { redirect } = await import("next/navigation");
       redirect("/");
     }
-    return { id: sessao.actorId, basePapel: "ADMIN", status: "ATIVO" };
+    return { id: sessao.actorId, basePapel: "ADMIN", status: "ATIVO", cerId: sessao.cerId };
   },
   getAtorReal: async () => sessao.atorReal,
 }));
@@ -78,6 +79,7 @@ beforeAll(async () => {
 beforeEach(() => {
   sessao.chaves = ["admin.usuarios.impersonar"];
   sessao.actorId = adminId;
+  sessao.cerId = CER_ID;
   sessao.atorReal = { atorRealId: adminId, impersonando: false, usuarioSimuladoId: null };
 });
 
@@ -133,6 +135,36 @@ describe("iam/impersonacao — iniciarImpersonacao", () => {
     const aud = await auditorias("usuario.impersonar.iniciar", alvo);
     expect(aud).toHaveLength(1);
     expect(aud[0].actorId).toBe(adminId);
+  });
+
+  it("não simula usuário de outro CER (isolamento multi-CER)", async () => {
+    const cer = await db.cer.create({
+      data: { nome: `CER Imp ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
+    });
+    const papel = await db.papel.create({
+      data: { cerId: cer.id, nome: `ImpFora ${randomUUID().slice(0, 4)}`, base: "CLINICO" },
+    });
+    const alvo = await db.usuario.create({
+      data: {
+        cerId: cer.id,
+        email: `imp-fora-${randomUUID().slice(0, 8)}@pts.local`,
+        senhaHash: "hash-placeholder",
+        nome: "Alvo Outro CER",
+        categoria: "FISIOTERAPEUTA",
+        papelId: papel.id,
+        status: "ATIVO",
+      },
+    });
+
+    expect(await iniciarImpersonacao(alvo.id)).toEqual({
+      ok: false,
+      erro: "Usuário não pertence ao seu CER.",
+    });
+    expect(await auditorias("usuario.impersonar.iniciar", alvo.id)).toHaveLength(0);
+
+    await db.usuario.delete({ where: { id: alvo.id } });
+    await db.papel.delete({ where: { id: papel.id } });
+    await db.cer.delete({ where: { id: cer.id } });
   });
 });
 

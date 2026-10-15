@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import { randomUUID } from "node:crypto";
 
-const sessao = vi.hoisted(() => ({ chaves: [] as string[], actorId: "" }));
+const sessao = vi.hoisted(() => ({ chaves: [] as string[], actorId: "", cerId: "" }));
 
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
@@ -11,7 +11,7 @@ vi.mock("@/server/iam/session", () => ({
       const { redirect } = await import("next/navigation");
       redirect("/");
     }
-    return { id: sessao.actorId };
+    return { id: sessao.actorId, cerId: sessao.cerId };
   },
 }));
 
@@ -51,6 +51,7 @@ beforeAll(async () => {
     select: { id: true },
   });
   sessao.actorId = admin.id;
+  sessao.cerId = CER_ID;
   const [auto, fisio] = await Promise.all(
     ["AUTOCADASTRO", "FISIOTERAPEUTA"].map((nome) =>
       db.papel.findUniqueOrThrow({ where: { cerId_nome: { cerId: CER_ID, nome } } }),
@@ -118,5 +119,27 @@ describe("iam/admissao — aprovarUsuario com papel (#99)", () => {
     }
     const u = await db.usuario.findUniqueOrThrow({ where: { id } });
     expect(u).toMatchObject({ status: "PENDENTE", papelId: autocadastroId });
+  });
+
+  it("não aprova pendente de outro CER (isolamento multi-CER)", async () => {
+    const u = await db.usuario.create({
+      data: {
+        cerId: cerOutroId,
+        email: `aprov-fora-${randomUUID().slice(0, 8)}@pts.local`,
+        senhaHash: "hash-placeholder",
+        nome: "Candidato Outro CER",
+        categoria: "FISIOTERAPEUTA",
+        papelId: papelOutroCerId,
+        status: "PENDENTE",
+      },
+    });
+    usuarioIds.push(u.id);
+
+    expect(await aprovarUsuario(u.id)).toEqual({
+      ok: false,
+      erro: "Usuário não pertence ao seu CER.",
+    });
+    const atual = await db.usuario.findUniqueOrThrow({ where: { id: u.id } });
+    expect(atual.status).toBe("PENDENTE");
   });
 });

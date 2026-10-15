@@ -17,11 +17,11 @@ export default async function TriagemPacientePage({
 }: {
   params: Promise<{ pacienteId: string }>;
 }) {
-  await requirePermissao("triage.triagem.escrever");
+  const user = await requirePermissao("triage.triagem.escrever");
   const { pacienteId } = await params;
 
   const paciente = await db.paciente.findUnique({
-    where: { id: pacienteId },
+    where: { id: pacienteId, cerId: user.cerId ?? undefined },
     select: {
       id: true,
       nome: true,

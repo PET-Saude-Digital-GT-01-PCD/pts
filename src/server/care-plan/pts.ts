@@ -72,6 +72,10 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
         select: { cerId: true, nome: true },
       });
       if (!paciente) throw new Error("Paciente não encontrado.");
+      // Isolamento multi-CER: não abre PTS sobre paciente de outro CER.
+      if (user.cerId && paciente.cerId !== user.cerId) {
+        throw new Error("Paciente não pertence ao seu CER.");
+      }
 
       const pts = await tx.pts.create({
         data: {

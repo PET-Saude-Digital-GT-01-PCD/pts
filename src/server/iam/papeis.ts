@@ -104,6 +104,8 @@ export async function atualizarPapel(
     include: { recursos: { include: { recurso: true } } },
   });
   if (!papel) return { ok: false, erro: "Papel não encontrado." };
+  // Isolamento multi-CER: só edita papel do próprio CER.
+  if (papel.cerId !== user.cerId) return { ok: false, erro: "Papel não encontrado." };
 
   const recursosAtuais = papel.recursos.map((pr) => pr.recurso.chave);
   const erro = erroDaValidacao(parsed.data.base, parsed.data.recursos);
@@ -181,6 +183,8 @@ export async function atualizarRecursos(
     include: { recursos: { include: { recurso: true } } },
   });
   if (!papel) return { ok: false, erro: "Papel não encontrado." };
+  // Isolamento multi-CER: só edita permissões de papel do próprio CER.
+  if (papel.cerId !== user.cerId) return { ok: false, erro: "Papel não encontrado." };
 
   const erro = erroDaValidacao(papel.base, chaves);
   if (erro) return { ok: false, erro };
@@ -228,12 +232,15 @@ export async function deletarPapel(papelId: string): Promise<Resultado> {
     include: { _count: { select: { usuarios: true } } },
   });
   if (!papel) return { ok: false, erro: "Papel não encontrado." };
+  // Isolamento multi-CER: só deleta papel do próprio CER.
+  if (papel.cerId !== user.cerId) return { ok: false, erro: "Papel não encontrado." };
 
   const emUso = papel._count.usuarios > 0;
   const ehAdmin = papel.base === "ADMIN";
+  // Escopo por unidade (P17): a trava do "≥1 admin" conta só ativos do CER.
   const ultimoAdminAtivo =
     ehAdmin && (await db.usuario.count({
-      where: { papel: { base: "ADMIN" }, status: "ATIVO" },
+      where: { cerId: user.cerId ?? undefined, papel: { base: "ADMIN" }, status: "ATIVO" },
     })) <= 1;
 
   if (!podeDeletarPapel(emUso, ultimoAdminAtivo)) {
@@ -275,6 +282,10 @@ export async function atribuirPapelUsuario(
   ]);
   if (!usuario || !papel) return { ok: false, erro: "Usuário ou papel não encontrado." };
 
+  // Isolamento multi-CER: o alvo precisa pertencer ao CER do ator.
+  if (usuario.cerId !== user.cerId) {
+    return { ok: false, erro: "Usuário não pertence ao seu CER." };
+  }
   if (papel.cerId !== usuario.cerId) {
     return { ok: false, erro: "Papel não pertence ao mesmo CER do usuário." };
   }

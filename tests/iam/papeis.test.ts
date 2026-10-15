@@ -35,7 +35,11 @@ vi.mock("@/server/iam/session", () => ({
 }));
 
 import { db } from "@/lib/db";
-import { atribuirPapelUsuario } from "@/server/iam/papeis";
+import {
+  atualizarPapel,
+  atribuirPapelUsuario,
+  deletarPapel,
+} from "@/server/iam/papeis";
 
 const CER_ID = "00000000-0000-4000-8000-000000000001";
 
@@ -110,5 +114,97 @@ describe("iam/papeis — atribuirPapelUsuario", () => {
     });
     expect(aud.beforeJson).toMatchObject({ papelId: papelOrigemId });
     expect(aud.afterJson).toMatchObject({ papelId: papelDestinoId });
+  });
+
+  it("não atribui papel a usuário de outro CER (isolamento multi-CER)", async () => {
+    const cer = await db.cer.create({
+      data: { nome: `CER Pap ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
+    });
+    const papel = await db.papel.create({
+      data: { cerId: cer.id, nome: `PapFora ${randomUUID().slice(0, 4)}`, base: "CLINICO" },
+    });
+    const fora = await db.usuario.create({
+      data: {
+        cerId: cer.id,
+        email: `pap-fora-${randomUUID().slice(0, 8)}@pts.local`,
+        senhaHash: "hash-placeholder",
+        nome: "Usuário de outro CER",
+        categoria: "MEDICO",
+        papelId: papel.id,
+      },
+    });
+
+    sessao.chaves = ["admin.papeis.gerenciar"];
+    expect(await atribuirPapelUsuario(fora.id, papel.id)).toEqual({
+      ok: false,
+      erro: "Usuário não pertence ao seu CER.",
+    });
+
+    await db.usuario.delete({ where: { id: fora.id } });
+    await db.papel.delete({ where: { id: papel.id } });
+    await db.cer.delete({ where: { id: cer.id } });
+  });
+});
+
+describe("iam/papeis — escopo multi-CER de papéis", () => {
+  it("não edita nem deleta papel de outro CER", async () => {
+    sessao.chaves = ["admin.papeis.gerenciar"];
+    const cer = await db.cer.create({
+      data: { nome: `CER Pap2 ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
+    });
+    const papel = await db.papel.create({
+      data: { cerId: cer.id, nome: `PapFora2 ${randomUUID().slice(0, 4)}`, base: "CLINICO" },
+    });
+
+    expect(
+      await atualizarPapel(papel.id, { nome: "Renomeado", base: "CLINICO", recursos: [] }),
+    ).toEqual({ ok: false, erro: "Papel não encontrado." });
+    expect(await deletarPapel(papel.id)).toEqual({
+      ok: false,
+      erro: "Papel não encontrado.",
+    });
+
+    const ainda = await db.papel.findUnique({ where: { id: papel.id } });
+    expect(ainda?.nome).not.toBe("Renomeado");
+
+    await db.papel.delete({ where: { id: papel.id } });
+    await db.cer.delete({ where: { id: cer.id } });
+  });
+
+  it("trava do '≥1 admin' conta só admins ativos do próprio CER", async () => {
+    sessao.chaves = ["admin.papeis.gerenciar"];
+    const cer = await db.cer.create({
+      data: { nome: `CER Admin ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
+    });
+    const papelFora = await db.papel.create({
+      data: { cerId: cer.id, nome: `AdminFora ${randomUUID().slice(0, 4)}`, base: "ADMIN" },
+    });
+    // "Prova" de que há mais de um admin no sistema, mas em outro CER.
+    await db.usuario.createMany({
+      data: [1, 2].map((i) => ({
+        cerId: cer.id,
+        email: `admin-fora-${i}-${randomUUID().slice(0, 6)}@pts.local`,
+        senhaHash: "hash-placeholder",
+        nome: `Admin Fora ${i}`,
+        categoria: "MEDICO" as const,
+        papelId: papelFora.id,
+        status: "ATIVO" as const,
+      })),
+    });
+    // Papel ADMIN vazio no CER do ator: com a contagem global antiga, seria
+    // deletável (3 admins no sistema); com o escopo por CER, deve ser barrado.
+    const papelVazio = await db.papel.create({
+      data: { cerId: CER_ID, nome: `AdminVazio ${randomUUID().slice(0, 4)}`, base: "ADMIN" },
+    });
+
+    expect(await deletarPapel(papelVazio.id)).toEqual({
+      ok: false,
+      erro: "Deve haver ao menos um admin ativo.",
+    });
+
+    await db.papel.delete({ where: { id: papelVazio.id } });
+    await db.usuario.deleteMany({ where: { cerId: cer.id } });
+    await db.papel.delete({ where: { id: papelFora.id } });
+    await db.cer.delete({ where: { id: cer.id } });
   });
 });
