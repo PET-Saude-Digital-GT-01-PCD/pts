@@ -123,8 +123,12 @@ export async function criarAvaliacaoEspecialidade(
     return { ok: false, erro: "Você não está vinculado a este caso." };
   }
 
-  // códigos CIF derivados em background do preenchimento do checklist
-  const cif = marcarCif(especialidade, dadosJson);
+  // Códigos CIF continuam derivados somente dos itens estruturados marcados.
+  // As classificações livres são persistidas junto da avaliação, sem mapa CIF.
+  const itensMarcados = Object.fromEntries(
+    Object.entries(dadosJson).filter(([, valor]) => typeof valor === "boolean"),
+  ) as Record<string, boolean>;
+  const cif = marcarCif(especialidade, itensMarcados);
 
   try {
     const avaliacaoId = await db.$transaction(async (tx) => {
