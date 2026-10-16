@@ -112,6 +112,7 @@ export async function autoCadastrar(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: cer.id,
           actorId: usuario.id,
           action: "usuario.autocadastro",
           entityType: "usuario",
@@ -193,6 +194,7 @@ export async function aprovarUsuario(
     });
     await tx.auditoria.create({
       data: {
+        cerId: admin.cerId,
         actorId: admin.id,
         action: "usuario.aprovar",
         entityType: "usuario",
@@ -231,6 +233,7 @@ export async function rejeitarUsuario(usuarioId: string, input: unknown): Promis
     await tx.usuario.update({ where: { id: usuarioId }, data: { status: "BLOQUEADO" } });
     await tx.auditoria.create({
       data: {
+        cerId: admin.cerId,
         actorId: admin.id,
         action: "usuario.rejeitar",
         entityType: "usuario",

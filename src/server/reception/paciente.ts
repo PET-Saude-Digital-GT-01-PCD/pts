@@ -126,6 +126,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "paciente.criar",
           entityType: "paciente",
@@ -291,6 +292,7 @@ export async function encaminharParaTriagem(
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "recepcao.encaminhar_triagem",
           entityType: "paciente",

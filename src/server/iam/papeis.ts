@@ -69,6 +69,7 @@ export async function criarPapel(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "papel.criar",
           entityType: "papel",
@@ -146,6 +147,7 @@ export async function atualizarPapel(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "papel.atualizar",
           entityType: "papel",
@@ -206,6 +208,7 @@ export async function atualizarRecursos(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "papel.permissao.atualizar",
           entityType: "papel",
@@ -254,6 +257,7 @@ export async function deletarPapel(papelId: string): Promise<Resultado> {
       await tx.papel.delete({ where: { id: papelId } });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "papel.deletar",
           entityType: "papel",
@@ -298,6 +302,7 @@ export async function atribuirPapelUsuario(
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "usuario.papel.atribuir",
           entityType: "usuario",

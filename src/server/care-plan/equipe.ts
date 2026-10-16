@@ -161,6 +161,7 @@ export async function adicionarMembroEquipe(input: unknown): Promise<Resultado> 
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "equipe.adicionar",
           entityType: "equipe_pts",
@@ -208,6 +209,7 @@ export async function removerMembroEquipe(input: unknown): Promise<Resultado> {
     await tx.equipePts.delete({ where: { id: membro.id } });
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "equipe.remover",
         entityType: "equipe_pts",

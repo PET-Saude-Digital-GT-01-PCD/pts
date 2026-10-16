@@ -173,16 +173,21 @@ describe("iam/papeis — escopo multi-CER de papéis", () => {
 
   it("trava do '≥1 admin' conta só admins ativos do próprio CER", async () => {
     sessao.chaves = ["admin.papeis.gerenciar"];
+    // CER dedicado: isola a contagem da concorrência de outros arquivos de
+    // teste que criam admins ativos no CER padrão.
     const cer = await db.cer.create({
       data: { nome: `CER Admin ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
     });
+    const cerAlheio = await db.cer.create({
+      data: { nome: `CER Alheio ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
+    });
     const papelFora = await db.papel.create({
-      data: { cerId: cer.id, nome: `AdminFora ${randomUUID().slice(0, 4)}`, base: "ADMIN" },
+      data: { cerId: cerAlheio.id, nome: `AdminFora ${randomUUID().slice(0, 4)}`, base: "ADMIN" },
     });
     // "Prova" de que há mais de um admin no sistema, mas em outro CER.
     await db.usuario.createMany({
       data: [1, 2].map((i) => ({
-        cerId: cer.id,
+        cerId: cerAlheio.id,
         email: `admin-fora-${i}-${randomUUID().slice(0, 6)}@pts.local`,
         senhaHash: "hash-placeholder",
         nome: `Admin Fora ${i}`,
@@ -191,20 +196,44 @@ describe("iam/papeis — escopo multi-CER de papéis", () => {
         status: "ATIVO" as const,
       })),
     });
+
+    const papelAdminUnico = await db.papel.create({
+      data: { cerId: cer.id, nome: `AdminUnico ${randomUUID().slice(0, 4)}`, base: "ADMIN" },
+    });
+    // Único admin ativo do CER do ator.
+    await db.usuario.create({
+      data: {
+        cerId: cer.id,
+        email: `admin-unico-${randomUUID().slice(0, 6)}@pts.local`,
+        senhaHash: "hash-placeholder",
+        nome: "Admin Único",
+        categoria: "MEDICO",
+        papelId: papelAdminUnico.id,
+        status: "ATIVO",
+      },
+    });
     // Papel ADMIN vazio no CER do ator: com a contagem global antiga, seria
     // deletável (3 admins no sistema); com o escopo por CER, deve ser barrado.
     const papelVazio = await db.papel.create({
-      data: { cerId: CER_ID, nome: `AdminVazio ${randomUUID().slice(0, 4)}`, base: "ADMIN" },
+      data: { cerId: cer.id, nome: `AdminVazio ${randomUUID().slice(0, 4)}`, base: "ADMIN" },
     });
 
-    expect(await deletarPapel(papelVazio.id)).toEqual({
-      ok: false,
-      erro: "Deve haver ao menos um admin ativo.",
-    });
+    sessao.cerId = cer.id;
+    try {
+      expect(await deletarPapel(papelVazio.id)).toEqual({
+        ok: false,
+        erro: "Deve haver ao menos um admin ativo.",
+      });
+    } finally {
+      sessao.cerId = CER_ID;
+    }
 
-    await db.papel.delete({ where: { id: papelVazio.id } });
-    await db.usuario.deleteMany({ where: { cerId: cer.id } });
-    await db.papel.delete({ where: { id: papelFora.id } });
-    await db.cer.delete({ where: { id: cer.id } });
+    await db.usuario.deleteMany({
+      where: { cerId: { in: [cer.id, cerAlheio.id] } },
+    });
+    await db.papel.deleteMany({
+      where: { id: { in: [papelVazio.id, papelAdminUnico.id, papelFora.id] } },
+    });
+    await db.cer.deleteMany({ where: { id: { in: [cer.id, cerAlheio.id] } } });
   });
 });

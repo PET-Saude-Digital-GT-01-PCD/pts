@@ -158,6 +158,7 @@ export async function criarTriagem(input: unknown): Promise<ResultadoTriagem> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "triagem.criar",
           entityType: "triagem",
@@ -248,6 +249,7 @@ export async function ajustarClassificacao(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "triagem.ajustar",
           entityType: "ajuste_classificacao",

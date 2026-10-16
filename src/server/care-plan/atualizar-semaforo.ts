@@ -73,6 +73,7 @@ export async function atualizarSemaforoReuniao(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "pts.semaforo_reuniao",
           entityType: "pts",

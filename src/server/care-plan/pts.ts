@@ -89,6 +89,7 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "pts.abrir",
           entityType: "pts",
@@ -103,11 +104,16 @@ export async function abrirPts(input: unknown): Promise<Resultado> {
       });
 
       // Marcador de PTS ativo no e-SUS PEC (PRD M1) — envio real é Fase 2.
-      await enfileirarOutbound(tx, "MARKER_ESUS", {
-        ptsId: pts.id,
-        pacienteId,
-        status: pts.status,
-      });
+      await enfileirarOutbound(
+        tx,
+        "MARKER_ESUS",
+        {
+          ptsId: pts.id,
+          pacienteId,
+          status: pts.status,
+        },
+        pts.cerId,
+      );
 
       return { ptsId: pts.id, pacienteNome: paciente.nome };
     });
@@ -206,6 +212,7 @@ export async function transicionarStatusPts(input: unknown): Promise<Resultado> 
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "pts.transicionar",
           entityType: "pts",

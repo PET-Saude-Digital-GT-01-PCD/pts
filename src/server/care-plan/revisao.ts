@@ -53,6 +53,7 @@ export async function registrarRevisao(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "pts.revisao.criar",
           entityType: "pts_revisao",
@@ -165,7 +166,12 @@ export async function buscarComparativo(
       select: { id: true, de: true, para: true, data: true, motivo: true },
     }),
     db.auditoria.findMany({
-      where: { entityType: "pts", entityId: ptsId, action: "pts.semaforo_reuniao" },
+      where: {
+        cerId: user.cerId ?? undefined,
+        entityType: "pts",
+        entityId: ptsId,
+        action: "pts.semaforo_reuniao",
+      },
       orderBy: { criadaEm: "asc" },
       select: { criadaEm: true, afterJson: true },
     }),

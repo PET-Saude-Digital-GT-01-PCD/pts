@@ -90,15 +90,21 @@ export async function emitirContrarreferencia(
       });
 
       // Envio real ao e-SUS PEC é Fase 2 (worker outbound).
-      await enfileirarOutbound(tx, "REFERRAL", {
-        contrarreferenciaId: guia.id,
-        pacienteId: alvoPacienteId,
-        ptsId: dados.ptsId ?? null,
-        destinoUbs: dados.destinoUbs ?? null,
-      });
+      await enfileirarOutbound(
+        tx,
+        "REFERRAL",
+        {
+          contrarreferenciaId: guia.id,
+          pacienteId: alvoPacienteId,
+          ptsId: dados.ptsId ?? null,
+          destinoUbs: dados.destinoUbs ?? null,
+        },
+        paciente.cerId,
+      );
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "contrarreferencia.emitir",
           entityType: "contrarreferencia",

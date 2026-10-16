@@ -31,6 +31,7 @@ export async function iniciarImpersonacao(alvoId: string): Promise<Resultado> {
 
   await db.auditoria.create({
     data: {
+      cerId: ator.cerId,
       actorId: ator.id,
       action: "usuario.impersonar.iniciar",
       entityType: "usuario",
@@ -46,8 +47,14 @@ export async function encerrarImpersonacao(): Promise<Resultado> {
   const atorReal = await getAtorReal();
   if (!atorReal.impersonando || !atorReal.usuarioSimuladoId) return { ok: true };
 
+  const alvo = await db.usuario.findUnique({
+    where: { id: atorReal.usuarioSimuladoId },
+    select: { cerId: true },
+  });
+
   await db.auditoria.create({
     data: {
+      cerId: alvo?.cerId,
       actorId: atorReal.atorRealId,
       action: "usuario.impersonar.encerrar",
       entityType: "usuario",
