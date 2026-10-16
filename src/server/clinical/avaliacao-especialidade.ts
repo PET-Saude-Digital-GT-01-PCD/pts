@@ -33,8 +33,30 @@ const checklistFisio = z
     forca: z.boolean().optional(),
     fatoresAmbientais: z.boolean().optional(),
     objetivosFuncionais: z.boolean().optional(),
+    // A classificação livre complementa, mas não substitui, a checklist
+    // estruturada. Ela não é convertida automaticamente para CIF.
+    classificacoesLivres: z
+      .array(z.string().trim().min(1).max(500))
+      .max(20)
+      .optional(),
   })
-  .strip();
+  .strip()
+  .superRefine((dados, ctx) => {
+    const vistas = new Set<string>();
+    for (const [indice, classificacao] of (
+      dados.classificacoesLivres ?? []
+    ).entries()) {
+      const chave = classificacao.toLocaleLowerCase("pt-BR");
+      if (vistas.has(chave)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["classificacoesLivres", indice],
+          message: "Classificação livre repetida.",
+        });
+      }
+      vistas.add(chave);
+    }
+  });
 
 const checklistTo = z
   .object({
@@ -85,6 +107,15 @@ export async function criarAvaliacaoEspecialidade(
     return {
       ok: false,
       erro: `Sem permissão para registrar avaliação ${especialidade}.`,
+    };
+  }
+
+  // A especialidade é determinada pela categoria profissional no servidor;
+  // não basta esconder o formulário no cliente.
+  if (!especialidadesDoUsuario(user.categoria).includes(especialidade)) {
+    return {
+      ok: false,
+      erro: "Sua categoria profissional não pode registrar esta avaliação.",
     };
   }
 
