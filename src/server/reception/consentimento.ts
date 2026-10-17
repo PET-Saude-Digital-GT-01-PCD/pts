@@ -72,6 +72,7 @@ export async function registrarConsentimento(
 
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "consentimento.registrar",
         entityType: "consentimento",
@@ -137,6 +138,7 @@ export async function revogarConsentimento(
 
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "consentimento.revogar",
         entityType: "consentimento",

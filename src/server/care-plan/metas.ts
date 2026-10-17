@@ -118,6 +118,7 @@ export async function criarMeta(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "meta.criar",
           entityType: "meta",
@@ -207,6 +208,7 @@ export async function mudarStatusMeta(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "meta.status",
           entityType: "meta",

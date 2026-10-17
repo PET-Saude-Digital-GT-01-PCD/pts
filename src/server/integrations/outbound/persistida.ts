@@ -20,9 +20,12 @@ export async function enfileirarOutbound(
   tx: Prisma.TransactionClient,
   tipo: TipoOutboundEvent,
   payload: unknown,
+  cerId: string,
 ): Promise<ResultadoEnfileiramento> {
   const payloadHash = hashPayload(payload);
-  const chaveLock = `${tipo}:${payloadHash}`;
+  // Dedup e advisory lock escopados por CER: payloads idênticos em unidades
+  // diferentes não colidem entre si.
+  const chaveLock = `${cerId}:${tipo}:${payloadHash}`;
 
   await tx.$queryRaw<Array<{ locked: number }>>`
     WITH lock AS MATERIALIZED (
@@ -32,13 +35,14 @@ export async function enfileirarOutbound(
   `;
 
   const existente = await tx.outboundEvent.findFirst({
-    where: { tipo, payloadHash },
+    where: { tipo, payloadHash, cerId },
     select: { id: true },
   });
   if (existente) return { id: existente.id, duplicado: true };
 
   const evento = await tx.outboundEvent.create({
     data: {
+      cerId,
       tipo,
       payloadJson: payload as Prisma.InputJsonValue,
       payloadHash,

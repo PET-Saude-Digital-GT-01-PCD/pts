@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, recursosDoUsuario } from "@/server/iam/session";
 import { podeAcessarCaso } from "@/server/shared/acesso-caso";
+import { assertPtsMutavel } from "@/server/care-plan/acesso";
 import {
   semaforoDeReuniao,
   type EntradaReuniao,
@@ -54,6 +55,7 @@ export async function atualizarSemaforoReuniao(
 
   try {
     await db.$transaction(async (tx) => {
+      await assertPtsMutavel(ptsId, tx);
       const atual = await tx.pts.findUniqueOrThrow({
         where: { id: ptsId },
         select: { semaforoReuniao: true, versao: true },
@@ -71,6 +73,7 @@ export async function atualizarSemaforoReuniao(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "pts.semaforo_reuniao",
           entityType: "pts",
@@ -86,6 +89,9 @@ export async function atualizarSemaforoReuniao(
   } catch (e) {
     if (e instanceof ConflitoVersao) {
       return { ok: false, erro: e.message, codigo: e.codigo };
+    }
+    if (e instanceof Error && e.message.startsWith("PTS fechado")) {
+      return { ok: false, erro: e.message };
     }
     return { ok: false, erro: "Erro ao atualizar o semáforo de reunião." };
   }

@@ -126,6 +126,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoPaciente> 
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "paciente.criar",
           entityType: "paciente",
@@ -268,6 +269,7 @@ export async function encaminharParaTriagem(
     where: { id: pacienteId },
     select: {
       id: true,
+      cerId: true,
       nome: true,
       encaminhadoTriagem: true,
       pts: { where: { status: { not: "FECHADO" } }, select: { id: true }, take: 1 },
@@ -275,6 +277,10 @@ export async function encaminharParaTriagem(
   });
 
   if (!paciente) return { ok: false, erro: "Paciente não encontrado." };
+  // Isolamento multi-CER: só encaminha paciente do próprio CER.
+  if (user.cerId && paciente.cerId !== user.cerId) {
+    return { ok: false, erro: "Paciente não pertence ao seu CER." };
+  }
   if (paciente.encaminhadoTriagem) return { ok: false, erro: "Paciente já encaminhado para triagem." };
   if (paciente.pts.length > 0) return { ok: false, erro: "Paciente já possui um caso ativo." };
 
@@ -286,6 +292,7 @@ export async function encaminharParaTriagem(
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "recepcao.encaminhar_triagem",
           entityType: "paciente",
