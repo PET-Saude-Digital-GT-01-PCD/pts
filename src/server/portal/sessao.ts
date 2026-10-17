@@ -19,6 +19,7 @@ export const COOKIE_PORTAL = "portal_acesso";
 export type SessaoPortal = {
   acessoId: string;
   pacienteId: string;
+  cerId: string;
   validoAte: Date;
 };
 
@@ -48,7 +49,7 @@ async function buscarAcesso(codigo: string) {
       pacienteId: true,
       validoAte: true,
       revogadoEm: true,
-      paciente: { select: { ativo: true } },
+      paciente: { select: { ativo: true, cerId: true } },
     },
   });
 }
@@ -75,6 +76,7 @@ export async function lerSessaoPortal(): Promise<SessaoPortal | null> {
   return {
     acessoId: acesso.id,
     pacienteId: acesso.pacienteId,
+    cerId: acesso.paciente.cerId,
     validoAte: acesso.validoAte,
   };
 }
@@ -122,6 +124,7 @@ export async function validarCodigoParaEntrada(
     });
     await tx.auditoria.create({
       data: {
+        cerId: acesso.paciente.cerId,
         actorTipo: "CIDADAO",
         actorPacienteId: acesso.pacienteId,
         action: "portal.acesso.entrar",

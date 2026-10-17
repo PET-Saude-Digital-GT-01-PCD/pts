@@ -22,8 +22,9 @@ export async function reprocessarEventoOutbound(
   }
 
   const resultado = await db.$transaction(async (tx) => {
-    const evento = await tx.outboundEvent.findUnique({
-      where: { id: parsedId.data },
+    // Escopo multi-CER: só reprocessa evento do próprio CER do ator.
+    const evento = await tx.outboundEvent.findFirst({
+      where: { id: parsedId.data, cerId: user.cerId ?? undefined },
       select: { id: true, status: true, attempts: true, lastError: true },
     });
     if (!evento) return { ok: false as const, erro: "Evento não encontrado." };
@@ -53,6 +54,7 @@ export async function reprocessarEventoOutbound(
     }
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "outbound_event.reprocessar",
         entityType: "outbound_event",

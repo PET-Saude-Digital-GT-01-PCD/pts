@@ -82,6 +82,7 @@ export async function comentarMural(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "mural.comentar",
           entityType: "discussao",

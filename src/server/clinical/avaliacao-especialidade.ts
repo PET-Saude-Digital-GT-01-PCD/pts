@@ -117,6 +117,7 @@ export async function criarAvaliacaoEspecialidade(
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "clinical.avaliacao.criar",
           entityType: "avaliacao",

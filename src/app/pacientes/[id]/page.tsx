@@ -17,7 +17,7 @@ export default async function PacientePage({
   const { id } = await params;
 
   const paciente = await db.paciente.findUnique({
-    where: { id },
+    where: { id, cerId: user.cerId ?? undefined },
     select: {
       id: true,
       cerId: true,

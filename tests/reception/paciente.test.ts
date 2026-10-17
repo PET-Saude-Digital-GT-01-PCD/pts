@@ -18,10 +18,15 @@ vi.mock("@/server/iam/session", () => ({
 }));
 
 import { db } from "@/lib/db";
-import { buscarPacientePorDocumento, criarPaciente } from "@/server/reception/paciente";
+import {
+  buscarPacientePorDocumento,
+  criarPaciente,
+  encaminharParaTriagem,
+} from "@/server/reception/paciente";
 
 let cerAId: string;
 let cerBId: string;
+let pacienteBId: string;
 const pacienteIds: string[] = [];
 
 const CER_ID = "00000000-0000-4000-8000-000000000001";
@@ -65,6 +70,7 @@ beforeAll(async () => {
     },
   });
   pacienteIds.push(pacienteB.id);
+  pacienteBId = pacienteB.id;
 
   await db.ppiLocal.upsert({
     where: { cerId_municipioOrigem: { cerId: CER_ID, municipioOrigem: "Recife" } },
@@ -146,6 +152,16 @@ describe("reception/paciente — escopo de CER", () => {
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.erro).toContain("Paciente Só do CER B");
+  });
+
+  it("encaminharParaTriagem não encaminha paciente de outro CER", async () => {
+    sessao.cerId = cerAId;
+    expect(await encaminharParaTriagem(pacienteBId)).toEqual({
+      ok: false,
+      erro: "Paciente não pertence ao seu CER.",
+    });
+    const p = await db.paciente.findUniqueOrThrow({ where: { id: pacienteBId } });
+    expect(p.encaminhadoTriagem).toBe(false);
   });
 
   it("criarPaciente com CPF novo no CER A cadastra normalmente", async () => {

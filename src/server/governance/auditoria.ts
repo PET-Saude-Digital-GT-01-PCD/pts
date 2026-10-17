@@ -46,10 +46,13 @@ export type PaginaAuditoria = {
 export async function listarAuditoria(
   filtro: FiltroAuditoria,
 ): Promise<PaginaAuditoria> {
-  await requirePermissao("governanca.auditoria.ver");
+  const user = await requirePermissao("governanca.auditoria.ver");
 
   const temIntervalo = Boolean(filtro.desde || filtro.ate);
   const where: Prisma.AuditoriaWhereInput = {
+    // Escopo multi-CER: a trilha é por unidade (linhas SISTEMA sem CER ficam
+    // fora — leitura fail-closed).
+    cerId: user.cerId ?? undefined,
     entityType: filtro.entityType || undefined,
     entityId: filtro.entityId || undefined,
     actorTipo: filtro.actorTipo || undefined,
@@ -132,9 +135,10 @@ export async function listarAuditoria(
 }
 
 export async function listarTiposEntidade(): Promise<string[]> {
-  await requirePermissao("governanca.auditoria.ver");
+  const user = await requirePermissao("governanca.auditoria.ver");
   const grupos = await db.auditoria.groupBy({
     by: ["entityType"],
+    where: { cerId: user.cerId ?? undefined },
     orderBy: { entityType: "asc" },
   });
   return grupos.map((g) => g.entityType);

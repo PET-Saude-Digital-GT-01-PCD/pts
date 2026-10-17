@@ -156,6 +156,8 @@ model Cer {
   pts               Pts[]
   papeis            Papel[]
   ppisLocais        PpiLocal[]
+  auditorias        Auditoria[]
+  eventosOutbound   OutboundEvent[]
   papelAutocadastro Papel?             @relation("autocadastro", fields: [papelAutocadastroId], references: [id], onDelete: SetNull)
   formulariosConfig FormularioConfig[]
   orgConfig         OrgConfig?
@@ -597,6 +599,7 @@ model AcessoCidadao {
 // SISTEMA tem os dois nulos — garantido por CHECK na migration.
 model Auditoria {
   id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId           String?    @db.Uuid
   actorId         String?    @db.Uuid
   actorTipo       ActorTipo  @default(USUARIO)
   actorPacienteId String?    @db.Uuid
@@ -608,10 +611,12 @@ model Auditoria {
   motivo          String?
   criadaEm        DateTime   @default(now()) @db.Timestamptz(3)
 
-  actor         Usuario? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  cer           Cer?      @relation(fields: [cerId], references: [id], onDelete: Restrict)
+  actor         Usuario?  @relation(fields: [actorId], references: [id], onDelete: Restrict)
   actorPaciente Paciente? @relation(fields: [actorPacienteId], references: [id], onDelete: Restrict)
 
   @@index([entityType, entityId, criadaEm])
+  @@index([cerId, criadaEm])
   @@map("auditoria")
 }
 
@@ -620,6 +625,7 @@ model Auditoria {
 // leases vencidos são recuperáveis após queda do processo.
 model OutboundEvent {
   id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cerId        String?             @db.Uuid
   tipo         TipoOutboundEvent
   payloadJson  Json                @db.JsonB
   payloadHash  String
@@ -631,11 +637,14 @@ model OutboundEvent {
   criadoEm     DateTime            @default(now()) @db.Timestamptz(3)
   processadoEm DateTime?           @db.Timestamptz(3)
 
+  cer Cer? @relation(fields: [cerId], references: [id], onDelete: Restrict)
+
   @@index([status, nextRetryAt])
   // lease do worker (20260922120000_outbound_worker): recuperação de
   // reservas vencidas por crash filtra status + lockedUntil.
   @@index([status, lockedUntil])
   @@index([tipo, payloadHash, status])
+  @@index([cerId, status])
   @@map("outbound_event")
 }
 

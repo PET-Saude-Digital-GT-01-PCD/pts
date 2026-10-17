@@ -43,6 +43,7 @@ export async function registrarEvento(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "evento_cuidado.registrar",
           entityType: "evento_cuidado",
