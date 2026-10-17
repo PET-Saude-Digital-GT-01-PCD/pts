@@ -92,3 +92,25 @@ test("checklist fisio → CIF gerada → salvar vinculado ao PTS (#21)", async (
   await expect(page.getByTestId("lista-especialidade")).toBeVisible();
   await expect(page.getByText("CIF d450").first()).toBeVisible();
 });
+
+test("fisioterapeuta adiciona classificação livre sem substituir a checklist", async ({
+  page,
+}) => {
+  await login(page, "fisio@pts.local", "fisio123");
+  await page.goto(`/casos/${PTS_ATIVO_ID}?aba=avaliacoes`);
+
+  await page
+    .getByLabel("Classificação livre")
+    .fill("Padrão de marcha assimétrico");
+  await page.getByRole("button", { name: "Adicionar" }).click();
+  await expect(page.getByLabel("Classificações livres adicionadas")).toContainText(
+    "Padrão de marcha assimétrico",
+  );
+  await page.getByTestId("check-mobilidade").check();
+  await page.getByRole("button", { name: "Salvar avaliação Fisio" }).click();
+
+  await expect(page.getByTestId("cif-ok")).toContainText("d410");
+  await expect(
+    page.getByText("Classificações livres: Padrão de marcha assimétrico"),
+  ).toBeVisible();
+});

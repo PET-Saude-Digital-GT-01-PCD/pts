@@ -33,8 +33,30 @@ const checklistFisio = z
     forca: z.boolean().optional(),
     fatoresAmbientais: z.boolean().optional(),
     objetivosFuncionais: z.boolean().optional(),
+    // A classificação livre complementa, mas não substitui, a checklist
+    // estruturada. Ela não é convertida automaticamente para CIF.
+    classificacoesLivres: z
+      .array(z.string().trim().min(1).max(500))
+      .max(20)
+      .optional(),
   })
-  .strip();
+  .strip()
+  .superRefine((dados, ctx) => {
+    const vistas = new Set<string>();
+    for (const [indice, classificacao] of (
+      dados.classificacoesLivres ?? []
+    ).entries()) {
+      const chave = classificacao.toLocaleLowerCase("pt-BR");
+      if (vistas.has(chave)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["classificacoesLivres", indice],
+          message: "Classificação livre repetida.",
+        });
+      }
+      vistas.add(chave);
+    }
+  });
 
 const checklistTo = z
   .object({
@@ -88,12 +110,25 @@ export async function criarAvaliacaoEspecialidade(
     };
   }
 
+  // A especialidade é determinada pela categoria profissional no servidor;
+  // não basta esconder o formulário no cliente.
+  if (!especialidadesDoUsuario(user.categoria).includes(especialidade)) {
+    return {
+      ok: false,
+      erro: "Sua categoria profissional não pode registrar esta avaliação.",
+    };
+  }
+
   if (!(await podeAcessarCaso(user.id, ptsId))) {
     return { ok: false, erro: "Você não está vinculado a este caso." };
   }
 
-  // códigos CIF derivados em background do preenchimento do checklist
-  const cif = marcarCif(especialidade, dadosJson);
+  // Códigos CIF continuam derivados somente dos itens estruturados marcados.
+  // As classificações livres são persistidas junto da avaliação, sem mapa CIF.
+  const itensMarcados = Object.fromEntries(
+    Object.entries(dadosJson).filter(([, valor]) => typeof valor === "boolean"),
+  ) as Record<string, boolean>;
+  const cif = marcarCif(especialidade, itensMarcados);
 
   try {
     const avaliacaoId = await db.$transaction(async (tx) => {
