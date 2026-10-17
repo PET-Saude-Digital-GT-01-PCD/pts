@@ -63,6 +63,7 @@ export async function emitirAcessoPortal(
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "portal.acesso.revogar",
           entityType: "paciente",
@@ -88,6 +89,7 @@ export async function emitirAcessoPortal(
     });
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "portal.acesso.emitir",
         entityType: "paciente",
@@ -141,6 +143,7 @@ export async function revogarAcessoPortal(
     });
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "portal.acesso.revogar",
         entityType: "paciente",
@@ -164,6 +167,7 @@ export async function sairDoPortal(): Promise<void> {
   if (sessao) {
     await db.auditoria.create({
       data: {
+        cerId: sessao.cerId,
         actorTipo: "CIDADAO",
         actorPacienteId: sessao.pacienteId,
         action: "portal.acesso.sair",

@@ -6,6 +6,7 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireAuth, recursosDoUsuario, requirePermissao } from "@/server/iam/session";
 import { enfileirarOutbound } from "@/server/integrations/outbound/persistida";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 
 // Guia de contrarreferência (PRD M2). Emitida em dois pontos: NAO_ELEGIVEL da
 // triagem (sem PTS — documento avulso) e encerramento por contrarreferência
@@ -46,22 +47,38 @@ export async function emitirContrarreferencia(
   }
   const dados = parsed.data;
 
+  // Escopo antes da escrita (#69 / multi-CER): com PTS exige vínculo ao
+  // caso; sem PTS (documento avulso do NAO_ELEGIVEL) exige que o paciente
+  // pertença ao mesmo CER do ator.
+  let pacienteId = dados.pacienteId ?? null;
+  if (dados.ptsId) {
+    if (!(await podeAcessarCaso(user.id, dados.ptsId))) {
+      return { ok: false, erro: "Você não está vinculado a este caso." };
+    }
+    const pts = await db.pts.findUnique({
+      where: { id: dados.ptsId },
+      select: { pacienteId: true },
+    });
+    if (!pts) return { ok: false, erro: "PTS não encontrado." };
+    pacienteId = pts.pacienteId;
+  }
+  if (!pacienteId) return { ok: false, erro: "Paciente não encontrado." };
+  const alvoPacienteId: string = pacienteId;
+
+  const paciente = await db.paciente.findUnique({
+    where: { id: alvoPacienteId },
+    select: { cerId: true },
+  });
+  if (!paciente) return { ok: false, erro: "Paciente não encontrado." };
+  if (user.cerId && paciente.cerId !== user.cerId) {
+    return { ok: false, erro: "Paciente não pertence ao seu CER." };
+  }
+
   try {
     const contrarreferenciaId = await db.$transaction(async (tx) => {
-      let pacienteId = dados.pacienteId;
-      if (!pacienteId && dados.ptsId) {
-        const pts = await tx.pts.findUnique({
-          where: { id: dados.ptsId },
-          select: { pacienteId: true },
-        });
-        if (!pts) throw new Error("PTS não encontrado.");
-        pacienteId = pts.pacienteId;
-      }
-      if (!pacienteId) throw new Error("Paciente não encontrado.");
-
       const guia = await tx.contrarreferencia.create({
         data: {
-          pacienteId,
+          pacienteId: alvoPacienteId,
           ptsId: dados.ptsId,
           motivo: dados.motivo,
           planoCuidadosJson: dados.planoCuidados
@@ -73,21 +90,27 @@ export async function emitirContrarreferencia(
       });
 
       // Envio real ao e-SUS PEC é Fase 2 (worker outbound).
-      await enfileirarOutbound(tx, "REFERRAL", {
-        contrarreferenciaId: guia.id,
-        pacienteId,
-        ptsId: dados.ptsId ?? null,
-        destinoUbs: dados.destinoUbs ?? null,
-      });
+      await enfileirarOutbound(
+        tx,
+        "REFERRAL",
+        {
+          contrarreferenciaId: guia.id,
+          pacienteId: alvoPacienteId,
+          ptsId: dados.ptsId ?? null,
+          destinoUbs: dados.destinoUbs ?? null,
+        },
+        paciente.cerId,
+      );
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "contrarreferencia.emitir",
           entityType: "contrarreferencia",
           entityId: guia.id,
           afterJson: {
-            pacienteId,
+            pacienteId: alvoPacienteId,
             ptsId: dados.ptsId ?? null,
             destinoUbs: dados.destinoUbs ?? null,
           },
@@ -145,6 +168,8 @@ export async function listarContrarreferenciasPts(
   const user = await requireAuth();
   const recursos = await recursosDoUsuario(user.papelId);
   if (!recursos.includes("triage.triagem.ver")) return [];
+  // Vínculo ao caso (#69): não vaza guias de caso alheio.
+  if (!(await podeAcessarCaso(user.id, ptsId))) return [];
 
   const rows = await db.contrarreferencia.findMany({
     where: { ptsId },
@@ -166,19 +191,26 @@ export async function listarContrarreferenciasPts(
 export async function buscarContrarreferencia(
   id: string,
 ): Promise<ContrarreferenciaResumo | null> {
-  await requirePermissao("triage.contrarreferencia.emissao");
+  const user = await requirePermissao("triage.contrarreferencia.emissao");
   const row = await db.contrarreferencia.findUnique({
     where: { id },
     select: {
       id: true,
+      ptsId: true,
       motivo: true,
       destinoUbs: true,
       planoCuidadosJson: true,
       criadaEm: true,
       emitidaPor: { select: { nome: true } },
-      paciente: { select: { nome: true } },
+      paciente: { select: { nome: true, cerId: true } },
     },
   });
   if (!row) return null;
+  // Guia de caso exige vínculo; guia avulsa exige mesmo CER do ator.
+  if (row.ptsId) {
+    if (!(await podeAcessarCaso(user.id, row.ptsId))) return null;
+  } else if (user.cerId && row.paciente.cerId !== user.cerId) {
+    return null;
+  }
   return (await paraResumo([row]))[0]!;
 }

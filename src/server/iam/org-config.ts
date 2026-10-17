@@ -74,6 +74,7 @@ export async function atualizarOrgConfig(input: unknown): Promise<Resultado> {
 
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "org-config.atualizar",
         entityType: "org_config",

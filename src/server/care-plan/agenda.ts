@@ -289,6 +289,7 @@ export async function criarAgendamento(input: unknown): Promise<Resultado> {
         });
         await tx.auditoria.create({
           data: {
+            cerId: user.cerId,
             actorId: user.id,
             action: "agenda.agendamento.criar",
             entityType: "agendamento",
@@ -358,6 +359,7 @@ export async function reagendarAtendimento(input: unknown): Promise<Resultado> {
         });
         await tx.auditoria.create({
           data: {
+            cerId: user.cerId,
             actorId: user.id,
             action: "agenda.agendamento.remarcar",
             entityType: "agendamento",
@@ -411,6 +413,7 @@ export async function cancelarAtendimento(input: unknown): Promise<Resultado> {
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "agenda.agendamento.cancelar",
           entityType: "agendamento",
@@ -465,6 +468,7 @@ export async function registrarResultadoAtendimento(input: unknown): Promise<Res
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: parsed.data.resultado === "FALTA" ? "agenda.atendimento.falta" : "agenda.atendimento.realizar",
           entityType: "agendamento",

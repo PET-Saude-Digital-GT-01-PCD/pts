@@ -112,6 +112,7 @@ export async function autoCadastrar(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: cer.id,
           actorId: usuario.id,
           action: "usuario.autocadastro",
           entityType: "usuario",
@@ -170,6 +171,10 @@ export async function aprovarUsuario(
 
   const usuario = await db.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario) return { ok: false, erro: "Usuário não encontrado." };
+  // Isolamento multi-CER: só aprova pendente do próprio CER.
+  if (admin.cerId && usuario.cerId !== admin.cerId) {
+    return { ok: false, erro: "Usuário não pertence ao seu CER." };
+  }
   if (usuario.status !== "PENDENTE") {
     return { ok: false, erro: "Usuário não está pendente de aprovação." };
   }
@@ -189,6 +194,7 @@ export async function aprovarUsuario(
     });
     await tx.auditoria.create({
       data: {
+        cerId: admin.cerId,
         actorId: admin.id,
         action: "usuario.aprovar",
         entityType: "usuario",
@@ -215,6 +221,10 @@ export async function rejeitarUsuario(usuarioId: string, input: unknown): Promis
 
   const usuario = await db.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario) return { ok: false, erro: "Usuário não encontrado." };
+  // Isolamento multi-CER: só rejeita pendente do próprio CER.
+  if (admin.cerId && usuario.cerId !== admin.cerId) {
+    return { ok: false, erro: "Usuário não pertence ao seu CER." };
+  }
   if (usuario.status !== "PENDENTE") {
     return { ok: false, erro: "Usuário não está pendente de aprovação." };
   }
@@ -223,6 +233,7 @@ export async function rejeitarUsuario(usuarioId: string, input: unknown): Promis
     await tx.usuario.update({ where: { id: usuarioId }, data: { status: "BLOQUEADO" } });
     await tx.auditoria.create({
       data: {
+        cerId: admin.cerId,
         actorId: admin.id,
         action: "usuario.rejeitar",
         entityType: "usuario",

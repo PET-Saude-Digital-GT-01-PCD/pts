@@ -87,7 +87,7 @@ async function criarPaciente() {
 async function criarPts() {
   const pacienteId = await criarPaciente();
   const pts = await db.pts.create({
-    data: { pacienteId, cerId: CER_ID, status: "REAVALIACAO" },
+    data: { pacienteId, cerId: CER_ID, status: "REAVALIACAO", refProfissionalId: adminId },
   });
   ptsIds.push(pts.id);
   return { ptsId: pts.id, pacienteId };
@@ -175,6 +175,41 @@ describe("triage/contrarreferencia — emitirContrarreferencia", () => {
       motivo: "x",
     });
     expect(r.ok).toBe(false);
+  });
+
+  it("PTS sem vínculo com o ator é recusado (IDOR)", async () => {
+    sessao.chaves = ["triage.contrarreferencia.emissao"];
+    const pacienteId = await criarPaciente();
+    const pts = await db.pts.create({
+      data: { pacienteId, cerId: CER_ID, status: "REAVALIACAO" },
+    });
+    ptsIds.push(pts.id);
+
+    const r = await emitirContrarreferencia({ ptsId: pts.id, motivo: "Motivo de teste" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erro).toContain("vinculado");
+  });
+
+  it("paciente avulso de outro CER é recusado (cross-CER)", async () => {
+    sessao.chaves = ["triage.contrarreferencia.emissao"];
+    const outroCer = await db.cer.create({
+      data: { nome: `CER Contrarref ${randomUUID().slice(0, 8)}`, municipio: "Teste" },
+    });
+    const p = await db.paciente.create({
+      data: {
+        cerId: outroCer.id,
+        nome: "Paciente Outro CER",
+        dtnasc: new Date("1990-01-01"),
+        sexo: "OUTRO",
+      },
+    });
+
+    const r = await emitirContrarreferencia({ pacienteId: p.id, motivo: "Motivo de teste" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erro).toContain("CER");
+
+    await db.paciente.delete({ where: { id: p.id } });
+    await db.cer.delete({ where: { id: outroCer.id } });
   });
 });
 

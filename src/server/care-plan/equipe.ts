@@ -134,11 +134,23 @@ export async function adicionarMembroEquipe(input: unknown): Promise<Resultado> 
 
   const [pts, usuario] = await Promise.all([
     db.pts.findUnique({ where: { id: ptsId }, select: { cerId: true } }),
-    db.usuario.findUnique({ where: { id: usuarioId }, select: { cerId: true } }),
+    db.usuario.findUnique({
+      where: { id: usuarioId },
+      select: { cerId: true, status: true, papel: { select: { base: true } } },
+    }),
   ]);
   if (!pts || pts.cerId !== user.cerId) return { ok: false, erro: "Caso não encontrado." };
   if (!usuario || usuario.cerId !== user.cerId) {
     return { ok: false, erro: "Usuário não encontrado neste CER." };
+  }
+  // Guardrail de conteúdo clínico (ADR-0009): só profissional CLINICO ativo
+  // integra a equipe. Impede auto-vínculo de GESTOR/ADMIN (que passariam a
+  // ver o caso individual via avaliarVinculoCaso).
+  if (usuario.papel.base !== "CLINICO" || usuario.status !== "ATIVO") {
+    return {
+      ok: false,
+      erro: "Apenas profissionais clínicos ativos podem integrar a equipe do caso.",
+    };
   }
 
   try {
@@ -149,6 +161,7 @@ export async function adicionarMembroEquipe(input: unknown): Promise<Resultado> 
       });
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "equipe.adicionar",
           entityType: "equipe_pts",
@@ -196,6 +209,7 @@ export async function removerMembroEquipe(input: unknown): Promise<Resultado> {
     await tx.equipePts.delete({ where: { id: membro.id } });
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "equipe.remover",
         entityType: "equipe_pts",
