@@ -96,6 +96,45 @@ describe("clinical/avaliacao-especialidade — criarAvaliacaoEspecialidade", () 
     expect(aud.action).toBe("clinical.avaliacao.criar");
   });
 
+  it("preserva classificações livres da Fisioterapia sem inventar códigos CIF", async () => {
+    const pts = await ptsAberto();
+    const r = await criarAvaliacaoEspecialidade({
+      especialidade: "FISIO",
+      ptsId: pts.id,
+      dadosJson: {
+        mobilidade: true,
+        classificacoesLivres: [" Padrão de marcha assimétrico "],
+      },
+    });
+
+    expect(r).toMatchObject({ ok: true, cif: ["d410", "d450", "d455"] });
+    if (!r.ok) return;
+
+    const avaliacao = await db.avaliacao.findUniqueOrThrow({
+      where: { id: r.avaliacaoId },
+    });
+    expect(avaliacao.dadosJson).toMatchObject({
+      classificacoesLivres: ["Padrão de marcha assimétrico"],
+    });
+  });
+
+  it("recusa classificação livre em branco ou repetida", async () => {
+    const pts = await ptsAberto();
+    const emBranco = await criarAvaliacaoEspecialidade({
+      especialidade: "FISIO",
+      ptsId: pts.id,
+      dadosJson: { classificacoesLivres: ["   "] },
+    });
+    const repetida = await criarAvaliacaoEspecialidade({
+      especialidade: "FISIO",
+      ptsId: pts.id,
+      dadosJson: { classificacoesLivres: ["Marcha instável", "marcha instável"] },
+    });
+
+    expect(emBranco).toEqual({ ok: false, erro: "Dados inválidos." });
+    expect(repetida).toEqual({ ok: false, erro: "Dados inválidos." });
+  });
+
   it("recusa avaliação em PTS FECHADO (somente leitura) e não bumpa versão", async () => {
     const pts = await ptsAberto("FECHADO");
 

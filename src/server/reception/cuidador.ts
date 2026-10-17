@@ -55,6 +55,7 @@ export async function registrarCuidador(input: unknown): Promise<ResultadoCuidad
 
     await tx.auditoria.create({
       data: {
+        cerId: user.cerId,
         actorId: user.id,
         action: "cuidador.criar",
         entityType: "cuidador",

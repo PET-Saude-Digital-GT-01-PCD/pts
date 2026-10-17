@@ -168,6 +168,7 @@ export async function exportarCsv(tokenExportacao: string): Promise<{
     // confirmado/commit, nenhum conteúdo de exportação é devolvido ao cliente.
     await tx.auditoria.create({
       data: {
+        cerId: acesso.cer.id,
         actorId: identidade.atorRealId,
         action: "governanca.relatorios.exportar",
         entityType: "relatorio_governanca",

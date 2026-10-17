@@ -23,7 +23,7 @@ Dar autonomia a cada organização (instância própria) para adaptar perfis, pe
 
 | Grupo | Chaves |
 |---|---|
-| recepcao | paciente.cadastrar · paciente.ver · consentimento.registrar · baseline.ver |
+| recepcao | paciente.cadastrar · paciente.ver · consentimento.registrar · baseline.ver · portal.emitir |
 | triage | triagem.escrever · triagem.ver · semaforo.ajustar · contrarreferencia.emissao |
 | clinical | soap.ler · soap.escrever · avaliacao.ler · avaliacao.escrever |
 | care-plan | meta.ler · meta.escrever · pts.revisar · pts.encerrar · mural.ler · mural.escrever |

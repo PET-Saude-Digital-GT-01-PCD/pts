@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { criarAvaliacaoEspecialidade } from "@/server/clinical/avaliacao-especialidade";
 
 // Checklist visual → códigos CIF gerados em background (RF-4.2).
@@ -35,6 +36,8 @@ export function ChecklistCifForm({
 }) {
   const router = useRouter();
   const [marcados, setMarcados] = useState<Record<string, boolean>>({});
+  const [classificacaoLivre, setClassificacaoLivre] = useState("");
+  const [classificacoesLivres, setClassificacoesLivres] = useState<string[]>([]);
   const [cifGerada, setCifGerada] = useState<string[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -43,6 +46,31 @@ export function ChecklistCifForm({
   function alternar(item: string) {
     setOk(false);
     setMarcados((atual) => ({ ...atual, [item]: !atual[item] }));
+  }
+
+  function adicionarClassificacaoLivre() {
+    const classificacao = classificacaoLivre.trim();
+    if (!classificacao) return;
+
+    if (
+      classificacoesLivres.some(
+        (item) =>
+          item.localeCompare(classificacao, "pt-BR", { sensitivity: "accent" }) ===
+          0,
+      )
+    ) {
+      setErro("Esta classificação já foi adicionada.");
+      return;
+    }
+
+    if (classificacoesLivres.length === 20) {
+      setErro("Adicione no máximo 20 classificações livres por avaliação.");
+      return;
+    }
+
+    setErro(null);
+    setClassificacoesLivres((atual) => [...atual, classificacao]);
+    setClassificacaoLivre("");
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -54,7 +82,12 @@ export function ChecklistCifForm({
     const result = await criarAvaliacaoEspecialidade({
       ptsId,
       especialidade,
-      dadosJson: marcados,
+      dadosJson: {
+        ...marcados,
+        ...(especialidade === "FISIO" && classificacoesLivres.length > 0
+          ? { classificacoesLivres }
+          : {}),
+      },
     });
     setSalvando(false);
 
@@ -65,6 +98,8 @@ export function ChecklistCifForm({
     setOk(true);
     setCifGerada(result.cif);
     setMarcados({});
+    setClassificacoesLivres([]);
+    setClassificacaoLivre("");
     router.refresh();
   }
 
@@ -91,6 +126,73 @@ export function ChecklistCifForm({
             {rotulo}
           </label>
         ))}
+
+        {especialidade === "FISIO" ? (
+          <div className="grid gap-2 border-t pt-3">
+            <label
+              htmlFor="classificacao-livre"
+              className="text-sm font-medium"
+            >
+              Classificação livre
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Registre uma condição observada que não esteja na checklist. Esse
+              texto não gera código CIF automaticamente.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                id="classificacao-livre"
+                value={classificacaoLivre}
+                maxLength={500}
+                placeholder="Ex.: padrão de marcha assimétrico"
+                onChange={(event) => setClassificacaoLivre(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    adicionarClassificacaoLivre();
+                  }
+                }}
+                disabled={salvando}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={adicionarClassificacaoLivre}
+                disabled={salvando}
+              >
+                Adicionar
+              </Button>
+            </div>
+            {classificacoesLivres.length > 0 ? (
+              <ul
+                className="flex flex-wrap gap-2"
+                aria-label="Classificações livres adicionadas"
+              >
+                {classificacoesLivres.map((classificacao) => (
+                  <li
+                    key={classificacao}
+                    className="flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
+                  >
+                    {classificacao}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setClassificacoesLivres((atual) =>
+                          atual.filter((item) => item !== classificacao),
+                        )
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label={`Remover classificação ${classificacao}`}
+                      disabled={salvando}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
       </fieldset>
 
       {erro ? (

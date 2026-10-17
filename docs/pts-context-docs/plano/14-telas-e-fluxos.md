@@ -26,7 +26,7 @@
 | 11 | Revisão/versão com comparativo | Referência | RF-UX-12 |
 | 12 | Encerramento (alta/contrarreferência + plano APS) | Referência | RF-UX-13 |
 | 13 | Dashboard governança (indicadores) | Gestor | UC-13 |
-| 14 | Portal cidadão (percurso + metas acessíveis + consentimento) | Usuário/Cuidador | RF-UX-14 |
+| 14 | Portal cidadão (acesso por código + percurso + metas acessíveis; consentimento pendente) | Usuário/Cuidador | RF-UX-14 |
 
 ## 2. Navegação (sitemap)
 
@@ -42,7 +42,8 @@
   └── #triagem                   # semáforo (5)
 /metas                           # painel de metas cruzadas (8)
 /governanca                      # indicadores (13, Fase 2)
-/portal                          # portal cidadão (14, Fase 2)
+/portal                          # portal cidadão: entrada por código (14, Fase 2)
+  └── /portal/[ptsId]            # percurso + metas acessíveis (sessão do cidadão)
 ```
 
 ## 3. Princípios de UX (aplicados)

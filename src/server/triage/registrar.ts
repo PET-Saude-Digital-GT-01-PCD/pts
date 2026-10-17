@@ -14,6 +14,8 @@ import {
   type EscopoCER,
 } from "@/server/triage/elegibilidade";
 import { abrirPts } from "@/server/care-plan/pts";
+import { assertPtsMutavel } from "@/server/care-plan/acesso";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 
 const slider = z.number().int().min(0).max(100);
 
@@ -118,6 +120,10 @@ export async function criarTriagem(input: unknown): Promise<ResultadoTriagem> {
     if (!nascimento.ok) return { ok: false, erro: nascimento.erro };
     ptsId = nascimento.ptsId;
   } else if (dados.ptsId) {
+    // Vínculo ao caso (#69): re-triagem só por quem é referência ou equipe.
+    if (!(await podeAcessarCaso(user.id, dados.ptsId))) {
+      return { ok: false, erro: "Você não está vinculado a este caso." };
+    }
     ptsId = dados.ptsId;
   } else {
     return { ok: false, erro: "Informe pacienteId ou ptsId." };
@@ -126,6 +132,8 @@ export async function criarTriagem(input: unknown): Promise<ResultadoTriagem> {
   try {
     const triagemId = await db.$transaction(async (tx) => {
       if (dados.ptsId) {
+        // Re-triagem não escreve em prontuário fechado.
+        await assertPtsMutavel(ptsId, tx);
         // Re-triagem: lock otimista na versão do PTS.
         const atualizado = await tx.pts.updateMany({
           where: { id: ptsId, versao: dados.version },
@@ -150,6 +158,7 @@ export async function criarTriagem(input: unknown): Promise<ResultadoTriagem> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "triagem.criar",
           entityType: "triagem",
@@ -216,23 +225,31 @@ export async function ajustarClassificacao(
   const triagem = await db.triagem.findUnique({
     where: { id: triagemId },
     select: {
+      ptsId: true,
       classificacao: true,
       ajustes: { orderBy: { data: "desc" }, take: 1, select: { para: true } },
     },
   });
   if (!triagem) return { ok: false, erro: "Triagem não encontrada." };
 
+  // Vínculo ao caso (#69): ajuste de classificação exige vínculo com o PTS.
+  if (!(await podeAcessarCaso(user.id, triagem.ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
   const de =
     triagem.ajustes[0]?.para ?? triagem.classificacao;
 
   try {
     return await db.$transaction(async (tx) => {
+      await assertPtsMutavel(triagem.ptsId, tx);
       const ajuste = await tx.ajusteClassificacao.create({
         data: { triagemId, de, para, motivo, ajustadoPorId: user.id },
       });
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "triagem.ajustar",
           entityType: "ajuste_classificacao",

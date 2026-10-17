@@ -105,6 +105,7 @@ export async function salvarBaseline(input: z.infer<typeof SALVAR_SCHEMA>) {
     });
     await tx.auditoria.create({
       data: {
+        cerId: usuario.cerId,
         actorId: usuario.id,
         action: "baseline.salva",
         entityType: "Baseline",
@@ -189,6 +190,7 @@ export async function importarBaseline(
     });
     await tx.auditoria.create({
       data: {
+        cerId: usuario.cerId,
         actorId: usuario.id,
         action: "baseline.importada",
         entityType: "Baseline",

@@ -3,8 +3,16 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@11.10.0 --activate
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml prisma.config.ts ./
+# O postinstall roda `prisma generate`, que no Prisma 7 exige schema +
+# prisma.config.ts já nesta etapa.
+COPY prisma ./prisma
+# Cache do store pnpm entre builds (dev local): retries deixam de rebaixar
+# tudo do zero quando o registry oscila. `--trust-lockfile` pula a
+# verificação supply-chain (centenas de requisições ao registry) — o lockfile
+# commitado já é a base de confiança do --frozen-lockfile.
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+  pnpm install --frozen-lockfile --trust-lockfile --fetch-timeout=120000 --fetch-retries=5
 
 FROM node:22-alpine AS builder
 WORKDIR /app

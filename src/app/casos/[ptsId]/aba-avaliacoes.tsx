@@ -156,6 +156,13 @@ export async function AbaAvaliacoes({
             {avaliacoesEspecialidade.map((a) => {
               const dados = a.dadosJson as Record<string, unknown>;
               const escores = (a.escoresJson as { cif?: string[] } | null) ?? {};
+              const classificacoesLivres = Array.isArray(
+                dados.classificacoesLivres,
+              )
+                ? dados.classificacoesLivres.filter(
+                    (item): item is string => typeof item === "string",
+                  )
+                : [];
               return (
                 <li key={a.id} className="rounded-lg border border-border p-4 text-sm">
                   <p className="mb-1 text-xs text-muted-foreground">
@@ -182,6 +189,11 @@ export async function AbaAvaliacoes({
                       .map(([k]) => k)
                       .join(", ") || "nenhum"}
                   </p>
+                  {classificacoesLivres.length > 0 ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Classificações livres: {classificacoesLivres.join(", ")}
+                    </p>
+                  ) : null}
                 </li>
               );
             })}

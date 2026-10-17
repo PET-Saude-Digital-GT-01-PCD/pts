@@ -3,8 +3,9 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { exigirUmaDas } from "@/server/care-plan/acesso";
+import { assertPtsMutavel, exigirUmaDas } from "@/server/care-plan/acesso";
 import { compararRevisoes, type ComparativoRevisoes } from "@/server/care-plan/comparativo";
+import { podeAcessarCaso } from "@/server/shared/acesso-caso";
 
 type Resultado =
   | { ok: true; revisaoId: string; numero: number }
@@ -27,10 +28,15 @@ export async function registrarRevisao(input: unknown): Promise<Resultado> {
   if (!parsed.success) return { ok: false, erro: parsed.error.issues[0].message };
   const { ptsId, motivo } = parsed.data;
 
+  // Vínculo ao caso (#69): acesso clínico individual exige ser a referência
+  // do PTS ou membro da equipe — a permissão global não basta.
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
+  }
+
   try {
     const resultado = await db.$transaction(async (tx) => {
-      const pts = await tx.pts.findUnique({ where: { id: ptsId }, select: { id: true } });
-      if (!pts) throw new Error("PTS não encontrado.");
+      await assertPtsMutavel(ptsId, tx);
 
       // ponytail: checagem-então-insere tem janela de corrida; unique
       // (ptsId, numero) no banco é o upgrade quando houver concorrência real.
@@ -47,6 +53,7 @@ export async function registrarRevisao(input: unknown): Promise<Resultado> {
 
       await tx.auditoria.create({
         data: {
+          cerId: user.cerId,
           actorId: user.id,
           action: "pts.revisao.criar",
           entityType: "pts_revisao",
@@ -76,11 +83,13 @@ export type MarcoRevisao = {
 };
 
 export async function listarRevisoes(ptsId: string): Promise<MarcoRevisao[]> {
+  let user;
   try {
-    await exigirUmaDas(["care-plan.pts.revisar"]);
+    user = await exigirUmaDas(["care-plan.pts.revisar"]);
   } catch {
     return [];
   }
+  if (!(await podeAcessarCaso(user.id, ptsId))) return [];
 
   const revisoes = await db.ptsRevisao.findMany({
     where: { ptsId },
@@ -112,10 +121,14 @@ export async function buscarComparativo(
   revisaoDeId: string,
   revisaoParaId: string,
 ): Promise<ResultadoComparativo> {
+  let user;
   try {
-    await exigirUmaDas(["care-plan.pts.revisar"]);
+    user = await exigirUmaDas(["care-plan.pts.revisar"]);
   } catch {
     return { ok: false, erro: "Sem permissão para ver o comparativo." };
+  }
+  if (!(await podeAcessarCaso(user.id, ptsId))) {
+    return { ok: false, erro: "Você não está vinculado a este caso." };
   }
 
   const [de, para] = await Promise.all([
@@ -153,7 +166,12 @@ export async function buscarComparativo(
       select: { id: true, de: true, para: true, data: true, motivo: true },
     }),
     db.auditoria.findMany({
-      where: { entityType: "pts", entityId: ptsId, action: "pts.semaforo_reuniao" },
+      where: {
+        cerId: user.cerId ?? undefined,
+        entityType: "pts",
+        entityId: ptsId,
+        action: "pts.semaforo_reuniao",
+      },
       orderBy: { criadaEm: "asc" },
       select: { criadaEm: true, afterJson: true },
     }),
